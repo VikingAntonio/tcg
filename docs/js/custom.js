@@ -1,82 +1,77 @@
 /**
  * custom.js — VikingTCG Store Customization & Visual Grid Editor (Fase 1)
- * Handles global styles, per-slot styles, independent PC & Mobile layouts,
- * drag-and-drop ordering, column/row span resizing, protected text zones,
- * and sticker management with Supabase persistence.
+ * Reflects identical look and feel of admin.html and public.html.
+ * Sizing adjusted purely via border dots / resize handles.
+ * Controls reduced strictly to 4 styling properties (border color, bg color, text color, typography).
  */
 
-// All real platform slots definitions
+// All real platform slots definitions with exact native classes from admin.html
 const ADMIN_SLOTS = [
-    { id: 'btn-home', title: 'Home', icon: 'fas fa-home', defaultPcSpan: { col: 2, row: 2 }, defaultMobileSpan: { col: 2, row: 1 } },
-    { id: 'btn-perfil', title: 'Mi Perfil', icon: 'fas fa-user-circle', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
-    { id: 'btn-show-decks', title: 'Mis Decks', icon: 'fas fa-layer-group', defaultPcSpan: { col: 2, row: 1 }, defaultMobileSpan: { col: 2, row: 1 } },
-    { id: 'btn-show-binders', title: 'Mis Binders', icon: 'fas fa-book', defaultPcSpan: { col: 2, row: 1 }, defaultMobileSpan: { col: 2, row: 1 } },
-    { id: 'btn-show-spirits', title: 'Asistente', icon: 'fas fa-ghost', defaultPcSpan: { col: 1, row: 2 }, defaultMobileSpan: { col: 1, row: 1 } },
-    { id: 'btn-scanner', title: 'Scanner', icon: 'fas fa-barcode', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
-    { id: 'btn-show-expansiones', title: 'Expansiones', icon: 'fas fa-th-large', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
-    { id: 'btn-users-panel', title: 'Usuarios', icon: 'fas fa-users', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
-    { id: 'btn-bdd-panel', title: 'BDD', icon: 'fas fa-database', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
-    { id: 'btn-wishlist', title: 'Wantlist Pro', icon: 'fas fa-heart', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
-    { id: 'btn-sealed', title: 'Producto Sellado', icon: 'fas fa-box', defaultPcSpan: { col: 2, row: 1 }, defaultMobileSpan: { col: 2, row: 1 } },
-    { id: 'btn-preventas', title: 'Preventas', icon: 'fas fa-fire', defaultPcSpan: { col: 2, row: 1 }, defaultMobileSpan: { col: 2, row: 1 } },
-    { id: 'btn-tracking', title: 'Tracking', icon: 'fas fa-shipping-fast', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
-    { id: 'btn-clientes', title: 'Clientes', icon: 'fas fa-address-book', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
-    { id: 'btn-claims', title: 'Claims', icon: 'fas fa-hand-holding-heart', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
-    { id: 'btn-admin-claims', title: 'Gestión Claims', icon: 'fas fa-tasks', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
-    { id: 'btn-subastas', title: 'Subastas', icon: 'fas fa-gavel', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
-    { id: 'btn-eventos', title: 'Eventos', icon: 'fas fa-calendar-alt', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
-    { id: 'btn-chatbot-config', title: 'Chatbot', icon: 'fas fa-robot', defaultPcSpan: { col: 2, row: 1 }, defaultMobileSpan: { col: 2, row: 1 } },
-    { id: 'btn-show-investments', title: 'Inversiones', icon: 'fas fa-chart-line', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
-    { id: 'btn-widgets', title: 'Widgets', icon: 'fas fa-code', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
-    { id: 'btn-logout-tile', title: 'Salir', icon: 'fas fa-sign-out-alt', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } }
+    { id: 'btn-home', title: 'Home', icon: 'fas fa-home', defaultClass: 'tile-blue tile-large', defaultPcSpan: { col: 2, row: 2 }, defaultMobileSpan: { col: 2, row: 1 } },
+    { id: 'btn-perfil', title: 'Mi Perfil', icon: 'fas fa-user-circle', defaultClass: 'tile-cyan', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
+    { id: 'btn-show-decks', title: 'Mis Decks', icon: 'fas fa-layer-group', defaultClass: 'tile-green tile-wide', defaultPcSpan: { col: 2, row: 1 }, defaultMobileSpan: { col: 2, row: 1 } },
+    { id: 'btn-show-binders', title: 'Mis Binders', icon: 'fas fa-book', defaultClass: 'tile-purple tile-wide', defaultPcSpan: { col: 2, row: 1 }, defaultMobileSpan: { col: 2, row: 1 } },
+    { id: 'btn-show-spirits', title: 'Asistente', icon: 'fas fa-ghost', defaultClass: 'tile-yellow tile-tall', defaultPcSpan: { col: 1, row: 2 }, defaultMobileSpan: { col: 1, row: 1 } },
+    { id: 'btn-scanner', title: 'Scanner', icon: 'fas fa-barcode', defaultClass: 'tile-orange', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
+    { id: 'btn-show-expansiones', title: 'Expansiones', icon: 'fas fa-th-large', defaultClass: 'tile-orange', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
+    { id: 'btn-users-panel', title: 'Usuarios', icon: 'fas fa-users', defaultClass: 'tile-pink', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
+    { id: 'btn-bdd-panel', title: 'BDD', icon: 'fas fa-database', defaultClass: 'tile-yellow', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
+    { id: 'btn-wishlist', title: 'Wantlist Pro', icon: 'fas fa-heart', defaultClass: 'tile-blue', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
+    { id: 'btn-sealed', title: 'Producto Sellado', icon: 'fas fa-box', defaultClass: 'tile-cyan tile-wide', defaultPcSpan: { col: 2, row: 1 }, defaultMobileSpan: { col: 2, row: 1 } },
+    { id: 'btn-preventas', title: 'Preventas', icon: 'fas fa-fire', defaultClass: 'tile-yellow tile-wide', defaultPcSpan: { col: 2, row: 1 }, defaultMobileSpan: { col: 2, row: 1 } },
+    { id: 'btn-tracking', title: 'Tracking', icon: 'fas fa-shipping-fast', defaultClass: 'tile-blue', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
+    { id: 'btn-clientes', title: 'Clientes', icon: 'fas fa-address-book', defaultClass: 'tile-green', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
+    { id: 'btn-claims', title: 'Claims', icon: 'fas fa-hand-holding-heart', defaultClass: 'tile-orange', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
+    { id: 'btn-admin-claims', title: 'Gestión Claims', icon: 'fas fa-tasks', defaultClass: 'tile-pink', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
+    { id: 'btn-subastas', title: 'Subastas', icon: 'fas fa-gavel', defaultClass: 'tile-purple', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
+    { id: 'btn-eventos', title: 'Eventos', icon: 'fas fa-calendar-alt', defaultClass: 'tile-cyan', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
+    { id: 'btn-chatbot-config', title: 'Chatbot', icon: 'fas fa-robot', defaultClass: 'tile-purple tile-wide', defaultPcSpan: { col: 2, row: 1 }, defaultMobileSpan: { col: 2, row: 1 } },
+    { id: 'btn-show-investments', title: 'Inversiones', icon: 'fas fa-chart-line', defaultClass: 'tile-green', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
+    { id: 'btn-widgets', title: 'Widgets', icon: 'fas fa-code', defaultClass: 'tile-blue', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
+    { id: 'btn-logout-tile', title: 'Salir', icon: 'fas fa-sign-out-alt', defaultClass: 'tile-pink', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } }
 ];
 
 const PUBLIC_SLOTS = [
-    { id: 'public-binders', title: 'Binders', icon: 'fas fa-book', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
-    { id: 'public-decks', title: 'Decks', icon: 'fas fa-layer-group', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
-    { id: 'public-auctions', title: 'Subastas', icon: 'fas fa-gavel', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
-    { id: 'public-sealed', title: 'Productos', icon: 'fas fa-box', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
-    { id: 'public-preorders', title: 'Preventas', icon: 'fas fa-fire', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
-    { id: 'public-wishlist', title: 'Buscamos', icon: 'fas fa-heart', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
-    { id: 'public-investments', title: 'Inversiones', icon: 'fas fa-chart-line', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
-    { id: 'public-claims', title: 'Claims', icon: 'fas fa-hand-holding-heart', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
-    { id: 'public-events', title: 'Eventos y Noticias', icon: 'fas fa-calendar-alt', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
-    { id: 'public-learn', title: 'Aprender', icon: 'fas fa-graduation-cap', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } }
+    { id: 'public-binders', title: 'Binders', icon: 'fas fa-book', defaultClass: 'tile-purple tile-wide', defaultPcSpan: { col: 2, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
+    { id: 'public-decks', title: 'Decks', icon: 'fas fa-layer-group', defaultClass: 'tile-blue tile-wide', defaultPcSpan: { col: 2, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
+    { id: 'public-auctions', title: 'Subastas', icon: 'fas fa-gavel', defaultClass: 'tile-pink', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
+    { id: 'public-sealed', title: 'Productos', icon: 'fas fa-box', defaultClass: 'tile-green', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
+    { id: 'public-preorders', title: 'Preventas', icon: 'fas fa-fire', defaultClass: 'tile-yellow tile-wide', defaultPcSpan: { col: 2, row: 1 }, defaultMobileSpan: { col: 2, row: 1 } },
+    { id: 'public-wishlist', title: 'Buscamos', icon: 'fas fa-heart', defaultClass: 'tile-pink', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
+    { id: 'public-investments', title: 'Inversiones', icon: 'fas fa-chart-line', defaultClass: 'tile-orange', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
+    { id: 'public-claims', title: 'Claims', icon: 'fas fa-hand-holding-heart', defaultClass: 'tile-cyan', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
+    { id: 'public-events', title: 'Eventos y Noticias', icon: 'fas fa-calendar-alt', defaultClass: 'tile-cyan tile-wide', defaultPcSpan: { col: 2, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } }
 ];
 
-// Test Stickers Library (transparent PNGs and high-res vector badges)
+// Test Stickers Library (transparent PNGs)
 const TEST_STICKERS = [
-    { id: 'stk-flame', name: 'Fuego / Hot', url: 'https://cdn-icons-png.flaticon.com/512/785/785116.png' },
+    { id: 'stk-flame', name: 'Fuego', url: 'https://cdn-icons-png.flaticon.com/512/785/785116.png' },
     { id: 'stk-star', name: 'Estrella Dorada', url: 'https://cdn-icons-png.flaticon.com/512/1828/1828884.png' },
-    { id: 'stk-sparkles', name: 'Destellos / Foil', url: 'https://cdn-icons-png.flaticon.com/512/1828/1828970.png' },
-    { id: 'stk-crown', name: 'Corona Pro', url: 'https://cdn-icons-png.flaticon.com/512/6941/6941697.png' },
-    { id: 'stk-diamond', name: 'Diamante / Rare', url: 'https://cdn-icons-png.flaticon.com/512/1828/1828882.png' },
+    { id: 'stk-sparkles', name: 'Destellos', url: 'https://cdn-icons-png.flaticon.com/512/1828/1828970.png' },
+    { id: 'stk-crown', name: 'Corona', url: 'https://cdn-icons-png.flaticon.com/512/6941/6941697.png' },
+    { id: 'stk-diamond', name: 'Diamante', url: 'https://cdn-icons-png.flaticon.com/512/1828/1828882.png' },
     { id: 'stk-verified', name: 'Verificado', url: 'https://cdn-icons-png.flaticon.com/512/7595/7595571.png' },
-    { id: 'stk-discount', name: 'Oferta / Promo', url: 'https://cdn-icons-png.flaticon.com/512/726/726488.png' },
-    { id: 'stk-tcg-card', name: 'Carta Mágica', url: 'https://cdn-icons-png.flaticon.com/512/4743/4743048.png' },
+    { id: 'stk-discount', name: 'Oferta', url: 'https://cdn-icons-png.flaticon.com/512/726/726488.png' },
+    { id: 'stk-tcg-card', name: 'Carta', url: 'https://cdn-icons-png.flaticon.com/512/4743/4743048.png' },
     { id: 'stk-ghost', name: 'Espíritu', url: 'https://cdn-icons-png.flaticon.com/512/1067/1067357.png' },
     { id: 'stk-shield', name: 'Escudo', url: 'https://cdn-icons-png.flaticon.com/512/1067/1067347.png' }
 ];
 
-// State Manager
 window.CustomStoreState = {
     currentUser: null,
     currentDevice: 'pc', // 'pc' or 'mobile'
     currentTargetView: 'admin', // 'admin' or 'public'
     selectedSlotId: null,
 
-    // Global Visual Settings
+    // Global Visual Settings (Only 4 Properties: border_color, bg_color, text_color, font_family)
     globalStyles: {
-        bg_color: '#121824',
-        border_color: '#00d2ff',
-        border_width: '2px',
-        border_radius: '24px',
-        text_color: '#ffffff',
-        font_family: "'Montserrat', sans-serif",
-        font_size: '16px'
+        bg_color: '',
+        border_color: '',
+        text_color: '',
+        font_family: "'Montserrat', sans-serif"
     },
 
-    // Individual Slot Customizations: { [slotId]: { bg_color, border_color, border_width, border_radius, text_color, font_family, font_size, stickers: [] } }
+    // Individual Slot Customizations: { [slotId]: { bg_color, border_color, text_color, font_family, stickers: [] } }
     slotsConfig: {},
 
     // Grid Layouts: { [view]: { order: [slotIds...], spans: { [slotId]: { col: number, row: number } } } }
@@ -91,6 +86,7 @@ window.CustomStoreState = {
 };
 
 $(document).ready(async function() {
+    initThemeManager();
     await initSession();
     initStickersLibrary();
     bindEvents();
@@ -98,7 +94,46 @@ $(document).ready(async function() {
     renderGrid();
 });
 
-// 1. Session Initialization
+// 1. Theme Switcher Manager matching platform standard
+function initThemeManager() {
+    const savedTheme = localStorage.getItem('site_theme') || 'theme-dark';
+    $('body').removeClass('theme-light theme-purple theme-dark').addClass(savedTheme);
+    $('.theme-btn-small').removeClass('active');
+    $(`.theme-btn-small[data-theme="${savedTheme}"]`).addClass('active');
+
+    $('.theme-btn-small').on('click', function() {
+        const theme = $(this).data('theme');
+        $('body').removeClass('theme-light theme-purple theme-dark').addClass(theme);
+        $('.theme-btn-small').removeClass('active');
+        $(`.theme-btn-small[data-theme="${theme}"]`).addClass('active');
+        localStorage.setItem('site_theme', theme);
+    });
+
+    $('#avatar-btn').on('click', function(e) {
+        e.stopPropagation();
+        $('#user-dropdown').toggleClass('active');
+    });
+
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('.user-menu-container').length) {
+            $('#user-dropdown').removeClass('active');
+        }
+    });
+
+    // Minimize sidebar button
+    $('#btn-toggle-sidebar').on('click', function() {
+        const $body = $('#sidebar-controls-body');
+        if ($body.is(':visible')) {
+            $body.slideUp(200);
+            $(this).text('Expandir');
+        } else {
+            $body.slideDown(200);
+            $(this).text('Minimizar');
+        }
+    });
+}
+
+// 2. Session Initialization
 async function initSession() {
     try {
         if (typeof _supabase !== 'undefined' && _supabase.auth) {
@@ -110,6 +145,9 @@ async function initSession() {
                     .eq('id', session.user.id)
                     .maybeSingle();
                 window.CustomStoreState.currentUser = userProfile || { id: session.user.id, username: session.user.email };
+                if (window.CustomStoreState.currentUser.username) {
+                    $('#dropdown-user-name').text(window.CustomStoreState.currentUser.username);
+                }
                 return;
             }
         }
@@ -117,23 +155,24 @@ async function initSession() {
         console.warn('Supabase auth session check failed, using fallback:', e);
     }
 
-    // Fallback: localStorage
     const savedSession = localStorage.getItem('tcg_session');
     if (savedSession) {
         try {
             window.CustomStoreState.currentUser = JSON.parse(savedSession);
+            if (window.CustomStoreState.currentUser.username) {
+                $('#dropdown-user-name').text(window.CustomStoreState.currentUser.username);
+            }
         } catch (e) {
             console.error('Error parsing tcg_session', e);
         }
     }
 
     if (!window.CustomStoreState.currentUser) {
-        // Guest / Demo Mode
         window.CustomStoreState.currentUser = { id: '00000000-0000-0000-0000-000000000000', username: 'Demo' };
     }
 }
 
-// 2. Load Customizations from Supabase
+// 3. Load Customizations from Supabase
 async function loadCustomizations() {
     const state = window.CustomStoreState;
     if (!state.currentUser || !state.currentUser.id || state.currentUser.id === '00000000-0000-0000-0000-000000000000') {
@@ -197,7 +236,7 @@ function populateDefaultGridStructure() {
     });
 }
 
-// 3. Render Interactive Grid
+// 4. Render Grid exactly as in admin.html / public.html
 function renderGrid() {
     const state = window.CustomStoreState;
     const isMobile = state.currentDevice === 'mobile';
@@ -209,7 +248,6 @@ function renderGrid() {
     const $grid = $('#custom-grid-container');
     $grid.empty();
 
-    // Ensure all slots are in the order list
     const renderedOrder = [...(gridData.order || [])];
     availableSlots.forEach(s => {
         if (!renderedOrder.includes(s.id)) renderedOrder.push(s.id);
@@ -217,7 +255,7 @@ function renderGrid() {
 
     const maxCols = isMobile ? 2 : 4;
 
-    renderedOrder.forEach((slotId, index) => {
+    renderedOrder.forEach(slotId => {
         const slotMeta = slotMap.get(slotId);
         if (!slotMeta) return;
 
@@ -225,82 +263,61 @@ function renderGrid() {
         const safeColSpan = Math.min(span.col || 1, maxCols);
         const safeRowSpan = span.row || 1;
 
-        // Slot styling: Individual or Global
+        // 4 properties: Individual or Global
         const slotConfig = state.slotsConfig[slotId] || {};
-        const bg = slotConfig.bg_color || state.globalStyles.bg_color;
-        const borderCol = slotConfig.border_color || state.globalStyles.border_color;
-        const borderWidth = slotConfig.border_width || state.globalStyles.border_width;
-        const borderRadius = slotConfig.border_radius || state.globalStyles.border_radius;
-        const textCol = slotConfig.text_color || state.globalStyles.text_color;
-        const fontFamily = (slotConfig.font_family && slotConfig.font_family !== 'inherit') ? slotConfig.font_family : state.globalStyles.font_family;
-        const fontSize = slotConfig.font_size || state.globalStyles.font_size;
+        const bg = slotConfig.bg_color || state.globalStyles.bg_color || '';
+        const borderCol = slotConfig.border_color || state.globalStyles.border_color || '';
+        const textCol = slotConfig.text_color || state.globalStyles.text_color || '';
+        const fontFamily = (slotConfig.font_family && slotConfig.font_family !== 'inherit')
+            ? slotConfig.font_family
+            : (state.globalStyles.font_family || "'Montserrat', sans-serif");
 
         const isSelected = state.selectedSlotId === slotId;
 
+        let customInlineStyles = `
+            grid-column: span ${safeColSpan} !important;
+            grid-row: span ${safeRowSpan} !important;
+        `;
+        if (bg) customInlineStyles += ` background-color: ${bg} !important;`;
+        if (borderCol) customInlineStyles += ` border-color: ${borderCol} !important;`;
+        if (textCol) customInlineStyles += ` color: ${textCol} !important;`;
+        if (fontFamily) customInlineStyles += ` font-family: ${fontFamily} !important;`;
+
+        // Render matching exact tile markup from admin.html
         const $slot = $(`
-            <div class="custom-grid-slot ${isSelected ? 'slot-selected show-protected' : ''}"
-                 id="slot-element-${slotId}"
+            <div class="tile ${slotMeta.defaultClass || ''} ${isSelected ? 'slot-selected' : ''}"
+                 id="${slotId}"
                  data-slot-id="${slotId}"
                  draggable="true"
-                 style="
-                    grid-column: span ${safeColSpan};
-                    grid-row: span ${safeRowSpan};
-                    --slot-bg: ${bg};
-                    --slot-border-color: ${borderCol};
-                    --slot-border-width: ${borderWidth};
-                    --slot-border-radius: ${borderRadius};
-                    --slot-text-color: ${textCol};
-                    --slot-font-family: ${fontFamily};
-                    --slot-font-size: ${fontSize};
-                 ">
-
-                <!-- Slot Action Ribbon -->
-                <div class="slot-quick-ribbon">
-                    <button class="btn-slot-quick btn-open-stickers" title="Administrar Stickers">
-                        <i class="fas fa-icons"></i> Stickers
-                    </button>
-                    <button class="btn-slot-quick btn-edit-slot-styles" title="Editar Estilos">
-                        <i class="fas fa-palette"></i> Estilos
-                    </button>
-                    <button class="btn-slot-quick btn-col-dec" title="Reducir Ancho">- Col</button>
-                    <button class="btn-slot-quick btn-col-inc" title="Aumentar Ancho">+ Col</button>
-                </div>
+                 style="${customInlineStyles}">
 
                 <!-- Protected Text Zone -->
                 <div class="slot-protected-zone">
-                    <span class="slot-protected-zone-tag"><i class="fas fa-shield-alt"></i> Zona Protegida</span>
+                    <span class="slot-protected-zone-tag">Zona Protegida</span>
                 </div>
 
-                <!-- Main Content -->
-                <div class="slot-icon-box">
-                    <i class="${slotMeta.icon}"></i>
-                </div>
-                <div class="slot-title-box">
-                    ${slotMeta.title}
-                </div>
+                <!-- Native Content -->
+                <i class="${slotMeta.icon}" style="${textCol ? `color: ${textCol} !important;` : ''}"></i>
+                <span style="${textCol ? `color: ${textCol} !important;` : ''}">${slotMeta.title}</span>
 
                 <!-- Stickers Layer -->
-                <div class="slot-stickers-layer" id="stickers-layer-${slotId}">
-                    <!-- Stickers appended here -->
-                </div>
+                <div class="slot-stickers-layer" id="stickers-layer-${slotId}"></div>
 
-                <!-- Resize Handles -->
-                <div class="slot-resize-handle handle-right" title="Arrastrar para ajustar ancho"></div>
-                <div class="slot-resize-handle handle-bottom" title="Arrastrar para ajustar alto"></div>
-                <div class="slot-resize-handle handle-corner" title="Arrastrar para ajustar ancho y alto"></div>
+                <!-- Sizing Handles on Borders (Yellow dots) -->
+                <div class="slot-resize-dot dot-right" title="Ajustar ancho"></div>
+                <div class="slot-resize-dot dot-bottom" title="Ajustar alto"></div>
+                <div class="slot-resize-dot dot-corner" title="Ajustar ancho y alto"></div>
             </div>
         `);
 
-        // Render stickers inside slot
         renderSlotStickers($slot.find('.slot-stickers-layer'), slotConfig.stickers || []);
-
         $grid.append($slot);
     });
 
-    bindDragAndDropEvents();
+    bindSlotInteractions();
 }
 
-// 4. Render Stickers in Slot
+// 5. Render Stickers in Slot
 function renderSlotStickers($container, stickers) {
     $container.empty();
     if (!stickers || stickers.length === 0) return;
@@ -323,17 +340,18 @@ function renderSlotStickers($container, stickers) {
             </div>
         `);
 
-        bindStickerDragAndDrop($stkItem, $container.closest('.custom-grid-slot'));
+        bindStickerDragAndDrop($stkItem, $container.closest('.tile'));
         $container.append($stkItem);
     });
 }
 
-// 5. Interactive Drag & Drop for Slots Sorting
+// 6. Slot Interactions: Click to edit slot & Drag to reorder
 let draggedSlotId = null;
 
-function bindDragAndDropEvents() {
-    const $slots = $('.custom-grid-slot');
+function bindSlotInteractions() {
+    const $slots = $('.custom-viewport-frame .tile');
 
+    // Drag and Drop Ordering
     $slots.on('dragstart', function(e) {
         draggedSlotId = $(this).data('slot-id');
         $(this).addClass('is-dragging');
@@ -343,7 +361,7 @@ function bindDragAndDropEvents() {
 
     $slots.on('dragend', function() {
         $(this).removeClass('is-dragging');
-        $('.custom-grid-slot').removeClass('drag-over');
+        $('.custom-viewport-frame .tile').removeClass('drag-over');
         draggedSlotId = null;
     });
 
@@ -367,24 +385,20 @@ function bindDragAndDropEvents() {
         }
     });
 
-    // Slot Selection
+    // Clicking slot selects it or opens individual modal
     $slots.on('click', function(e) {
-        // If clicking on ribbon buttons, don't trigger selection toggle
-        if ($(e.target).closest('.slot-quick-ribbon, .sticker-item').length > 0) return;
+        if ($(e.target).closest('.slot-resize-dot, .sticker-item').length > 0) return;
 
         const slotId = $(this).data('slot-id');
-        if (window.CustomStoreState.selectedSlotId === slotId) {
-            window.CustomStoreState.selectedSlotId = null;
-            $('.custom-grid-slot').removeClass('slot-selected show-protected');
-        } else {
-            window.CustomStoreState.selectedSlotId = slotId;
-            $('.custom-grid-slot').removeClass('slot-selected show-protected');
-            $(this).addClass('slot-selected show-protected');
-        }
+        window.CustomStoreState.selectedSlotId = slotId;
+        $('.custom-viewport-frame .tile').removeClass('slot-selected');
+        $(this).addClass('slot-selected');
+
+        // Open Individual Slot Customization Modal
+        openSlotStylesModal(slotId);
     });
 
-    // Resize Handles logic
-    bindResizeHandles();
+    bindResizeDots();
 }
 
 function reorderSlots(fromId, toId) {
@@ -402,34 +416,22 @@ function reorderSlots(fromId, toId) {
     }
 }
 
-// 6. Interactive Column/Row Span Adjustment via Handles & Ribbon
-function bindResizeHandles() {
-    $('.btn-col-inc').off('click').on('click', function(e) {
-        e.stopPropagation();
-        const slotId = $(this).closest('.custom-grid-slot').data('slot-id');
-        adjustSlotSpan(slotId, 1, 0);
-    });
-
-    $('.btn-col-dec').off('click').on('click', function(e) {
-        e.stopPropagation();
-        const slotId = $(this).closest('.custom-grid-slot').data('slot-id');
-        adjustSlotSpan(slotId, -1, 0);
-    });
-
-    // Handle corner drag for continuous intuitive sizing
-    $('.slot-resize-handle').off('mousedown touchstart').on('mousedown touchstart', function(e) {
+// 7. Interactive Resize Dots (Sizing exclusively by dragging border dots)
+function bindResizeDots() {
+    $('.slot-resize-dot').off('mousedown touchstart').on('mousedown touchstart', function(e) {
         e.stopPropagation();
         e.preventDefault();
-        const $slot = $(this).closest('.custom-grid-slot');
+
+        const $slot = $(this).closest('.tile');
         const slotId = $slot.data('slot-id');
-        const isRight = $(this).hasClass('handle-right') || $(this).hasClass('handle-corner');
-        const isBottom = $(this).hasClass('handle-bottom') || $(this).hasClass('handle-corner');
+        const isRight = $(this).hasClass('dot-right') || $(this).hasClass('dot-corner');
+        const isBottom = $(this).hasClass('dot-bottom') || $(this).hasClass('dot-corner');
 
         const startX = e.pageX || (e.originalEvent.touches ? e.originalEvent.touches[0].pageX : 0);
         const startY = e.pageY || (e.originalEvent.touches ? e.originalEvent.touches[0].pageY : 0);
 
         function onMouseMove(moveEvent) {
-            // Drag tracking indicator can be added here
+            // Live indicator can optionally update
         }
 
         function onMouseUp(upEvent) {
@@ -446,13 +448,13 @@ function bindResizeHandles() {
             let rowChange = 0;
 
             if (isRight) {
-                if (deltaX > 60) colChange = 1;
-                else if (deltaX < -60) colChange = -1;
+                if (deltaX > 45) colChange = 1;
+                else if (deltaX < -45) colChange = -1;
             }
 
             if (isBottom) {
-                if (deltaY > 60) rowChange = 1;
-                else if (deltaY < -60) rowChange = -1;
+                if (deltaY > 45) rowChange = 1;
+                else if (deltaY < -45) rowChange = -1;
             }
 
             if (colChange !== 0 || rowChange !== 0) {
@@ -485,7 +487,7 @@ function adjustSlotSpan(slotId, colDelta, rowDelta) {
     renderGrid();
 }
 
-// 7. Sticker Drag and Placement inside Slot
+// 8. Sticker Drag and Placement inside Slot
 function bindStickerDragAndDrop($stickerEl, $slotEl) {
     $stickerEl.on('mousedown touchstart', function(e) {
         e.stopPropagation();
@@ -501,7 +503,6 @@ function bindStickerDragAndDrop($stickerEl, $slotEl) {
             const pageX = moveEvent.pageX || (moveEvent.originalEvent.touches ? moveEvent.originalEvent.touches[0].pageX : 0);
             const pageY = moveEvent.pageY || (moveEvent.originalEvent.touches ? moveEvent.originalEvent.touches[0].pageY : 0);
 
-            // Compute relative percentage inside the slot
             const relX = ((pageX - slotRect.left) / slotRect.width) * 100;
             const relY = ((pageY - slotRect.top) / slotRect.height) * 100;
 
@@ -516,7 +517,6 @@ function bindStickerDragAndDrop($stickerEl, $slotEl) {
             $(document).off('mouseup touchend', onStickerUp);
             $item.removeClass('sticker-selected');
 
-            // Save new position into state
             const finalLeft = parseFloat($item[0].style.left) || 50;
             const finalTop = parseFloat($item[0].style.top) || 50;
 
@@ -532,46 +532,37 @@ function bindStickerDragAndDrop($stickerEl, $slotEl) {
     });
 }
 
-// 8. Global Styles Application to Inputs and Grid
+// 9. Global Styles to Inputs
 function applyGlobalStylesToInputs() {
     const s = window.CustomStoreState.globalStyles;
-    $('#global-bg-color').val(s.bg_color);
-    $('#global-bg-text').val(s.bg_color);
-    $('#global-border-color').val(s.border_color);
-    $('#global-border-text').val(s.border_color);
-
-    const bWidthNum = parseInt(s.border_width, 10) || 2;
-    $('#global-border-width').val(bWidthNum);
-    $('#global-border-width-badge').text(`${bWidthNum}px`);
-
-    const bRadiusNum = parseInt(s.border_radius, 10) || 24;
-    $('#global-border-radius').val(bRadiusNum);
-    $('#global-border-radius-badge').text(`${bRadiusNum}px`);
-
-    $('#global-text-color').val(s.text_color);
-    $('#global-text-color-val').val(s.text_color);
-
-    $('#global-font-family').val(s.font_family);
-
-    const fSizeNum = parseInt(s.font_size, 10) || 16;
-    $('#global-font-size').val(fSizeNum);
-    $('#global-font-size-badge').text(`${fSizeNum}px`);
+    if (s.bg_color) {
+        $('#global-bg-color').val(s.bg_color);
+        $('#global-bg-text').val(s.bg_color);
+    }
+    if (s.border_color) {
+        $('#global-border-color').val(s.border_color);
+        $('#global-border-text').val(s.border_color);
+    }
+    if (s.text_color) {
+        $('#global-text-color').val(s.text_color);
+        $('#global-text-color-val').val(s.text_color);
+    }
+    if (s.font_family) {
+        $('#global-font-family').val(s.font_family);
+    }
 }
 
 function updateGlobalStylesFromInputs() {
     const s = window.CustomStoreState.globalStyles;
-    s.bg_color = $('#global-bg-text').val() || $('#global-bg-color').val();
-    s.border_color = $('#global-border-text').val() || $('#global-border-color').val();
-    s.border_width = `${$('#global-border-width').val()}px`;
-    s.border_radius = `${$('#global-border-radius').val()}px`;
-    s.text_color = $('#global-text-color-val').val() || $('#global-text-color').val();
+    s.bg_color = $('#global-bg-text').val();
+    s.border_color = $('#global-border-text').val();
+    s.text_color = $('#global-text-color-val').val();
     s.font_family = $('#global-font-family').val();
-    s.font_size = `${$('#global-font-size').val()}px`;
 
     renderGrid();
 }
 
-// 9. Individual Slot Modal
+// 10. Individual Slot Modal (Strictly 4 properties + stickers)
 function openSlotStylesModal(slotId) {
     const state = window.CustomStoreState;
     const target = state.currentTargetView;
@@ -581,37 +572,22 @@ function openSlotStylesModal(slotId) {
 
     state.selectedSlotId = slotId;
     $('#modal-slot-title').text(slotMeta.title);
-    $('#modal-current-device-label').text(state.currentDevice.toUpperCase());
 
     const slotConfig = state.slotsConfig[slotId] || {};
-    const bg = slotConfig.bg_color || state.globalStyles.bg_color;
-    const borderCol = slotConfig.border_color || state.globalStyles.border_color;
-    const borderWidth = parseInt(slotConfig.border_width || state.globalStyles.border_width, 10) || 2;
-    const borderRadius = parseInt(slotConfig.border_radius || state.globalStyles.border_radius, 10) || 24;
-    const textCol = slotConfig.text_color || state.globalStyles.text_color;
+    const bg = slotConfig.bg_color || state.globalStyles.bg_color || '';
+    const borderCol = slotConfig.border_color || state.globalStyles.border_color || '';
+    const textCol = slotConfig.text_color || state.globalStyles.text_color || '';
     const fontFamily = slotConfig.font_family || 'inherit';
-    const fontSize = parseInt(slotConfig.font_size || state.globalStyles.font_size, 10) || 16;
 
-    $('#slot-bg-color').val(bg);
+    $('#slot-bg-color').val(bg || '#1e272e');
     $('#slot-bg-text').val(bg);
-    $('#slot-border-color').val(borderCol);
+    $('#slot-border-color').val(borderCol || '#00d2ff');
     $('#slot-border-text').val(borderCol);
-    $('#slot-border-width').val(borderWidth);
-    $('#slot-border-width-badge').text(`${borderWidth}px`);
-    $('#slot-border-radius').val(borderRadius);
-    $('#slot-border-radius-badge').text(`${borderRadius}px`);
-    $('#slot-text-color').val(textCol);
+    $('#slot-text-color').val(textCol || '#f5f6fa');
     $('#slot-text-color-val').val(textCol);
     $('#slot-font-family').val(fontFamily);
-    $('#slot-font-size').val(fontSize);
-    $('#slot-font-size-badge').text(`${fontSize}px`);
 
-    // Span
-    const gridData = state.currentDevice === 'mobile' ? state.gridMobile[target] : state.gridPc[target];
-    const span = (gridData.spans && gridData.spans[slotId]) ? gridData.spans[slotId] : { col: 1, row: 1 };
-    $('#slot-col-span-select').val(span.col || 1);
-    $('#slot-row-span-select').val(span.row || 1);
-
+    renderStickersManagerList(slotId);
     $('#slot-modal-overlay').addClass('active');
 }
 
@@ -625,19 +601,8 @@ function applySlotStylesFromModal() {
 
     sc.bg_color = $('#slot-bg-text').val();
     sc.border_color = $('#slot-border-text').val();
-    sc.border_width = `${$('#slot-border-width').val()}px`;
-    sc.border_radius = `${$('#slot-border-radius').val()}px`;
     sc.text_color = $('#slot-text-color-val').val();
     sc.font_family = $('#slot-font-family').val();
-    sc.font_size = `${$('#slot-font-size').val()}px`;
-
-    // Spans
-    const isMobile = state.currentDevice === 'mobile';
-    const target = state.currentTargetView;
-    const gridData = isMobile ? state.gridMobile[target] : state.gridPc[target];
-    if (!gridData.spans[slotId]) gridData.spans[slotId] = {};
-    gridData.spans[slotId].col = parseInt($('#slot-col-span-select').val(), 10) || 1;
-    gridData.spans[slotId].row = parseInt($('#slot-row-span-select').val(), 10) || 1;
 
     $('#slot-modal-overlay').removeClass('active');
     renderGrid();
@@ -646,7 +611,6 @@ function applySlotStylesFromModal() {
 function resetSlotToGlobal(slotId) {
     const state = window.CustomStoreState;
     if (state.slotsConfig[slotId]) {
-        // Keep stickers intact, reset visual styles
         const stickers = state.slotsConfig[slotId].stickers || [];
         delete state.slotsConfig[slotId];
         if (stickers.length > 0) {
@@ -657,7 +621,7 @@ function resetSlotToGlobal(slotId) {
     renderGrid();
 }
 
-// 10. Stickers Library & Management Modal
+// 11. Stickers Library & Manager
 function initStickersLibrary() {
     const $lib = $('#stickers-lib-container');
     $lib.empty();
@@ -675,19 +639,6 @@ function initStickersLibrary() {
     });
 }
 
-function openStickersModal(slotId) {
-    const state = window.CustomStoreState;
-    const target = state.currentTargetView;
-    const availableSlots = target === 'admin' ? ADMIN_SLOTS : PUBLIC_SLOTS;
-    const slotMeta = availableSlots.find(s => s.id === slotId);
-    if (!slotMeta) return;
-
-    state.selectedSlotId = slotId;
-    $('#stickers-modal-slot-title').text(slotMeta.title);
-    renderStickersManagerList(slotId);
-    $('#stickers-modal-overlay').addClass('active');
-}
-
 function renderStickersManagerList(slotId) {
     const state = window.CustomStoreState;
     const sc = state.slotsConfig[slotId] || {};
@@ -698,7 +649,7 @@ function renderStickersManagerList(slotId) {
     $list.empty();
 
     if (stickers.length === 0) {
-        $list.html('<div style="color: #64748b; font-size: 0.8rem; text-align: center; padding: 10px;">No hay stickers añadidos a este slot.</div>');
+        $list.html('<div style="color: var(--text-muted); font-size: 0.75rem; text-align: center; padding: 6px;">Sin stickers</div>');
         return;
     }
 
@@ -707,37 +658,26 @@ function renderStickersManagerList(slotId) {
             <div class="sticker-manager-row">
                 <img src="${stk.url}" alt="Sticker" class="sticker-row-preview">
                 <div class="sticker-row-controls">
-                    <label style="font-size: 0.7rem; color: #94a3b8;">Tamaño: </label>
-                    <input type="range" class="custom-range-slider stk-scale-range" min="20" max="100" value="${stk.size || 40}" style="flex: 1;">
-                    <span style="font-size: 0.75rem; color: #00d2ff; min-width: 35px;">${stk.size || 40}px</span>
+                    <label style="font-size: 0.65rem; color: var(--text-muted);">Tamaño: </label>
+                    <input type="range" class="stk-scale-range" min="20" max="100" value="${stk.size || 40}" style="flex: 1;">
 
-                    <label style="font-size: 0.7rem; color: #94a3b8; margin-left: 10px;">Giro: </label>
-                    <input type="range" class="custom-range-slider stk-rot-range" min="-180" max="180" value="${stk.rotation || 0}" style="flex: 1;">
-                    <span style="font-size: 0.75rem; color: #ffcc00; min-width: 35px;">${stk.rotation || 0}°</span>
+                    <label style="font-size: 0.65rem; color: var(--text-muted); margin-left: 6px;">Giro: </label>
+                    <input type="range" class="stk-rot-range" min="-180" max="180" value="${stk.rotation || 0}" style="flex: 1;">
                 </div>
-                <button class="btn-delete-sticker" data-index="${idx}" title="Eliminar sticker">
-                    <i class="fas fa-trash"></i>
-                </button>
+                <button class="btn-delete-sticker" data-index="${idx}">Eliminar</button>
             </div>
         `);
 
-        // Change size
         $row.find('.stk-scale-range').on('input', function() {
-            const val = parseInt($(this).val(), 10);
-            stk.size = val;
-            $(this).next().text(`${val}px`);
+            stk.size = parseInt($(this).val(), 10);
             renderGrid();
         });
 
-        // Change rotation
         $row.find('.stk-rot-range').on('input', function() {
-            const val = parseInt($(this).val(), 10);
-            stk.rotation = val;
-            $(this).next().text(`${val}°`);
+            stk.rotation = parseInt($(this).val(), 10);
             renderGrid();
         });
 
-        // Delete
         $row.find('.btn-delete-sticker').on('click', function() {
             stickers.splice(idx, 1);
             renderStickersManagerList(slotId);
@@ -758,11 +698,10 @@ function addStickerToCurrentSlot(stkTemplate) {
 
     const stickers = state.slotsConfig[slotId].stickers;
     if (stickers.length >= 10) {
-        Swal.fire('Límite alcanzado', 'Has alcanzado el límite máximo de 10 stickers por slot.', 'warning');
+        Swal.fire('Límite alcanzado', 'Máximo 10 stickers por slot.', 'warning');
         return;
     }
 
-    // Default positioning in corners to avoid the protected text zone
     const cornerPositions = [
         { x: 15, y: 20 },
         { x: 85, y: 20 },
@@ -779,7 +718,7 @@ function addStickerToCurrentSlot(stkTemplate) {
         url: stkTemplate.url,
         x: pos.x,
         y: pos.y,
-        size: 42,
+        size: 38,
         rotation: 0
     });
 
@@ -787,21 +726,21 @@ function addStickerToCurrentSlot(stkTemplate) {
     renderGrid();
 }
 
-// 11. Save Customizations to Supabase
+// 12. Save Customizations to Supabase
 async function saveCustomizationsToSupabase() {
     const state = window.CustomStoreState;
     if (!state.currentUser || !state.currentUser.id || state.currentUser.id === '00000000-0000-0000-0000-000000000000') {
         Swal.fire({
             icon: 'info',
             title: 'Modo Demostración',
-            text: 'Tus cambios han sido aplicados visualmente. Inicia sesión en tu cuenta para guardar permanentemente en tu tienda.'
+            text: 'Tus cambios han sido aplicados visualmente. Inicia sesión para guardar permanentemente.'
         });
         return;
     }
 
     Swal.fire({
-        title: 'Guardando personalización...',
-        text: 'Sincronizando diseño y distribución con tu tienda',
+        title: 'Guardando...',
+        text: 'Sincronizando diseño y distribución',
         allowOutsideClick: false,
         didOpen: () => { Swal.showLoading(); }
     });
@@ -825,8 +764,8 @@ async function saveCustomizationsToSupabase() {
         Swal.fire({
             icon: 'success',
             title: '¡Diseño Guardado!',
-            text: 'Tu tienda y panel de control han sido actualizados con tu personalización.',
-            timer: 2000,
+            text: 'Tu personalización ha sido guardada con éxito.',
+            timer: 1800,
             showConfirmButton: false
         });
     } catch (err) {
@@ -834,16 +773,16 @@ async function saveCustomizationsToSupabase() {
         Swal.fire({
             icon: 'error',
             title: 'Error al Guardar',
-            text: err.message || 'No se pudo guardar la personalización en la base de datos.'
+            text: err.message || 'No se pudo guardar la personalización.'
         });
     }
 }
 
-// 12. Reset All Configuration
+// 13. Reset All Configuration
 function resetAllCustomizations() {
     Swal.fire({
         title: '¿Restablecer todo el diseño?',
-        text: 'Se restablecerán los estilos globales, individuales y la distribución GRID a los valores por defecto.',
+        text: 'Se restablecerán los estilos y la distribución a los valores predeterminados.',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#ff4757',
@@ -854,13 +793,10 @@ function resetAllCustomizations() {
         if (result.isConfirmed) {
             const state = window.CustomStoreState;
             state.globalStyles = {
-                bg_color: '#121824',
-                border_color: '#00d2ff',
-                border_width: '2px',
-                border_radius: '24px',
-                text_color: '#ffffff',
-                font_family: "'Montserrat', sans-serif",
-                font_size: '16px'
+                bg_color: '',
+                border_color: '',
+                text_color: '',
+                font_family: "'Montserrat', sans-serif"
             };
             state.slotsConfig = {};
             state.gridPc = { admin: { order: [], spans: {} }, public: { order: [], spans: {} } };
@@ -870,33 +806,33 @@ function resetAllCustomizations() {
             applyGlobalStylesToInputs();
             renderGrid();
 
-            Swal.fire('Restablecido', 'El diseño ha sido restablecido a los valores predeterminados.', 'success');
+            Swal.fire('Restablecido', 'El diseño ha sido restablecido.', 'success');
         }
     });
 }
 
-// 13. DOM Event Listeners
+// 14. Event Bindings
 function bindEvents() {
-    // Device Toggle
+    // Device Toggle (PC vs Celular)
     $('#btn-device-pc').on('click', function() {
-        $('.btn-device').removeClass('active');
+        $('.segmented-group button[data-device]').removeClass('active');
         $(this).addClass('active');
         window.CustomStoreState.currentDevice = 'pc';
-        $('#device-stage-wrapper').removeClass('mode-mobile').addClass('mode-pc');
+        $('#custom-viewport-frame').removeClass('mode-mobile').addClass('mode-pc');
         renderGrid();
     });
 
     $('#btn-device-mobile').on('click', function() {
-        $('.btn-device').removeClass('active');
+        $('.segmented-group button[data-device]').removeClass('active');
         $(this).addClass('active');
         window.CustomStoreState.currentDevice = 'mobile';
-        $('#device-stage-wrapper').removeClass('mode-pc').addClass('mode-mobile');
+        $('#custom-viewport-frame').removeClass('mode-pc').addClass('mode-mobile');
         renderGrid();
     });
 
-    // Target View Toggle (Admin Dashboard vs Public Store)
+    // Target View Toggle (Panel Admin vs Tienda Pública)
     $('#btn-target-admin').on('click', function() {
-        $('.btn-target-view').removeClass('active');
+        $('.segmented-group button[data-target]').removeClass('active');
         $(this).addClass('active');
         window.CustomStoreState.currentTargetView = 'admin';
         window.CustomStoreState.selectedSlotId = null;
@@ -904,14 +840,14 @@ function bindEvents() {
     });
 
     $('#btn-target-public').on('click', function() {
-        $('.btn-target-view').removeClass('active');
+        $('.segmented-group button[data-target]').removeClass('active');
         $(this).addClass('active');
         window.CustomStoreState.currentTargetView = 'public';
         window.CustomStoreState.selectedSlotId = null;
         renderGrid();
     });
 
-    // Global Style Inputs Sync
+    // Global Style Inputs Sync (Only 4 Properties)
     $('#global-bg-color').on('input', function() {
         $('#global-bg-text').val($(this).val());
         updateGlobalStylesFromInputs();
@@ -930,16 +866,6 @@ function bindEvents() {
         updateGlobalStylesFromInputs();
     });
 
-    $('#global-border-width').on('input', function() {
-        $('#global-border-width-badge').text(`${$(this).val()}px`);
-        updateGlobalStylesFromInputs();
-    });
-
-    $('#global-border-radius').on('input', function() {
-        $('#global-border-radius-badge').text(`${$(this).val()}px`);
-        updateGlobalStylesFromInputs();
-    });
-
     $('#global-text-color').on('input', function() {
         $('#global-text-color-val').val($(this).val());
         updateGlobalStylesFromInputs();
@@ -951,34 +877,13 @@ function bindEvents() {
 
     $('#global-font-family').on('change', updateGlobalStylesFromInputs);
 
-    $('#global-font-size').on('input', function() {
-        $('#global-font-size-badge').text(`${$(this).val()}px`);
-        updateGlobalStylesFromInputs();
-    });
-
-    // Individual Slot Customizer Triggers
-    $(document).on('click', '.btn-edit-slot-styles', function(e) {
-        e.stopPropagation();
-        const slotId = $(this).closest('.custom-grid-slot').data('slot-id');
-        openSlotStylesModal(slotId);
-    });
-
-    $(document).on('click', '.btn-open-stickers', function(e) {
-        e.stopPropagation();
-        const slotId = $(this).closest('.custom-grid-slot').data('slot-id');
-        openStickersModal(slotId);
-    });
-
     // Slot Modal Inputs Sync
     $('#slot-bg-color').on('input', function() { $('#slot-bg-text').val($(this).val()); });
     $('#slot-bg-text').on('change', function() { $('#slot-bg-color').val($(this).val()); });
     $('#slot-border-color').on('input', function() { $('#slot-border-text').val($(this).val()); });
     $('#slot-border-text').on('change', function() { $('#slot-border-color').val($(this).val()); });
-    $('#slot-border-width').on('input', function() { $('#slot-border-width-badge').text(`${$(this).val()}px`); });
-    $('#slot-border-radius').on('input', function() { $('#slot-border-radius-badge').text(`${$(this).val()}px`); });
     $('#slot-text-color').on('input', function() { $('#slot-text-color-val').val($(this).val()); });
     $('#slot-text-color-val').on('change', function() { $('#slot-text-color').val($(this).val()); });
-    $('#slot-font-size').on('input', function() { $('#slot-font-size-badge').text(`${$(this).val()}px`); });
 
     $('#btn-apply-slot-styles').on('click', applySlotStylesFromModal);
     $('#btn-reset-slot-to-global').on('click', function() {
@@ -986,11 +891,6 @@ function bindEvents() {
     });
     $('#btn-close-slot-modal').on('click', function() {
         $('#slot-modal-overlay').removeClass('active');
-    });
-
-    // Stickers Modal Controls
-    $('#btn-close-stickers-modal, #btn-finish-stickers').on('click', function() {
-        $('#stickers-modal-overlay').removeClass('active');
     });
 
     // Save & Reset Buttons
