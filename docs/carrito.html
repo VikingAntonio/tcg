@@ -241,19 +241,13 @@
 
         <div id="cart-summary-section" class="cart-summary" style="display: none;">
             <div class="total-row">
-                Total Estimado: <span class="total-amount" id="cart-total-display">$0.00</span>
+                Total: <span class="total-amount" id="cart-total-display">$0.00</span>
             </div>
             <div class="checkout-actions">
-                <button class="btn btn-checkout btn-simulated" id="send-simulated" style="background: linear-gradient(135deg, #00d2ff, #00ff88) !important; color: #000 !important; font-weight: 800; border: none; border-radius: 12px; cursor: pointer;">
-                    <i class="fas fa-vial"></i> Simular Compra (Probar Notificación)
-                </button>
-                <button class="btn btn-checkout btn-stripe" id="send-stripe" style="background: linear-gradient(135deg, #635bff, #a259ff) !important; color: #fff !important; font-weight: 800; border: none; border-radius: 12px; cursor: pointer;">
-                    <i class="fab fa-stripe-s"></i> Pagar con Tarjeta (Stripe)
-                </button>
-                <button class="btn btn-checkout btn-whatsapp" id="send-whatsapp">
+                <button class="btn btn-checkout btn-whatsapp" id="send-whatsapp" style="border: none; border-radius: 12px; cursor: pointer; font-weight: 700;">
                     <i class="fab fa-whatsapp"></i> Enviar por WhatsApp
                 </button>
-                <button class="btn btn-checkout btn-messenger" id="send-messenger">
+                <button class="btn btn-checkout btn-messenger" id="send-messenger" style="border: none; border-radius: 12px; cursor: pointer; font-weight: 700;">
                     <i class="fab fa-facebook-messenger"></i> Enviar por Messenger
                 </button>
             </div>
@@ -395,14 +389,6 @@
                         renderCart();
                     }
                 });
-            });
-
-            $('#send-simulated').click(function() {
-                simulatePurchase();
-            });
-
-            $('#send-stripe').click(function() {
-                payWithStripe();
             });
 
             $('#send-whatsapp').click(function() {
@@ -726,6 +712,26 @@
             }
         }
 
+        async function getAutofillUser() {
+            let sessionUser = null;
+            if (typeof _supabase !== 'undefined') {
+                try {
+                    const { data: { session } } = await _supabase.auth.getSession();
+                    if (session && session.user) {
+                        const { data: user } = await _supabase.from('usuarios').select('*').eq('id', session.user.id).maybeSingle();
+                        if (user) sessionUser = user;
+                    }
+                } catch(e) {}
+            }
+            if (!sessionUser) {
+                const cached = localStorage.getItem('tcg_session');
+                if (cached) {
+                    try { sessionUser = JSON.parse(cached); } catch(e) {}
+                }
+            }
+            return sessionUser;
+        }
+
         async function sendMessage(platform) {
             const items = Cart.getAll();
             if (items.length === 0) return;
@@ -737,40 +743,67 @@
             if (firstItem.whatsapp_link) whatsapp = firstItem.whatsapp_link;
             if (firstItem.messenger_link) messenger = firstItem.messenger_link;
 
-            const { value: buyerDetails } = await Swal.fire({
-                title: 'Confirmar Datos para el Vendedor',
-                html: `
-                    <div style="text-align: left; font-family: sans-serif; font-size: 0.9rem;">
-                        <p style="margin-bottom: 12px; color: #cbd5e1;">Ingresa tus datos para notificar al vendedor y coordinar tu entrega:</p>
-                        <label style="display: block; margin-bottom: 4px; font-weight: bold; color: #00d2ff;">Tu Nombre Completo *</label>
-                        <input id="swal-buyer-name" class="swal2-input" placeholder="Ej. Sutano Pérez" style="margin-top: 0; width: 100%; box-sizing: border-box; background: #1e293b; color: #fff; border: 1px solid #334155; border-radius: 8px;">
+            const sessionUser = await getAutofillUser();
+            const defaultName = sessionUser ? (sessionUser.store_name || sessionUser.username || (sessionUser.user_metadata && sessionUser.user_metadata.name) || '') : '';
+            const defaultPhone = sessionUser ? (sessionUser.whatsapp_link || (sessionUser.user_metadata && sessionUser.user_metadata.phone) || '') : '';
 
-                        <label style="display: block; margin-top: 12px; margin-bottom: 4px; font-weight: bold; color: #00d2ff;">Teléfono / Contacto</label>
-                        <input id="swal-buyer-contact" class="swal2-input" placeholder="Ej. 55-1234-5678" style="margin-top: 0; width: 100%; box-sizing: border-box; background: #1e293b; color: #fff; border: 1px solid #334155; border-radius: 8px;">
+            const hasPreorders = items.some(it => it.unit_deposit !== undefined && it.unit_deposit !== null);
 
-                        <label style="display: block; margin-top: 12px; margin-bottom: 4px; font-weight: bold; color: #00d2ff;">Estado / Opción de Pago *</label>
-                        <select id="swal-payment-status" class="swal2-select" style="width: 100%; margin-top: 0; background: #1e293b; color: #fff; border: 1px solid #334155; padding: 10px; border-radius: 8px;">
-                            <option value="Pagado Completo" selected>Pagado Completo</option>
-                            <option value="Apartado (50%)">Apartado (50%) / Anticipo</option>
-                            <option value="Pago Parcial">Pago Parcial</option>
-                            <option value="Pago al Entregar">Pago al Entregar</option>
+            let paymentOptionsHtml = '';
+            if (!hasPreorders) {
+                paymentOptionsHtml = `
+                    <div style="margin-bottom: 14px;">
+                        <label style="display: block; margin-bottom: 6px; font-weight: 600; color: #00d2ff; font-size: 0.9rem;">Opciones de pago</label>
+                        <select id="swal-payment-status" style="width: 100%; box-sizing: border-box; background: #1e293b; color: #fff; border: 1px solid #334155; padding: 12px; border-radius: 10px; font-size: 0.95rem; outline: none;">
+                            <option value="Pagar en local">Pagar en local</option>
+                            <option value="Pagar por transferencia">Pagar por transferencia</option>
+                            <option value="Apartar 50%">Apartar 50%</option>
                         </select>
                     </div>
+                `;
+            }
+
+            const { value: buyerDetails } = await Swal.fire({
+                title: '<span style="font-size: 1.35rem; font-weight: 800; color: #fff;">Confirmar Pedido</span>',
+                html: `
+                    <div style="text-align: left; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 5px 0;">
+                        <div style="margin-bottom: 14px;">
+                            <label style="display: block; margin-bottom: 6px; font-weight: 600; color: #00d2ff; font-size: 0.9rem;">Nombre *</label>
+                            <input id="swal-buyer-name" type="text" placeholder="Ingresa tu nombre" value="${defaultName}" style="width: 100%; box-sizing: border-box; background: #1e293b; color: #fff; border: 1px solid #334155; padding: 12px; border-radius: 10px; font-size: 0.95rem; outline: none;">
+                        </div>
+
+                        <div style="margin-bottom: 14px;">
+                            <label style="display: block; margin-bottom: 6px; font-weight: 600; color: #00d2ff; font-size: 0.9rem;">Teléfono *</label>
+                            <input id="swal-buyer-contact" type="tel" placeholder="Ej. 55-1234-5678" value="${defaultPhone}" style="width: 100%; box-sizing: border-box; background: #1e293b; color: #fff; border: 1px solid #334155; padding: 12px; border-radius: 10px; font-size: 0.95rem; outline: none;">
+                        </div>
+
+                        ${paymentOptionsHtml}
+                    </div>
                 `,
+                customClass: {
+                    popup: 'cart-swal-clean-modal'
+                },
                 focusConfirm: false,
                 showCancelButton: true,
-                confirmButtonText: '<i class="fas fa-paper-plane"></i> Registrar y Enviar Mensaje',
+                confirmButtonText: platform === 'whatsapp' ? '<i class="fab fa-whatsapp"></i> Enviar por WhatsApp' : '<i class="fab fa-facebook-messenger"></i> Enviar por Messenger',
                 cancelButtonText: 'Cancelar',
-                confirmButtonColor: '#25d366',
+                confirmButtonColor: platform === 'whatsapp' ? '#25d366' : '#006aff',
                 cancelButtonColor: '#475569',
                 background: '#0f172a',
                 color: '#fff',
+                width: '460px',
+                padding: '24px',
                 preConfirm: () => {
                     const name = document.getElementById('swal-buyer-name').value.trim();
                     const contact = document.getElementById('swal-buyer-contact').value.trim();
-                    const payment = document.getElementById('swal-payment-status').value;
+                    const paymentSelect = document.getElementById('swal-payment-status');
+                    const payment = paymentSelect ? paymentSelect.value : 'Preventa (Abono Configurado)';
                     if (!name) {
-                        Swal.showValidationMessage('Por favor ingresa tu nombre');
+                        Swal.showValidationMessage('Ingresa tu nombre');
+                        return false;
+                    }
+                    if (!contact) {
+                        Swal.showValidationMessage('Ingresa tu teléfono');
                         return false;
                     }
                     return { name, contact, payment };
@@ -833,7 +866,7 @@
                 const tag = detailParts.length > 0 ? ` (${detailParts.join(' - ')})` : '';
                 message += `${index + 1}. ${item.name}${tag} x${qty} - $${subtotal.toFixed(2)}\n`;
             });
-            message += `\nTotal Estimado: $${totalAmount.toFixed(2)}`;
+            message += `\nTotal: $${totalAmount.toFixed(2)}`;
 
             const encodedMsg = encodeURIComponent(message);
 
