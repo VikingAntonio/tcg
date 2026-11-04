@@ -344,12 +344,14 @@
         }
 
         .slot-title-text {
-            font-size: 0.95rem;
-            font-weight: 700;
+            font-size: 1.1rem;
+            font-weight: 800;
             letter-spacing: 0.5px;
             pointer-events: none;
             z-index: 20;
-            text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+            text-shadow: none !important;
+            filter: none !important;
+            -webkit-font-smoothing: antialiased;
         }
 
         /* Tight Protected Text Zone: Minimal 1px margin around slot text */
@@ -538,28 +540,38 @@
             display: flex;
         }
 
-        /* Clean Single-Row Unit Customization Bar */
+        /* Clean Single-Row Unit Customization Bar + Stickers Panel Immediately Below */
         .unit-custom-bar-overlay {
             position: fixed;
-            bottom: 30px;
+            bottom: 25px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 20000;
             display: none;
+            flex-direction: column;
             background: rgba(18, 24, 38, 0.95);
             border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 50px;
-            padding: 8px 18px;
+            border-radius: 20px;
+            padding: 12px 20px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 210, 255, 0.2);
             backdrop-filter: blur(20px);
             align-items: center;
-            gap: 14px;
+            gap: 12px;
             max-width: 95vw;
             box-sizing: border-box;
         }
 
         .unit-custom-bar-overlay.active {
             display: flex;
+        }
+
+        .unit-bar-main-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
         }
 
         .unit-bar-group {
@@ -619,24 +631,37 @@
             color: #ff4757;
         }
 
-        /* Stickers Mini Tray Popup */
-        .stickers-picker-popup {
-            position: absolute;
-            bottom: 55px;
-            right: 0;
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 16px;
-            padding: 10px;
-            display: none;
-            grid-template-columns: repeat(5, 42px);
-            gap: 8px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-            z-index: 20005;
+        /* Stickers Mini Tray / Embedded Row */
+        .unit-stickers-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding-top: 4px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            overflow-x: auto;
+            scrollbar-width: thin;
         }
 
-        .stickers-picker-popup.active {
-            display: grid;
+        .unit-stickers-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        .stickers-picker-popup {
+            display: flex !important;
+            align-items: center;
+            gap: 8px;
+            background: transparent;
+            border: none;
+            padding: 2px 0;
+            box-shadow: none;
+            position: static;
+            z-index: auto;
         }
 
         .picker-sticker-item {
@@ -793,59 +818,62 @@
         </div>
     </div>
 
-    <!-- Clean Single-Row Unit Customization Bar (Fondo, Borde, Letra, Tipografía, Stickers, Reset) -->
+    <!-- Unit Customization Bar with Controls on Top Row and Stickers Library Immediately Below -->
     <div class="unit-custom-bar-overlay" id="unit-custom-bar">
-        <!-- Fondo Swatch -->
-        <div class="unit-bar-group">
-            <span class="unit-bar-label">Fondo</span>
-            <div class="swatch-btn swatch-fill" id="swatch-unit-bg">
-                <input type="color" id="unit-bg-color" value="#1e272e">
+        <!-- Top Row: Colors, Typography & Actions -->
+        <div class="unit-bar-main-row">
+            <!-- Fondo Swatch -->
+            <div class="unit-bar-group">
+                <span class="unit-bar-label">Fondo</span>
+                <div class="swatch-btn swatch-fill" id="swatch-unit-bg">
+                    <input type="color" id="unit-bg-color" value="#1e272e">
+                </div>
             </div>
-        </div>
 
-        <!-- Borde Swatch (Outline only) -->
-        <div class="unit-bar-group">
-            <span class="unit-bar-label">Borde</span>
-            <div class="swatch-btn swatch-outline" id="swatch-unit-border">
-                <input type="color" id="unit-border-color" value="#00d2ff">
+            <!-- Borde Swatch (Outline only) -->
+            <div class="unit-bar-group">
+                <span class="unit-bar-label">Borde</span>
+                <div class="swatch-btn swatch-outline" id="swatch-unit-border">
+                    <input type="color" id="unit-border-color" value="#00d2ff">
+                </div>
             </div>
-        </div>
 
-        <!-- Letra Swatch -->
-        <div class="unit-bar-group">
-            <span class="unit-bar-label">Letra</span>
-            <div class="swatch-btn swatch-fill" id="swatch-unit-text" style="background-color: #f5f6fa;">
-                <input type="color" id="unit-text-color" value="#f5f6fa">
+            <!-- Letra Swatch -->
+            <div class="unit-bar-group">
+                <span class="unit-bar-label">Letra</span>
+                <div class="swatch-btn swatch-fill" id="swatch-unit-text" style="background-color: #f5f6fa;">
+                    <input type="color" id="unit-text-color" value="#f5f6fa">
+                </div>
             </div>
+
+            <!-- Tipografía Dropdown -->
+            <div class="unit-bar-group">
+                <span class="unit-bar-label">Tipografía</span>
+                <select id="unit-font-family" class="unit-bar-select">
+                    <option value="inherit">Heredar</option>
+                    <option value="'Montserrat', sans-serif">Montserrat</option>
+                    <option value="'Inter', sans-serif">Inter</option>
+                    <option value="'Roboto', sans-serif">Roboto</option>
+                    <option value="'Poppins', sans-serif">Poppins</option>
+                    <option value="'Orbitron', sans-serif">Orbitron</option>
+                    <option value="'Cinzel', serif">Cinzel</option>
+                </select>
+            </div>
+
+            <!-- Unit Reset to Global -->
+            <button class="unit-bar-btn" id="btn-unit-reset" style="color: #ff4757; border-color: rgba(255,71,87,0.3);">Restablecer</button>
+
+            <!-- Close Bar -->
+            <button class="unit-bar-btn-close" id="btn-close-unit-bar">&times;</button>
         </div>
 
-        <!-- Tipografía Dropdown -->
-        <div class="unit-bar-group">
-            <span class="unit-bar-label">Tipografía</span>
-            <select id="unit-font-family" class="unit-bar-select">
-                <option value="inherit">Heredar</option>
-                <option value="'Montserrat', sans-serif">Montserrat</option>
-                <option value="'Inter', sans-serif">Inter</option>
-                <option value="'Roboto', sans-serif">Roboto</option>
-                <option value="'Poppins', sans-serif">Poppins</option>
-                <option value="'Orbitron', sans-serif">Orbitron</option>
-                <option value="'Cinzel', serif">Cinzel</option>
-            </select>
-        </div>
-
-        <!-- Stickers Picker Trigger -->
-        <div class="unit-bar-group" style="position: relative;">
-            <button class="unit-bar-btn" id="btn-toggle-stickers-popup">+ Sticker</button>
+        <!-- Bottom Row: Stickers Library Immediately Below -->
+        <div class="unit-stickers-row">
+            <span class="unit-stickers-label">Stickers</span>
             <div class="stickers-picker-popup" id="stickers-picker-popup">
                 <!-- Temporary Test Stickers Library -->
             </div>
         </div>
-
-        <!-- Unit Reset to Global -->
-        <button class="unit-bar-btn" id="btn-unit-reset" style="color: #ff4757; border-color: rgba(255,71,87,0.3);">Restablecer</button>
-
-        <!-- Close Bar -->
-        <button class="unit-bar-btn-close" id="btn-close-unit-bar">&times;</button>
     </div>
 
     <!-- Scripts -->
