@@ -177,47 +177,40 @@
             margin-bottom: 4px;
         }
 
-        .compact-color-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .compact-color-input {
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
+        /* Clean Swatch Styling */
+        .swatch-btn {
+            position: relative;
             width: 32px;
             height: 32px;
-            background: none;
-            border: 1px solid var(--card-border);
             border-radius: 8px;
             cursor: pointer;
-            padding: 0;
-            overflow: hidden;
-            flex-shrink: 0;
-        }
-
-        .compact-color-input::-webkit-color-swatch-wrapper {
-            padding: 0;
-        }
-
-        .compact-color-input::-webkit-color-swatch {
-            border: none;
-            border-radius: 7px;
-        }
-
-        .compact-text-input {
-            width: 100%;
-            background: var(--slot-bg);
-            border: 1px solid var(--slot-border);
-            color: var(--text-color);
-            padding: 6px 10px;
-            border-radius: 8px;
-            font-size: 0.75rem;
-            font-family: inherit;
-            outline: none;
+            display: inline-block;
             box-sizing: border-box;
+            overflow: hidden;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+            vertical-align: middle;
+        }
+
+        .swatch-btn.swatch-fill {
+            background-color: #1e272e;
+            border: 1px solid var(--card-border);
+        }
+
+        .swatch-btn.swatch-outline {
+            background-color: transparent !important;
+            border: 3px solid #00d2ff;
+        }
+
+        .swatch-btn input[type="color"] {
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            width: 60px;
+            height: 60px;
+            opacity: 0;
+            cursor: pointer;
+            border: none;
+            padding: 0;
         }
 
         .compact-select-input {
@@ -239,7 +232,7 @@
             width: 100%;
             max-width: 1400px;
             margin: 0 auto;
-            padding: 100px 20px 80px 20px;
+            padding: 100px 20px 80px 290px; /* Offset for left floating global sidebar */
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -299,18 +292,22 @@
             padding: 10px !important;
         }
 
-        /* Tile Slots in Editor */
+        /* Tile Slots in Editor - Clean layout without icons */
         .custom-viewport-frame .tile {
             position: relative;
             cursor: pointer;
             user-select: none;
-            overflow: visible; /* Stickers can protrude visually while editing */
+            overflow: visible; /* Stickers can protrude while editing */
             transition: border-color 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
         }
 
+        /* Remove yellow outline on selection */
         .custom-viewport-frame .tile.slot-selected {
-            outline: 3px solid #ffcc00 !important;
-            box-shadow: 0 0 25px rgba(255, 204, 0, 0.5) !important;
+            outline: none !important;
         }
 
         .custom-viewport-frame .tile.is-dragging {
@@ -323,80 +320,120 @@
             background: rgba(0, 255, 136, 0.1) !important;
         }
 
-        /* Protected Text Zone */
-        .slot-protected-zone {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 75%;
-            height: 65%;
-            border: 1px dashed rgba(255, 204, 0, 0.45);
-            border-radius: 12px;
+        /* Slot Content Wrapper */
+        .slot-content-wrapper {
+            position: relative;
+            z-index: 15; /* Above stickers layer */
             pointer-events: none;
-            display: none;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            z-index: 5;
-            background: rgba(255, 204, 0, 0.05);
+        }
+
+        .slot-title-text {
+            font-size: 0.95rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            pointer-events: none;
+            z-index: 20;
+            text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        /* Tight Protected Text Zone: Minimal 1px margin around slot text */
+        .slot-protected-zone {
+            position: absolute;
+            top: -2px;
+            bottom: -2px;
+            left: -3px;
+            right: -3px;
+            border: 1px dashed rgba(255, 204, 0, 0.6);
+            border-radius: 4px;
+            pointer-events: none;
+            display: none;
+            z-index: 18;
+            background: rgba(255, 204, 0, 0.04);
         }
 
         .custom-viewport-frame .tile.slot-selected .slot-protected-zone {
-            display: flex;
+            display: block;
         }
 
         .slot-protected-zone-tag {
             position: absolute;
-            bottom: -15px;
-            font-size: 8px;
+            bottom: -13px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 7px;
             font-weight: 800;
             color: #ffcc00;
-            background: rgba(0, 0, 0, 0.75);
-            padding: 1px 5px;
-            border-radius: 4px;
-            letter-spacing: 0.5px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 0 4px;
+            border-radius: 3px;
+            letter-spacing: 0.3px;
             white-space: nowrap;
         }
 
-        /* Sizing Handles on Borders (Yellow dots) */
+        /* 8 Sizing Handles (Yellow dots: 4 corners + 4 midpoints) */
         .slot-resize-dot {
             position: absolute;
             background: #ffcc00;
             border-radius: 50%;
-            width: 14px;
-            height: 14px;
+            width: 12px;
+            height: 12px;
             border: 2px solid #000;
-            z-index: 30;
+            z-index: 35;
             display: none;
             cursor: pointer;
-            box-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
+            box-shadow: 0 0 6px rgba(0, 0, 0, 0.7);
+            box-sizing: border-box;
         }
 
         .custom-viewport-frame .tile.slot-selected .slot-resize-dot {
             display: block;
         }
 
-        .slot-resize-dot.dot-right {
-            right: -7px;
-            top: 50%;
-            transform: translateY(-50%);
-            cursor: ew-resize;
-        }
+        .slot-resize-dot.dot-n  { top: -6px; left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+        .slot-resize-dot.dot-s  { bottom: -6px; left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+        .slot-resize-dot.dot-w  { left: -6px; top: 50%; transform: translateY(-50%); cursor: ew-resize; }
+        .slot-resize-dot.dot-e  { right: -6px; top: 50%; transform: translateY(-50%); cursor: ew-resize; }
+        .slot-resize-dot.dot-nw { top: -6px; left: -6px; cursor: nwse-resize; }
+        .slot-resize-dot.dot-ne { top: -6px; right: -6px; cursor: nesw-resize; }
+        .slot-resize-dot.dot-sw { bottom: -6px; left: -6px; cursor: nesw-resize; }
+        .slot-resize-dot.dot-se { bottom: -6px; right: -6px; cursor: nwse-resize; }
 
-        .slot-resize-dot.dot-bottom {
-            bottom: -7px;
+        /* Floating 'Personalizar' button attached to selected slot */
+        .btn-floating-customize {
+            position: absolute;
+            top: -36px;
             left: 50%;
             transform: translateX(-50%);
-            cursor: ns-resize;
+            background: linear-gradient(135deg, #00d2ff, #0077ff);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            padding: 4px 14px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 119, 255, 0.4);
+            z-index: 40;
+            display: none;
+            white-space: nowrap;
+            letter-spacing: 0.5px;
+            font-family: inherit;
         }
 
-        .slot-resize-dot.dot-corner {
-            right: -7px;
-            bottom: -7px;
-            cursor: nwse-resize;
+        .btn-floating-customize:hover {
+            transform: translateX(-50%) scale(1.05);
+            background: linear-gradient(135deg, #00ff88, #00d2ff);
+            color: #0b0f19;
         }
 
-        /* Stickers Layer */
+        .custom-viewport-frame .tile.slot-selected .btn-floating-customize {
+            display: block;
+        }
+
+        /* Stickers Layer (Positioned behind text, z-index: 10) */
         .slot-stickers-layer {
             position: absolute;
             top: 0;
@@ -413,10 +450,9 @@
             pointer-events: auto;
             user-select: none;
             transform-origin: center center;
-        }
-
-        .sticker-item.sticker-selected {
-            outline: 2px dashed #00d2ff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .sticker-item img {
@@ -427,163 +463,192 @@
             pointer-events: none;
         }
 
-        /* Individual Slot Editor Modal */
-        .custom-modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(8px);
-            z-index: 30000;
+        /* Active In-Slot Sticker Direct Controls */
+        .sticker-item.active-sticker {
+            outline: 1.5px dashed #00d2ff;
+        }
+
+        .stk-handle {
+            position: absolute;
+            width: 9px;
+            height: 9px;
+            background: #00d2ff;
+            border: 1px solid #000;
+            border-radius: 50%;
+            display: none;
+            z-index: 25;
+            box-sizing: border-box;
+        }
+
+        .sticker-item.active-sticker .stk-handle {
+            display: block;
+        }
+
+        .stk-handle.stk-scale-handle {
+            right: -5px;
+            bottom: -5px;
+            cursor: se-resize;
+        }
+
+        .stk-handle.stk-rotate-handle {
+            top: -14px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ffcc00;
+            cursor: grab;
+            border-radius: 3px;
+            width: 8px;
+            height: 8px;
+        }
+
+        .stk-btn-del {
+            position: absolute;
+            top: -12px;
+            right: -12px;
+            width: 16px;
+            height: 16px;
+            background: #ff4757;
+            color: #fff;
+            border-radius: 50%;
+            border: 1px solid #000;
+            font-size: 10px;
             display: none;
             align-items: center;
             justify-content: center;
+            cursor: pointer;
+            line-height: 1;
+            z-index: 26;
         }
 
-        .custom-modal-overlay.active {
+        .sticker-item.active-sticker .stk-btn-del {
             display: flex;
         }
 
-        .custom-modal-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 24px;
-            width: 90%;
-            max-width: 580px;
-            max-height: 90vh;
-            overflow-y: auto;
-            padding: 24px;
+        /* Clean Single-Row Unit Customization Bar */
+        .unit-custom-bar-overlay {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20000;
+            display: none;
+            background: rgba(18, 24, 38, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 50px;
+            padding: 8px 18px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 210, 255, 0.2);
+            backdrop-filter: blur(20px);
+            align-items: center;
+            gap: 14px;
+            max-width: 95vw;
             box-sizing: border-box;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
-            color: var(--text-color);
         }
 
-        .custom-modal-header {
+        .unit-custom-bar-overlay.active {
+            display: flex;
+        }
+
+        .unit-bar-group {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid var(--card-border);
+            gap: 6px;
         }
 
-        .custom-modal-header h2 {
-            margin: 0;
-            font-size: 1.2rem;
+        .unit-bar-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .unit-bar-select {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--card-border);
             color: var(--text-color);
+            padding: 5px 8px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-family: inherit;
+            outline: none;
+            cursor: pointer;
         }
 
-        .btn-modal-close {
-            background: transparent;
+        .unit-bar-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--card-border);
+            color: var(--text-color);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .unit-bar-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .unit-bar-btn-close {
+            background: none;
             border: none;
             color: var(--text-muted);
-            font-size: 1.6rem;
+            font-size: 1.1rem;
             cursor: pointer;
-            padding: 4px;
-            line-height: 1;
+            padding: 0 4px;
         }
 
-        .btn-modal-close:hover {
+        .unit-bar-btn-close:hover {
             color: #ff4757;
         }
 
-        .modal-section-title {
-            font-size: 0.8rem;
-            font-weight: 800;
-            color: var(--primary-color);
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            margin-bottom: 12px;
-        }
-
-        /* Stickers Manager inside Modal */
-        .stickers-library-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
-            gap: 10px;
-            max-height: 160px;
-            overflow-y: auto;
-            padding: 10px;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 12px;
+        /* Stickers Mini Tray Popup */
+        .stickers-picker-popup {
+            position: absolute;
+            bottom: 55px;
+            right: 0;
+            background: var(--card-bg);
             border: 1px solid var(--card-border);
-            margin-bottom: 16px;
+            border-radius: 16px;
+            padding: 10px;
+            display: none;
+            grid-template-columns: repeat(5, 42px);
+            gap: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            z-index: 20005;
         }
 
-        .sticker-lib-item {
-            aspect-ratio: 1;
-            background: rgba(255, 255, 255, 0.05);
+        .stickers-picker-popup.active {
+            display: grid;
+        }
+
+        .picker-sticker-item {
+            width: 42px;
+            height: 42px;
+            background: rgba(255, 255, 255, 0.04);
             border: 1px solid var(--card-border);
             border-radius: 8px;
-            padding: 6px;
+            padding: 4px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all 0.2s;
+            box-sizing: border-box;
+            transition: transform 0.15s;
         }
 
-        .sticker-lib-item:hover {
+        .picker-sticker-item:hover {
+            transform: scale(1.15);
             border-color: var(--primary-color);
-            transform: scale(1.08);
-            background: rgba(0, 210, 255, 0.1);
         }
 
-        .sticker-lib-item img {
+        .picker-sticker-item img {
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
-        }
-
-        .slot-stickers-manager-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            max-height: 160px;
-            overflow-y: auto;
-            margin-bottom: 16px;
-        }
-
-        .sticker-manager-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--card-border);
-            padding: 6px 10px;
-            border-radius: 8px;
-            gap: 10px;
-        }
-
-        .sticker-row-preview {
-            width: 32px;
-            height: 32px;
-            object-fit: contain;
-        }
-
-        .sticker-row-controls {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex: 1;
-        }
-
-        .btn-delete-sticker {
-            background: rgba(255, 71, 87, 0.2);
-            border: 1px solid rgba(255, 71, 87, 0.4);
-            color: #ff4757;
-            padding: 5px 8px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.75rem;
-            font-family: inherit;
-        }
-
-        .btn-delete-sticker:hover {
-            background: #ff4757;
-            color: #fff;
         }
 
         @media (max-width: 768px) {
@@ -599,6 +664,13 @@
             }
             .custom-workspace-container {
                 padding-top: 20px;
+            }
+            .unit-custom-bar-overlay {
+                flex-wrap: wrap;
+                border-radius: 20px;
+                bottom: 15px;
+                padding: 10px;
+                justify-content: center;
             }
         }
     </style>
@@ -655,7 +727,7 @@
         <button class="btn-action-save-text" id="btn-save-all">Guardar Cambios</button>
     </div>
 
-    <!-- Compact Floating Global Styles Panel (Only 4 properties: border color, bg color, text color, typography) -->
+    <!-- Compact Floating Global Styles Panel (Only 4 properties: Fondo, Borde, Letra, Tipografía) -->
     <aside class="compact-global-sidebar" id="compact-global-sidebar">
         <div class="compact-sidebar-header">
             <span class="compact-sidebar-title">Estilos Globales</span>
@@ -664,26 +736,23 @@
 
         <div id="sidebar-controls-body">
             <div class="compact-field-group">
-                <label>Color de Fondo</label>
-                <div class="compact-color-row">
-                    <input type="color" id="global-bg-color" class="compact-color-input" value="#1e272e">
-                    <input type="text" id="global-bg-text" class="compact-text-input" value="#1e272e">
+                <label>Fondo</label>
+                <div class="swatch-btn swatch-fill" id="swatch-global-bg">
+                    <input type="color" id="global-bg-color" value="#1e272e">
                 </div>
             </div>
 
             <div class="compact-field-group">
-                <label>Color de Borde</label>
-                <div class="compact-color-row">
-                    <input type="color" id="global-border-color" class="compact-color-input" value="#00d2ff">
-                    <input type="text" id="global-border-text" class="compact-text-input" value="#00d2ff">
+                <label>Borde</label>
+                <div class="swatch-btn swatch-outline" id="swatch-global-border">
+                    <input type="color" id="global-border-color" value="#00d2ff">
                 </div>
             </div>
 
             <div class="compact-field-group">
-                <label>Color de Fuente</label>
-                <div class="compact-color-row">
-                    <input type="color" id="global-text-color" class="compact-color-input" value="#f5f6fa">
-                    <input type="text" id="global-text-color-val" class="compact-text-input" value="#f5f6fa">
+                <label>Letra</label>
+                <div class="swatch-btn swatch-fill" id="swatch-global-text" style="background-color: #f5f6fa;">
+                    <input type="color" id="global-text-color" value="#f5f6fa">
                 </div>
             </div>
 
@@ -705,72 +774,64 @@
     <div class="custom-workspace-container">
         <div class="custom-viewport-frame mode-pc" id="custom-viewport-frame">
             <div class="tile-grid" id="custom-grid-container">
-                <!-- Real platform slots dynamically rendered here matching exact admin.html / public.html markup -->
+                <!-- Real platform slots dynamically rendered here without random icons -->
             </div>
         </div>
     </div>
 
-    <!-- Individual Slot Customizer Modal (Only 4 Properties + Stickers + Reset) -->
-    <div class="custom-modal-overlay" id="slot-modal-overlay">
-        <div class="custom-modal-card">
-            <div class="custom-modal-header">
-                <h2>Slot: <span id="modal-slot-title" style="color: var(--primary-color);">-</span></h2>
-                <button class="btn-modal-close" id="btn-close-slot-modal">&times;</button>
-            </div>
-
-            <div class="modal-section-title">Estilos del Slot</div>
-
-            <div class="compact-field-group">
-                <label>Color de Fondo</label>
-                <div class="compact-color-row">
-                    <input type="color" id="slot-bg-color" class="compact-color-input" value="#1e272e">
-                    <input type="text" id="slot-bg-text" class="compact-text-input" value="#1e272e">
-                </div>
-            </div>
-
-            <div class="compact-field-group">
-                <label>Color de Borde</label>
-                <div class="compact-color-row">
-                    <input type="color" id="slot-border-color" class="compact-color-input" value="#00d2ff">
-                    <input type="text" id="slot-border-text" class="compact-text-input" value="#00d2ff">
-                </div>
-            </div>
-
-            <div class="compact-field-group">
-                <label>Color de Fuente</label>
-                <div class="compact-color-row">
-                    <input type="color" id="slot-text-color" class="compact-color-input" value="#f5f6fa">
-                    <input type="text" id="slot-text-color-val" class="compact-text-input" value="#f5f6fa">
-                </div>
-            </div>
-
-            <div class="compact-field-group">
-                <label>Tipografía</label>
-                <select id="slot-font-family" class="compact-select-input">
-                    <option value="inherit">Heredar de Global</option>
-                    <option value="'Montserrat', sans-serif">Montserrat</option>
-                    <option value="'Inter', sans-serif">Inter</option>
-                    <option value="'Roboto', sans-serif">Roboto</option>
-                    <option value="'Poppins', sans-serif">Poppins</option>
-                    <option value="'Orbitron', sans-serif">Orbitron</option>
-                    <option value="'Cinzel', serif">Cinzel</option>
-                </select>
-            </div>
-
-            <div class="modal-section-title" style="margin-top: 20px;">Stickers (<span id="slot-stickers-count">0</span>/10)</div>
-            <div class="stickers-library-grid" id="stickers-lib-container">
-                <!-- Temporary Test Stickers Library -->
-            </div>
-
-            <div class="slot-stickers-manager-list" id="slot-stickers-list">
-                <!-- Added Stickers with size, rotation and delete -->
-            </div>
-
-            <div style="display: flex; gap: 10px; margin-top: 20px; border-top: 1px solid var(--card-border); padding-top: 15px;">
-                <button class="btn-action-reset-text" id="btn-reset-slot-to-global" style="flex: 1;">Restablecer a Global</button>
-                <button class="btn-action-save-text" id="btn-apply-slot-styles" style="flex: 1;">Aplicar</button>
+    <!-- Clean Single-Row Unit Customization Bar (Fondo, Borde, Letra, Tipografía, Stickers, Reset) -->
+    <div class="unit-custom-bar-overlay" id="unit-custom-bar">
+        <!-- Fondo Swatch -->
+        <div class="unit-bar-group">
+            <span class="unit-bar-label">Fondo</span>
+            <div class="swatch-btn swatch-fill" id="swatch-unit-bg">
+                <input type="color" id="unit-bg-color" value="#1e272e">
             </div>
         </div>
+
+        <!-- Borde Swatch (Outline only) -->
+        <div class="unit-bar-group">
+            <span class="unit-bar-label">Borde</span>
+            <div class="swatch-btn swatch-outline" id="swatch-unit-border">
+                <input type="color" id="unit-border-color" value="#00d2ff">
+            </div>
+        </div>
+
+        <!-- Letra Swatch -->
+        <div class="unit-bar-group">
+            <span class="unit-bar-label">Letra</span>
+            <div class="swatch-btn swatch-fill" id="swatch-unit-text" style="background-color: #f5f6fa;">
+                <input type="color" id="unit-text-color" value="#f5f6fa">
+            </div>
+        </div>
+
+        <!-- Tipografía Dropdown -->
+        <div class="unit-bar-group">
+            <span class="unit-bar-label">Tipografía</span>
+            <select id="unit-font-family" class="unit-bar-select">
+                <option value="inherit">Heredar</option>
+                <option value="'Montserrat', sans-serif">Montserrat</option>
+                <option value="'Inter', sans-serif">Inter</option>
+                <option value="'Roboto', sans-serif">Roboto</option>
+                <option value="'Poppins', sans-serif">Poppins</option>
+                <option value="'Orbitron', sans-serif">Orbitron</option>
+                <option value="'Cinzel', serif">Cinzel</option>
+            </select>
+        </div>
+
+        <!-- Stickers Picker Trigger -->
+        <div class="unit-bar-group" style="position: relative;">
+            <button class="unit-bar-btn" id="btn-toggle-stickers-popup">+ Sticker</button>
+            <div class="stickers-picker-popup" id="stickers-picker-popup">
+                <!-- Temporary Test Stickers Library -->
+            </div>
+        </div>
+
+        <!-- Unit Reset to Global -->
+        <button class="unit-bar-btn" id="btn-unit-reset" style="color: #ff4757; border-color: rgba(255,71,87,0.3);">Restablecer</button>
+
+        <!-- Close Bar -->
+        <button class="unit-bar-btn-close" id="btn-close-unit-bar">&times;</button>
     </div>
 
     <!-- Scripts -->
