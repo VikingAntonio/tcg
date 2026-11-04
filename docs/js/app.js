@@ -1702,6 +1702,9 @@ async function loadStoreData() {
 
         // Initialize companion bot
         initMichatbot(true);
+
+        // Apply store customization to public store home slots
+        await applyStoreCustomizationsToPublic(userData.id);
     } catch (e) {
         console.error("Error in loadStoreData:", e);
     }
@@ -5670,4 +5673,97 @@ function getCoverHtml(style, title, color) {
         <div class="textured-cover ${styleClass}" style="background-color: ${color || '#1a1a1a'}">
         </div>
     `;
+}
+
+// --- Store Customization Rendering for Public Store Home Slots ---
+async function applyStoreCustomizationsToPublic(storeUserId) {
+    if (!storeUserId) return;
+    try {
+        const { data, error } = await _supabase
+            .from('store_customizations')
+            .select('*')
+            .eq('user_id', storeUserId)
+            .maybeSingle();
+
+        if (error || !data) return;
+
+        const isMobile = window.innerWidth <= 768;
+        const globalStyles = data.global_styles || {};
+        const slotsConfig = data.slots_config || {};
+        const gridData = (isMobile ? data.grid_mobile : data.grid_pc) || {};
+        const publicGrid = gridData.public || {};
+
+        const $menuGrid = $('.home-menu-grid');
+        if (!$menuGrid.length) return;
+
+        // Reorder public menu items
+        if (publicGrid.order && Array.isArray(publicGrid.order) && publicGrid.order.length > 0) {
+            publicGrid.order.forEach(slotId => {
+                const viewName = slotId.replace('public-', '');
+                const $item = $(`.home-menu-item[data-view="${viewName}"]`);
+                if ($item.length) {
+                    $menuGrid.append($item);
+                }
+            });
+        }
+
+        // Apply styles, spans, and stickers to each public home slot
+        $('.home-menu-grid .home-menu-item').each(function() {
+            const viewName = $(this).data('view');
+            const slotId = `public-${viewName}`;
+            const slotConfig = slotsConfig[slotId] || {};
+
+            const bg = slotConfig.bg_color || globalStyles.bg_color;
+            const borderCol = slotConfig.border_color || globalStyles.border_color;
+            const borderWidth = slotConfig.border_width || globalStyles.border_width;
+            const borderRadius = slotConfig.border_radius || globalStyles.border_radius;
+            const textCol = slotConfig.text_color || globalStyles.text_color;
+            const fontFamily = (slotConfig.font_family && slotConfig.font_family !== 'inherit') ? slotConfig.font_family : globalStyles.font_family;
+            const fontSize = slotConfig.font_size || globalStyles.font_size;
+
+            if (bg) $(this).css('background-color', bg);
+            if (borderCol) $(this).css('border-color', borderCol);
+            if (borderWidth) $(this).css('border-width', borderWidth);
+            if (borderRadius) $(this).css('border-radius', borderRadius);
+            if (textCol) {
+                $(this).css('color', textCol);
+                $(this).find('span, i').css('color', textCol);
+            }
+            if (fontFamily) $(this).css('font-family', fontFamily);
+            if (fontSize) $(this).find('span').css('font-size', fontSize);
+
+            // Spans (GRID)
+            if (publicGrid.spans && publicGrid.spans[slotId]) {
+                const span = publicGrid.spans[slotId];
+                if (span.col) $(this).css('grid-column', `span ${span.col}`);
+                if (span.row) $(this).css('grid-row', `span ${span.row}`);
+            }
+
+            // Stickers (rendered with overflow: hidden clipping on slot)
+            $(this).css({
+                'position': 'relative',
+                'overflow': 'hidden'
+            });
+            $(this).find('.slot-stickers-layer-public').remove();
+
+            const stickers = slotConfig.stickers || [];
+            if (stickers.length > 0) {
+                const $layer = $('<div class="slot-stickers-layer-public" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5;"></div>');
+                stickers.forEach(stk => {
+                    const x = stk.x || 50;
+                    const y = stk.y || 50;
+                    const size = stk.size || 40;
+                    const rot = stk.rotation || 0;
+                    $layer.append(`
+                        <div style="position: absolute; left: ${x}%; top: ${y}%; width: ${size}px; height: ${size}px; transform: translate(-50%, -50%) rotate(${rot}deg); pointer-events: none;">
+                            <img src="${stk.url}" alt="${stk.name || 'Sticker'}" style="width: 100%; height: 100%; object-fit: contain;">
+                        </div>
+                    `);
+                });
+                $(this).append($layer);
+            }
+        });
+    } catch (err) {
+        console.warn('Error applying store customizations to public view:', err);
+    }
 }

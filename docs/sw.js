@@ -1,9 +1,11 @@
-const STATIC_CACHE = 'viking-static-v185';
+const STATIC_CACHE = 'viking-static-v186';
 const IMAGE_CACHE = 'viking-images-v1';
 const DATA_CACHE = 'viking-data-v1';
 
 const URLS_TO_CACHE = [
   './',
+  './custom.html',
+  './js/custom.js',
   './index.html',
   './admin.html',
   './public.html',
