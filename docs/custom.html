@@ -84,32 +84,32 @@
         }
 
         .btn-segment.active {
-            background: var(--primary-color);
-            color: #0b0f19;
-            box-shadow: 0 0 10px rgba(0, 210, 255, 0.4);
+            background: #a29bfe; /* Flat pastel purple */
+            color: #1e1e2f;
+            box-shadow: none;
         }
 
         body.theme-light .btn-segment.active {
-            color: #ffffff;
+            color: #1e1e2f;
         }
 
         .btn-action-save-text {
-            background: linear-gradient(135deg, #00d2ff, #00ff88);
-            color: #0b0f19;
+            background: #a29bfe; /* Flat pastel purple */
+            color: #1e1e2f;
             border: none;
             padding: 8px 18px;
             border-radius: 50px;
             font-size: 0.85rem;
             font-weight: 800;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0, 210, 255, 0.4);
+            box-shadow: 0 2px 8px rgba(162, 155, 254, 0.3);
             transition: all 0.2s ease;
             font-family: inherit;
         }
 
         .btn-action-save-text:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 255, 136, 0.5);
+            transform: translateY(-1px);
+            background: #b8b2ff;
         }
 
         .btn-action-reset-text {
@@ -292,17 +292,30 @@
             padding: 10px !important;
         }
 
-        /* Tile Slots in Editor - Clean layout without icons */
-        .custom-viewport-frame .tile {
+        /* Tile Slots in Editor - Clean layout without icons, and NO hover scale/movement or flickering */
+        .custom-viewport-frame .tile,
+        .custom-workspace-container .tile {
             position: relative;
             cursor: pointer;
             user-select: none;
             overflow: visible; /* Stickers can protrude while editing */
-            transition: border-color 0.2s, box-shadow 0.2s;
+            transition: none !important;
+            transform: none !important;
+            animation: none !important;
             display: flex;
             align-items: center;
             justify-content: center;
             text-align: center;
+        }
+
+        /* Enforce NO hover shift or scale anywhere in the editor */
+        .custom-viewport-frame .tile:hover,
+        .custom-workspace-container .tile:hover,
+        .custom-viewport-frame .tile.slot-selected:hover {
+            transform: none !important;
+            transition: none !important;
+            animation: none !important;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important;
         }
 
         /* Remove yellow outline on selection */
@@ -407,26 +420,27 @@
             top: -36px;
             left: 50%;
             transform: translateX(-50%);
-            background: linear-gradient(135deg, #00d2ff, #0077ff);
-            color: #ffffff;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: #a29bfe; /* Flat pastel purple */
+            color: #1e1e2f;
+            border: 1px solid rgba(255, 255, 255, 0.4);
             border-radius: 20px;
-            padding: 4px 14px;
+            padding: 5px 16px;
             font-size: 0.72rem;
             font-weight: 800;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0, 119, 255, 0.4);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
             z-index: 40;
             display: none;
             white-space: nowrap;
             letter-spacing: 0.5px;
             font-family: inherit;
+            transition: all 0.2s ease;
         }
 
         .btn-floating-customize:hover {
-            transform: translateX(-50%) scale(1.05);
-            background: linear-gradient(135deg, #00ff88, #00d2ff);
-            color: #0b0f19;
+            transform: translateX(-50%) scale(1.04);
+            background: #b8b2ff;
+            color: #1e1e2f;
         }
 
         .custom-viewport-frame .tile.slot-selected .btn-floating-customize {

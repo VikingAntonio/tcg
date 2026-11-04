@@ -100,16 +100,17 @@ $(document).ready(async function() {
 
 // 1. Theme Switcher Manager matching platform standard
 function initThemeManager() {
-    const savedTheme = localStorage.getItem('site_theme') || 'theme-dark';
-    $('body').removeClass('theme-light theme-purple theme-dark').addClass(savedTheme);
+    const savedTheme = localStorage.getItem('tcg_theme') || localStorage.getItem('site_theme') || 'theme-dark';
+    $('body').removeClass('theme-light theme-medium theme-dark theme-purple').addClass(savedTheme);
     $('.theme-btn-small').removeClass('active');
     $(`.theme-btn-small[data-theme="${savedTheme}"]`).addClass('active');
 
     $('.theme-btn-small').on('click', function() {
         const theme = $(this).data('theme');
-        $('body').removeClass('theme-light theme-purple theme-dark').addClass(theme);
+        $('body').removeClass('theme-light theme-medium theme-dark theme-purple').addClass(theme);
         $('.theme-btn-small').removeClass('active');
         $(`.theme-btn-small[data-theme="${theme}"]`).addClass('active');
+        localStorage.setItem('tcg_theme', theme);
         localStorage.setItem('site_theme', theme);
     });
 
@@ -362,13 +363,15 @@ function renderSlotStickers($container, stickers, slotId) {
     });
 }
 
-// 6. Slot Interactions: Click to select & Drag to reorder
+// 6. Slot Interactions: Click to select & Smooth Drag to reorder
 let draggedSlotId = null;
 
 function bindSlotInteractions() {
     const $slots = $('.custom-viewport-frame .tile');
 
-    // Drag and Drop Ordering
+    // Smooth Drag-and-Drop:
+    // Keeps active slot steady under cursor, highlights candidate drop targets without intermediate DOM jumping,
+    // and commits the new grid position smoothly on mouse release (drop).
     $slots.on('dragstart', function(e) {
         if ($(e.target).closest('.slot-resize-dot, .sticker-item, .btn-floating-customize').length > 0) {
             e.preventDefault();
@@ -389,7 +392,11 @@ function bindSlotInteractions() {
     $slots.on('dragover', function(e) {
         e.preventDefault();
         e.originalEvent.dataTransfer.dropEffect = 'move';
-        $(this).addClass('drag-over');
+        const targetSlotId = $(this).data('slot-id');
+        if (draggedSlotId && targetSlotId !== draggedSlotId) {
+            $('.custom-viewport-frame .tile').removeClass('drag-over');
+            $(this).addClass('drag-over');
+        }
     });
 
     $slots.on('dragleave', function() {
@@ -442,9 +449,10 @@ function reorderSlots(fromId, toId) {
     }
 }
 
-// 7. 8 Resize Dots with Real-Time Responsive Grid Preview
+// 7. 8 Resize Dots with Smooth Anchored Interaction
+// Slots remain rock steady without jitter; handles anchor cleanly; preview updates smoothly without collapsing or resetting
 function bind8ResizeDots() {
-    $('.slot-resize-dot').off('mousedown touchstart').on('mousedown touchstart', function(e) {
+    $('.slot-resize-dot').off('mousedown touchstart pointerdown').on('mousedown touchstart pointerdown', function(e) {
         e.stopPropagation();
         e.preventDefault();
 
@@ -461,60 +469,70 @@ function bind8ResizeDots() {
         const maxRows = 3;
 
         if (!gridData.spans[slotId]) gridData.spans[slotId] = { col: 1, row: 1 };
-        const originalCol = gridData.spans[slotId].col || 1;
-        const originalRow = gridData.spans[slotId].row || 1;
+        const initialCol = gridData.spans[slotId].col || 1;
+        const initialRow = gridData.spans[slotId].row || 1;
 
-        const startX = e.pageX || (e.originalEvent.touches ? e.originalEvent.touches[0].pageX : 0);
-        const startY = e.pageY || (e.originalEvent.touches ? e.originalEvent.touches[0].pageY : 0);
+        let workingCol = initialCol;
+        let workingRow = initialRow;
 
-        // Approximate cell size for real-time responsiveness threshold
-        const cellWidthThreshold = isMobile ? 120 : 160;
-        const cellHeightThreshold = 100;
+        const startX = e.pageX !== undefined ? e.pageX : (e.originalEvent.touches ? e.originalEvent.touches[0].pageX : 0);
+        const startY = e.pageY !== undefined ? e.pageY : (e.originalEvent.touches ? e.originalEvent.touches[0].pageY : 0);
 
-        function onMouseMove(moveEvent) {
-            const currentX = moveEvent.pageX || (moveEvent.originalEvent.touches ? moveEvent.originalEvent.touches[0].pageX : startX);
-            const currentY = moveEvent.pageY || (moveEvent.originalEvent.touches ? moveEvent.originalEvent.touches[0].pageY : startY);
+        // Precise drag sensitivity thresholds
+        const cellWidthStep = isMobile ? 130 : 180;
+        const cellHeightStep = 110;
 
-            const deltaX = currentX - startX;
-            const deltaY = currentY - startY;
+        // Visual feedback during active resizing
+        $slot.css('box-shadow', '0 0 0 2px #a29bfe, 0 10px 30px rgba(0,0,0,0.5)');
+
+        function onResizeMove(moveEvent) {
+            const curX = moveEvent.pageX !== undefined ? moveEvent.pageX : (moveEvent.originalEvent.touches ? moveEvent.originalEvent.touches[0].pageX : startX);
+            const curY = moveEvent.pageY !== undefined ? moveEvent.pageY : (moveEvent.originalEvent.touches ? moveEvent.originalEvent.touches[0].pageY : startY);
+
+            const deltaX = curX - startX;
+            const deltaY = curY - startY;
 
             let colDelta = 0;
             let rowDelta = 0;
 
             if (handle.includes('e')) {
-                colDelta = Math.round(deltaX / cellWidthThreshold);
+                colDelta = Math.round(deltaX / cellWidthStep);
             } else if (handle.includes('w')) {
-                colDelta = -Math.round(deltaX / cellWidthThreshold);
+                colDelta = -Math.round(deltaX / cellWidthStep);
             }
 
             if (handle.includes('s')) {
-                rowDelta = Math.round(deltaY / cellHeightThreshold);
+                rowDelta = Math.round(deltaY / cellHeightStep);
             } else if (handle.includes('n')) {
-                rowDelta = -Math.round(deltaY / cellHeightThreshold);
+                rowDelta = -Math.round(deltaY / cellHeightStep);
             }
 
-            const targetCol = Math.max(1, Math.min(maxCols, originalCol + colDelta));
-            const targetRow = Math.max(1, Math.min(maxRows, originalRow + rowDelta));
+            const targetCol = Math.max(1, Math.min(maxCols, initialCol + colDelta));
+            const targetRow = Math.max(1, Math.min(maxRows, initialRow + rowDelta));
 
-            if (gridData.spans[slotId].col !== targetCol || gridData.spans[slotId].row !== targetRow) {
-                gridData.spans[slotId].col = targetCol;
-                gridData.spans[slotId].row = targetRow;
+            if (workingCol !== targetCol || workingRow !== targetRow) {
+                workingCol = targetCol;
+                workingRow = targetRow;
                 // Live preview real-time
                 $slot.css({
-                    'grid-column': `span ${targetCol}`,
-                    'grid-row': `span ${targetRow}`
+                    'grid-column': `span ${workingCol}`,
+                    'grid-row': `span ${workingRow}`
                 });
             }
         }
 
-        function onMouseUp() {
-            $(document).off('mousemove touchmove', onMouseMove);
-            $(document).off('mouseup touchend', onMouseUp);
+        function onResizeUp() {
+            $(document).off('mousemove touchmove pointermove', onResizeMove);
+            $(document).off('mouseup touchend pointerup', onResizeUp);
+
+            gridData.spans[slotId].col = workingCol;
+            gridData.spans[slotId].row = workingRow;
+            $slot.css('box-shadow', '');
             renderGrid();
         }
 
-        $(document).on('mousemove touchmove', onMouseMove);
-        $(document).on('mouseup touchend', onMouseUp);
+        $(document).on('mousemove touchmove pointermove', onResizeMove);
+        $(document).on('mouseup touchend pointerup', onResizeUp);
     });
 }
 
