@@ -5186,8 +5186,93 @@ $(document).on('click', '.nexus-section-header', function() {
 });
 
 // --- Store Customization Rendering for Admin Dashboard Tiles ---
+function renderStoreCustomizationsOnAdmin(data) {
+    if (!data) return;
+    const isMobile = window.innerWidth <= 768;
+    const globalStyles = data.global_styles || {};
+    const slotsConfig = data.slots_config || {};
+    const gridData = (isMobile ? data.grid_mobile : data.grid_pc) || {};
+    const adminGrid = gridData.admin || {};
+
+    const $tileGrid = $('.tile-grid');
+    if (!$tileGrid.length) return;
+
+    // Reorder tiles if an order is defined
+    if (adminGrid.order && Array.isArray(adminGrid.order) && adminGrid.order.length > 0) {
+        adminGrid.order.forEach(slotId => {
+            const $tile = $(`#${slotId}`);
+            if ($tile.length) {
+                $tileGrid.append($tile);
+            }
+        });
+    }
+
+    // Apply styles, spans, and stickers to each tile
+    $('.tile-grid .tile').each(function() {
+        const tileId = $(this).attr('id');
+        const slotConfig = slotsConfig[tileId] || {};
+
+        const bg = slotConfig.bg_color || globalStyles.bg_color;
+        const border = slotConfig.border_color || globalStyles.border_color;
+        const borderWidth = slotConfig.border_width !== undefined ? slotConfig.border_width : globalStyles.border_width;
+        const borderRadius = slotConfig.border_radius !== undefined ? slotConfig.border_radius : globalStyles.border_radius;
+        const textColor = slotConfig.text_color || globalStyles.text_color;
+        const font = slotConfig.font_family || globalStyles.font_family;
+
+        if (bg) $(this).css('background', bg);
+        if (border) $(this).css('border-color', border);
+        if (borderWidth !== undefined) $(this).css('border-width', `${borderWidth}px`);
+        if (borderRadius !== undefined) $(this).css('border-radius', `${borderRadius}px`);
+        if (textColor) {
+            $(this).css('color', textColor);
+            $(this).find('span').css('color', textColor);
+        }
+        if (font) $(this).css('font-family', font);
+
+        // Grid spans
+        const customSpan = adminGrid.spans && adminGrid.spans[tileId];
+        if (customSpan) {
+            if (customSpan.colSpan) $(this).css('grid-column', `span ${customSpan.colSpan}`);
+            if (customSpan.rowSpan) $(this).css('grid-row', `span ${customSpan.rowSpan}`);
+        }
+
+        // Render stickers with container clipping
+        const stickers = slotConfig.stickers || [];
+        if (stickers.length > 0) {
+            $(this).css({ position: 'relative', overflow: 'hidden' });
+            $(this).find('.slot-custom-sticker').remove();
+            stickers.forEach(st => {
+                const $stk = $('<img>', {
+                    src: st.src,
+                    class: 'slot-custom-sticker',
+                    css: {
+                        position: 'absolute',
+                        left: `${st.x}%`,
+                        top: `${st.y}%`,
+                        width: `${st.scale || 50}px`,
+                        height: 'auto',
+                        transform: `translate(-50%, -50%) rotate(${st.rotation || 0}deg)`,
+                        pointerEvents: 'none',
+                        zIndex: 1
+                    }
+                });
+                $(this).append($stk);
+            });
+        }
+    });
+}
+
 async function applyStoreCustomizationsToAdmin() {
     if (!currentUser || !currentUser.id) return;
+    // 1. Instant cache check from localStorage to avoid layout flash
+    try {
+        const cached = localStorage.getItem(`tcg_customization_${currentUser.id}`);
+        if (cached) {
+            renderStoreCustomizationsOnAdmin(JSON.parse(cached));
+        }
+    } catch (_) {}
+
+    // 2. Fetch fresh customization from Supabase
     try {
         const { data, error } = await _supabase
             .from('store_customizations')
