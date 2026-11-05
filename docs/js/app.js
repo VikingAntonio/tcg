@@ -5676,8 +5676,95 @@ function getCoverHtml(style, title, color) {
 }
 
 // --- Store Customization Rendering for Public Store Home Slots ---
+function renderStoreCustomizationsOnPublic(data) {
+    if (!data) return;
+    const isMobile = window.innerWidth <= 768;
+    const globalStyles = data.global_styles || {};
+    const slotsConfig = data.slots_config || {};
+    const gridData = (isMobile ? data.grid_mobile : data.grid_pc) || {};
+    const publicGrid = gridData.public || {};
+
+    const $menuGrid = $('.home-menu-grid');
+    if (!$menuGrid.length) return;
+
+    // Reorder public menu items
+    if (publicGrid.order && Array.isArray(publicGrid.order) && publicGrid.order.length > 0) {
+        publicGrid.order.forEach(slotId => {
+            const viewName = slotId.replace('public-', '');
+            const $item = $(`.home-menu-item[data-view="${viewName}"]`);
+            if ($item.length) {
+                $menuGrid.append($item);
+            }
+        });
+    }
+
+    // Apply styles, spans, and stickers to each public home slot
+    $('.home-menu-grid .home-menu-item').each(function() {
+        const viewName = $(this).data('view');
+        const slotId = `public-${viewName}`;
+        const slotConfig = slotsConfig[slotId] || {};
+
+        const bg = slotConfig.bg_color || globalStyles.bg_color;
+        const border = slotConfig.border_color || globalStyles.border_color;
+        const borderWidth = slotConfig.border_width !== undefined ? slotConfig.border_width : globalStyles.border_width;
+        const borderRadius = slotConfig.border_radius !== undefined ? slotConfig.border_radius : globalStyles.border_radius;
+        const textColor = slotConfig.text_color || globalStyles.text_color;
+        const font = slotConfig.font_family || globalStyles.font_family;
+
+        if (bg) $(this).css('background', bg);
+        if (border) $(this).css('border-color', border);
+        if (borderWidth !== undefined) $(this).css('border-width', `${borderWidth}px`);
+        if (borderRadius !== undefined) $(this).css('border-radius', `${borderRadius}px`);
+        if (textColor) {
+            $(this).css('color', textColor);
+            $(this).find('span').css('color', textColor);
+        }
+        if (font) $(this).css('font-family', font);
+
+        // Grid spans
+        const customSpan = publicGrid.spans && publicGrid.spans[slotId];
+        if (customSpan) {
+            if (customSpan.colSpan) $(this).css('grid-column', `span ${customSpan.colSpan}`);
+            if (customSpan.rowSpan) $(this).css('grid-row', `span ${customSpan.rowSpan}`);
+        }
+
+        // Render stickers with container clipping
+        const stickers = slotConfig.stickers || [];
+        if (stickers.length > 0) {
+            $(this).css({ position: 'relative', overflow: 'hidden' });
+            $(this).find('.slot-custom-sticker').remove();
+            stickers.forEach(st => {
+                const $stk = $('<img>', {
+                    src: st.src,
+                    class: 'slot-custom-sticker',
+                    css: {
+                        position: 'absolute',
+                        left: `${st.x}%`,
+                        top: `${st.y}%`,
+                        width: `${st.scale || 50}px`,
+                        height: 'auto',
+                        transform: `translate(-50%, -50%) rotate(${st.rotation || 0}deg)`,
+                        pointerEvents: 'none',
+                        zIndex: 1
+                    }
+                });
+                $(this).append($stk);
+            });
+        }
+    });
+}
+
 async function applyStoreCustomizationsToPublic(storeUserId) {
     if (!storeUserId) return;
+    // 1. Instant cache check from localStorage
+    try {
+        const cached = localStorage.getItem(`tcg_customization_${storeUserId}`);
+        if (cached) {
+            renderStoreCustomizationsOnPublic(JSON.parse(cached));
+        }
+    } catch (_) {}
+
+    // 2. Fresh fetch from Supabase
     try {
         const { data, error } = await _supabase
             .from('store_customizations')
