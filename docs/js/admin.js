@@ -5213,51 +5213,55 @@ function renderStoreCustomizationsOnAdmin(data) {
         const slotConfig = slotsConfig[tileId] || {};
 
         const bg = slotConfig.bg_color || globalStyles.bg_color;
-        const border = slotConfig.border_color || globalStyles.border_color;
+        const borderCol = slotConfig.border_color || globalStyles.border_color;
         const borderWidth = slotConfig.border_width !== undefined ? slotConfig.border_width : globalStyles.border_width;
         const borderRadius = slotConfig.border_radius !== undefined ? slotConfig.border_radius : globalStyles.border_radius;
-        const textColor = slotConfig.text_color || globalStyles.text_color;
-        const font = slotConfig.font_family || globalStyles.font_family;
+        const textCol = slotConfig.text_color || globalStyles.text_color;
+        const fontFamily = (slotConfig.font_family && slotConfig.font_family !== 'inherit') ? slotConfig.font_family : globalStyles.font_family;
+        const fontSize = slotConfig.font_size || globalStyles.font_size;
 
-        if (bg) $(this).css('background', bg);
-        if (border) $(this).css('border-color', border);
-        if (borderWidth !== undefined) $(this).css('border-width', `${borderWidth}px`);
-        if (borderRadius !== undefined) $(this).css('border-radius', `${borderRadius}px`);
-        if (textColor) {
-            $(this).css('color', textColor);
-            $(this).find('span').css('color', textColor);
+        if (bg) $(this).css('background-color', bg);
+        if (borderCol) $(this).css('border-color', borderCol);
+        if (borderWidth !== undefined) $(this).css('border-width', typeof borderWidth === 'number' ? `${borderWidth}px` : borderWidth);
+        if (borderRadius !== undefined) $(this).css('border-radius', typeof borderRadius === 'number' ? `${borderRadius}px` : borderRadius);
+        if (textCol) {
+            $(this).css('color', textCol);
+            $(this).find('span, i').css('color', textCol);
         }
-        if (font) $(this).css('font-family', font);
+        if (fontFamily) $(this).css('font-family', fontFamily);
+        if (fontSize) $(this).find('span').css('font-size', fontSize);
 
-        // Grid spans
-        const customSpan = adminGrid.spans && adminGrid.spans[tileId];
-        if (customSpan) {
-            if (customSpan.colSpan) $(this).css('grid-column', `span ${customSpan.colSpan}`);
-            if (customSpan.rowSpan) $(this).css('grid-row', `span ${customSpan.rowSpan}`);
+        // Spans (supporting both col/row and colSpan/rowSpan)
+        const span = adminGrid.spans && adminGrid.spans[tileId];
+        if (span) {
+            const col = span.col || span.colSpan;
+            const row = span.row || span.rowSpan;
+            if (col) $(this).css('grid-column', `span ${col}`);
+            if (row) $(this).css('grid-row', `span ${row}`);
         }
 
-        // Render stickers with container clipping
+        // Stickers (rendered with overflow: hidden clipping on tile)
+        $(this).css({ position: 'relative', overflow: 'hidden' });
+        $(this).find('.tile-stickers-layer, .slot-custom-sticker').remove();
+
         const stickers = slotConfig.stickers || [];
         if (stickers.length > 0) {
-            $(this).css({ position: 'relative', overflow: 'hidden' });
-            $(this).find('.slot-custom-sticker').remove();
-            stickers.forEach(st => {
-                const $stk = $('<img>', {
-                    src: st.src,
-                    class: 'slot-custom-sticker',
-                    css: {
-                        position: 'absolute',
-                        left: `${st.x}%`,
-                        top: `${st.y}%`,
-                        width: `${st.scale || 50}px`,
-                        height: 'auto',
-                        transform: `translate(-50%, -50%) rotate(${st.rotation || 0}deg)`,
-                        pointerEvents: 'none',
-                        zIndex: 1
-                    }
-                });
-                $(this).append($stk);
+            const $layer = $('<div class="tile-stickers-layer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5;"></div>');
+            stickers.forEach(stk => {
+                const x = stk.x || 50;
+                const y = stk.y || 50;
+                const size = stk.size || stk.scale || 40;
+                const rot = stk.rotation || 0;
+                const imgUrl = stk.url || stk.src || '';
+                if (imgUrl) {
+                    $layer.append(`
+                        <div style="position: absolute; left: ${x}%; top: ${y}%; width: ${size}px; height: ${size}px; transform: translate(-50%, -50%) rotate(${rot}deg); pointer-events: none;">
+                            <img src="${imgUrl}" alt="${stk.name || 'Sticker'}" style="width: 100%; height: 100%; object-fit: contain;">
+                        </div>
+                    `);
+                }
             });
+            $(this).append($layer);
         }
     });
 }
@@ -5282,77 +5286,12 @@ async function applyStoreCustomizationsToAdmin() {
 
         if (error || !data) return;
 
-        const isMobile = window.innerWidth <= 768;
-        const globalStyles = data.global_styles || {};
-        const slotsConfig = data.slots_config || {};
-        const gridData = (isMobile ? data.grid_mobile : data.grid_pc) || {};
-        const adminGrid = gridData.admin || {};
+        // Update local cache with fresh data
+        try {
+            localStorage.setItem(`tcg_customization_${currentUser.id}`, JSON.stringify(data));
+        } catch (_) {}
 
-        const $tileGrid = $('.tile-grid');
-        if (!$tileGrid.length) return;
-
-        // Reorder tiles if an order is defined
-        if (adminGrid.order && Array.isArray(adminGrid.order) && adminGrid.order.length > 0) {
-            adminGrid.order.forEach(slotId => {
-                const $tile = $(`#${slotId}`);
-                if ($tile.length) {
-                    $tileGrid.append($tile);
-                }
-            });
-        }
-
-        // Apply styles, spans, and stickers to each tile
-        $('.tile-grid .tile').each(function() {
-            const tileId = $(this).attr('id');
-            const slotConfig = slotsConfig[tileId] || {};
-
-            const bg = slotConfig.bg_color || globalStyles.bg_color;
-            const borderCol = slotConfig.border_color || globalStyles.border_color;
-            const borderWidth = slotConfig.border_width || globalStyles.border_width;
-            const borderRadius = slotConfig.border_radius || globalStyles.border_radius;
-            const textCol = slotConfig.text_color || globalStyles.text_color;
-            const fontFamily = (slotConfig.font_family && slotConfig.font_family !== 'inherit') ? slotConfig.font_family : globalStyles.font_family;
-            const fontSize = slotConfig.font_size || globalStyles.font_size;
-
-            if (bg) $(this).css('background-color', bg);
-            if (borderCol) $(this).css('border-color', borderCol);
-            if (borderWidth) $(this).css('border-width', borderWidth);
-            if (borderRadius) $(this).css('border-radius', borderRadius);
-            if (textCol) {
-                $(this).css('color', textCol);
-                $(this).find('span, i').css('color', textCol);
-            }
-            if (fontFamily) $(this).css('font-family', fontFamily);
-            if (fontSize) $(this).find('span').css('font-size', fontSize);
-
-            // Spans
-            if (adminGrid.spans && adminGrid.spans[tileId]) {
-                const span = adminGrid.spans[tileId];
-                if (span.col) $(this).css('grid-column', `span ${span.col}`);
-                if (span.row) $(this).css('grid-row', `span ${span.row}`);
-            }
-
-            // Stickers (rendered with overflow: hidden clipping on tile)
-            $(this).css('overflow', 'hidden');
-            $(this).find('.tile-stickers-layer').remove();
-
-            const stickers = slotConfig.stickers || [];
-            if (stickers.length > 0) {
-                const $layer = $('<div class="tile-stickers-layer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5;"></div>');
-                stickers.forEach(stk => {
-                    const x = stk.x || 50;
-                    const y = stk.y || 50;
-                    const size = stk.size || 40;
-                    const rot = stk.rotation || 0;
-                    $layer.append(`
-                        <div style="position: absolute; left: ${x}%; top: ${y}%; width: ${size}px; height: ${size}px; transform: translate(-50%, -50%) rotate(${rot}deg); pointer-events: none;">
-                            <img src="${stk.url}" alt="${stk.name || 'Sticker'}" style="width: 100%; height: 100%; object-fit: contain;">
-                        </div>
-                    `);
-                });
-                $(this).append($layer);
-            }
-        });
+        renderStoreCustomizationsOnAdmin(data);
     } catch (err) {
         console.warn('Error applying store customizations to admin:', err);
     }

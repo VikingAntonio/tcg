@@ -893,6 +893,13 @@ async function saveCustomizationsToSupabase() {
             updated_at: new Date().toISOString()
         };
 
+        // Cache synchronously in localStorage immediately to eliminate latency when navigating to admin or public view
+        try {
+            localStorage.setItem(`tcg_customization_${state.currentUser.id}`, JSON.stringify(payload));
+        } catch (e) {
+            console.warn('Could not cache customization in localStorage:', e);
+        }
+
         const { error } = await _supabase
             .from('store_customizations')
             .upsert(payload, { onConflict: 'user_id' });
@@ -948,6 +955,13 @@ function resetAllCustomizations() {
             populateDefaultGridStructure();
             applyGlobalStylesToInputs();
             renderGrid();
+
+            // Clear or update local cache
+            if (state.currentUser && state.currentUser.id) {
+                try {
+                    localStorage.removeItem(`tcg_customization_${state.currentUser.id}`);
+                } catch (_) {}
+            }
 
             Swal.fire('Restablecido', 'El diseño y los controles han sido restablecidos.', 'success');
         }
