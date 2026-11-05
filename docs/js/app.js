@@ -5726,10 +5726,11 @@ function renderStoreCustomizationsOnPublic(data) {
         // Spans (GRID - supporting both col/row and colSpan/rowSpan)
         const span = publicGrid.spans && publicGrid.spans[slotId];
         if (span) {
-            const col = span.col || span.colSpan;
-            const row = span.row || span.rowSpan;
-            if (col) $(this).css('grid-column', `span ${col}`);
-            if (row) $(this).css('grid-row', `span ${row}`);
+            const maxCols = isMobile ? 2 : 4;
+            const col = Math.min(span.col || span.colSpan || 1, maxCols);
+            const row = span.row || span.rowSpan || 1;
+            this.style.setProperty('grid-column', `span ${col}`, 'important');
+            this.style.setProperty('grid-row', `span ${row}`, 'important');
         }
 
         // Stickers (rendered with overflow: hidden clipping on slot)
