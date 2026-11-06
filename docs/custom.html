@@ -736,31 +736,11 @@
             box-sizing: border-box;
         }
 
-        /* Stickers Section in Modal */
+        /* Clean Stickers Section in Modal - No titles, no hints, no upload buttons */
         .unit-modal-stickers-section {
-            padding: 16px 20px 20px;
+            padding: 14px 20px 20px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
-        }
-
-        .stickers-section-head {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .stickers-section-title {
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--primary-color, #00d2ff);
-            text-transform: uppercase;
-            letter-spacing: 0.6px;
-        }
-
-        .stickers-section-hint {
-            font-size: 0.7rem;
-            color: var(--text-muted, #a4b0be);
         }
 
         .stickers-picker-popup {
@@ -775,6 +755,7 @@
         }
 
         .picker-sticker-item {
+            position: relative;
             aspect-ratio: 1;
             background: rgba(255, 255, 255, 0.04);
             border: 1px solid var(--card-border, rgba(255, 255, 255, 0.15));
@@ -799,52 +780,49 @@
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
+            transition: filter 0.2s ease;
         }
 
-        .picker-sticker-del-btn {
+        /* Paid Stickers - Grayscale & Lock Badge */
+        .picker-sticker-item.paid-sticker img {
+            filter: grayscale(100%) opacity(0.65);
+        }
+
+        .picker-sticker-item.paid-sticker:hover img {
+            filter: grayscale(80%) opacity(0.85);
+        }
+
+        .picker-sticker-item .sticker-lock-badge {
             position: absolute;
             top: -4px;
             right: -4px;
-            width: 16px;
-            height: 16px;
+            background: #ffd700;
+            color: #000;
             border-radius: 50%;
-            background: #ff4757;
-            color: #ffffff;
-            font-size: 10px;
-            display: none;
+            width: 17px;
+            height: 17px;
+            font-size: 9px;
+            display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
-            border: 1px solid #000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            font-weight: 900;
             z-index: 5;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
         }
 
-        .picker-sticker-item:hover .picker-sticker-del-btn {
-            display: flex;
-        }
-
-        .btn-upload-sticker-action {
-            background: #a29bfe; /* Flat pastel purple */
-            color: #1e1e2f;
-            border: none;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.72rem;
+        .picker-sticker-item .sticker-price-tag {
+            position: absolute;
+            bottom: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            color: #ffd700;
+            font-size: 9px;
             font-weight: 800;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            box-shadow: 0 2px 6px rgba(162, 155, 254, 0.25);
-            transition: all 0.2s ease;
-            user-select: none;
-            font-family: inherit;
-        }
-
-        .btn-upload-sticker-action:hover {
-            background: #b8b2ff;
-            transform: translateY(-1px);
+            padding: 1px 4px;
+            border-radius: 4px;
+            white-space: nowrap;
+            letter-spacing: 0.3px;
         }
 
         .stickers-empty-notice {
@@ -1045,20 +1023,10 @@
                 </div>
             </div>
 
-            <!-- Bottom Section: Stickers Library prepared for many stickers -->
+            <!-- Bottom Section: Stickers Library (Clean, no titles, no upload button, no description) -->
             <div class="unit-modal-stickers-section">
-                <div class="stickers-section-head">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <span class="stickers-section-title">Mis Stickers</span>
-                        <label for="input-upload-user-sticker" class="btn-upload-sticker-action" id="btn-label-upload-sticker" title="Subir sticker PNG o WebP">
-                            <i class="fas fa-plus"></i> Subir Sticker
-                        </label>
-                        <input type="file" id="input-upload-user-sticker" accept="image/png,image/webp,image/gif" style="display: none;">
-                    </div>
-                    <span class="stickers-section-hint">Haz clic en un sticker para agregarlo (máx. 10)</span>
-                </div>
                 <div class="stickers-picker-popup" id="stickers-picker-popup">
-                    <!-- Dynamic user sticker catalog rendered here -->
+                    <!-- Dynamic admin sticker catalog rendered here -->
                 </div>
             </div>
         </div>
