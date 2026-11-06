@@ -6,8 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Fallback hardcoded Price ID for monthly 300 MXN subscription if not set in environment
-const DEFAULT_PREMIUM_PRICE_ID = "price_1UXZhRC6W4MA8NCfJ2n0G9CJ";
+// Fallback price in MXN for premium subscription if not set in DB package_configs
+const DEFAULT_PREMIUM_PRICE_MXN = 300;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -101,7 +101,8 @@ serve(async (req) => {
     params.append("customer", customerId);
     params.append("client_reference_id", userId);
     params.append("metadata[user_id]", userId);
-    params.append("payment_method_types[0]", "card");
+    // Note: Do not pass payment_method_types parameter as Stripe now automatically manages
+    // payment methods from Dashboard Settings (dynamic payment methods).
 
     if (purchaseType === "spirit") {
       // ONE-TIME MICRO-PAYMENT FOR ASSISTANT / SPIRIT
@@ -114,6 +115,7 @@ serve(async (req) => {
       }
 
       // Security: Query spirits table directly via service role to get verified server-side price
+      // Frontend client input is strictly ignored to prevent price manipulation.
       const { data: spirit, error: spiritErr } = await supabase
         .from("spirits")
         .select("id, name, price_mxn, stripe_price_id, sale_status")
@@ -132,13 +134,13 @@ serve(async (req) => {
       params.append("metadata[spirit_id]", spirit.id.toString());
       params.append("metadata[spirit_name]", spirit.name || "Asistente 3D");
 
-      // If a Stripe Price ID is explicitly configured for this assistant, use it directly
+      // If a Stripe Price ID is explicitly configured for this assistant, use it directly;
+      // otherwise, securely create line_item using server-side validated price_mxn without requiring a Stripe Price ID.
       if (spirit.stripe_price_id && spirit.stripe_price_id.trim().startsWith("price_")) {
         params.append("line_items[0][price]", spirit.stripe_price_id.trim());
         params.append("line_items[0][quantity]", "1");
       } else {
-        // Otherwise, create dynamic line_item using server-side validated price_mxn (defaults to 50 MXN if missing/zero)
-        const priceAmount = Math.max(10, Math.round((Number(spirit.price_mxn) || 50) * 100)); // in cents
+        const priceAmount = Math.max(1000, Math.round((Number(spirit.price_mxn) || 50) * 100)); // in cents, min 10 MXN
         params.append("line_items[0][price_data][currency]", "mxn");
         params.append("line_items[0][price_data][unit_amount]", priceAmount.toString());
         params.append("line_items[0][price_data][product_data][name]", `Asistente 3D: ${spirit.name}`);
@@ -159,7 +161,8 @@ serve(async (req) => {
         });
       }
 
-      // Security: Query stickers table directly via service role to get verified server-side price
+      // Security: Query stickers table directly via service role to get verified server-side price.
+      // Frontend client input is strictly ignored to prevent price manipulation.
       const { data: sticker, error: stickerErr } = await supabase
         .from("stickers")
         .select("id, name, price_mxn, stripe_price_id, sale_status")
@@ -178,11 +181,13 @@ serve(async (req) => {
       params.append("metadata[sticker_id]", sticker.id.toString());
       params.append("metadata[sticker_name]", sticker.name || "Sticker");
 
+      // If a Stripe Price ID is explicitly configured for this sticker, use it;
+      // otherwise, securely create line_item using server-side validated price_mxn without requiring a Stripe Price ID.
       if (sticker.stripe_price_id && sticker.stripe_price_id.trim().startsWith("price_")) {
         params.append("line_items[0][price]", sticker.stripe_price_id.trim());
         params.append("line_items[0][quantity]", "1");
       } else {
-        const priceAmount = Math.max(10, Math.round((Number(sticker.price_mxn) || 25) * 100)); // in cents
+        const priceAmount = Math.max(1000, Math.round((Number(sticker.price_mxn) || 25) * 100)); // in cents, min 10 MXN
         params.append("line_items[0][price_data][currency]", "mxn");
         params.append("line_items[0][price_data][unit_amount]", priceAmount.toString());
         params.append("line_items[0][price_data][product_data][name]", `Sticker: ${sticker.name}`);
@@ -194,14 +199,44 @@ serve(async (req) => {
       params.append("cancel_url", `${redirectOrigin}?payment=canceled&type=sticker`);
 
     } else {
-      // SUBSCRIPTION PURCHASE (300 MXN MONTHLY)
+      // SUBSCRIPTION PURCHASE (PREMIUM PLAN)
+      // Check if env variable STRIPE_PRICE_ID is set and starts with price_
       const envPriceId = (Deno.env.get("STRIPE_PRICE_ID") || "").trim();
-      const finalPriceId = envPriceId || DEFAULT_PREMIUM_PRICE_ID;
 
       params.append("mode", "subscription");
       params.append("metadata[purchase_type]", "subscription");
-      params.append("line_items[0][price]", finalPriceId);
-      params.append("line_items[0][quantity]", "1");
+
+      // Security: Query package_configs table for verified server-side price of premium plan
+      let subscriptionPriceMxn = DEFAULT_PREMIUM_PRICE_MXN;
+      try {
+        const { data: pkgConfig } = await supabase
+          .from("package_configs")
+          .select("price_mxn")
+          .eq("id", "premium")
+          .maybeSingle();
+
+        if (pkgConfig && Number(pkgConfig.price_mxn) > 0) {
+          subscriptionPriceMxn = Number(pkgConfig.price_mxn);
+        }
+      } catch (_) {
+        subscriptionPriceMxn = DEFAULT_PREMIUM_PRICE_MXN;
+      }
+
+      if (envPriceId && envPriceId.startsWith("price_")) {
+        params.append("line_items[0][price]", envPriceId);
+        params.append("line_items[0][quantity]", "1");
+      } else {
+        // Create recurring subscription directly via price_data without needing a pre-created Stripe Price ID.
+        // Works seamlessly in test mode (sk-test) and live mode (sk-live) without manual dashboard setup!
+        const unitAmountCents = Math.round(subscriptionPriceMxn * 100);
+        params.append("line_items[0][price_data][currency]", "mxn");
+        params.append("line_items[0][price_data][unit_amount]", unitAmountCents.toString());
+        params.append("line_items[0][price_data][recurring][interval]", "month");
+        params.append("line_items[0][price_data][product_data][name]", "Suscripción Viking TCG Pro");
+        params.append("line_items[0][price_data][product_data][description]", "Acceso ilimitado a widgets, stickers y herramientas profesionales.");
+        params.append("line_items[0][quantity]", "1");
+      }
+
       params.append("success_url", `${redirectOrigin}?payment=success&type=subscription&session_id={CHECKOUT_SESSION_ID}`);
       params.append("cancel_url", `${redirectOrigin}?payment=canceled&type=subscription`);
     }
