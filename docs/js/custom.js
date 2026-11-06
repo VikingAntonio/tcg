@@ -48,26 +48,13 @@ const PUBLIC_SLOTS = [
     { id: 'public-learn', title: 'Aprender', defaultClass: 'tile-green', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } }
 ];
 
-// Test Stickers Library (transparent PNGs)
-const TEST_STICKERS = [
-    { id: 'stk-flame', name: 'Fuego', url: 'https://cdn-icons-png.flaticon.com/512/785/785116.png' },
-    { id: 'stk-star', name: 'Estrella Dorada', url: 'https://cdn-icons-png.flaticon.com/512/1828/1828884.png' },
-    { id: 'stk-sparkles', name: 'Destellos', url: 'https://cdn-icons-png.flaticon.com/512/1828/1828970.png' },
-    { id: 'stk-crown', name: 'Corona', url: 'https://cdn-icons-png.flaticon.com/512/6941/6941697.png' },
-    { id: 'stk-diamond', name: 'Diamante', url: 'https://cdn-icons-png.flaticon.com/512/1828/1828882.png' },
-    { id: 'stk-verified', name: 'Verificado', url: 'https://cdn-icons-png.flaticon.com/512/7595/7595571.png' },
-    { id: 'stk-discount', name: 'Oferta', url: 'https://cdn-icons-png.flaticon.com/512/726/726488.png' },
-    { id: 'stk-tcg-card', name: 'Carta', url: 'https://cdn-icons-png.flaticon.com/512/4743/4743048.png' },
-    { id: 'stk-ghost', name: 'Espíritu', url: 'https://cdn-icons-png.flaticon.com/512/1067/1067357.png' },
-    { id: 'stk-shield', name: 'Escudo', url: 'https://cdn-icons-png.flaticon.com/512/1067/1067347.png' }
-];
-
 window.CustomStoreState = {
     currentUser: null,
     currentDevice: 'pc', // 'pc' or 'mobile'
     currentTargetView: 'admin', // 'admin' or 'public'
     selectedSlotId: null,
     activeStickerIdx: null,
+    userStickers: [], // Phase 2: User custom uploaded stickers
 
     // Global Visual Settings (Only 4 Properties: Fondo, Borde, Letra, Tipografía)
     globalStyles: {
@@ -200,7 +187,12 @@ async function loadCustomizations() {
         }
 
         if (data) {
-            if (data.global_styles) state.globalStyles = { ...state.globalStyles, ...data.global_styles };
+            if (data.global_styles) {
+                state.globalStyles = { ...state.globalStyles, ...data.global_styles };
+                if (data.global_styles.user_stickers && Array.isArray(data.global_styles.user_stickers)) {
+                    state.userStickers = data.global_styles.user_stickers;
+                }
+            }
             if (data.slots_config) state.slotsConfig = data.slots_config;
             if (data.grid_pc && Object.keys(data.grid_pc).length > 0) state.gridPc = data.grid_pc;
             if (data.grid_mobile && Object.keys(data.grid_mobile).length > 0) state.gridMobile = data.grid_mobile;
@@ -209,6 +201,16 @@ async function loadCustomizations() {
         console.warn('Error fetching store_customizations from Supabase:', e);
     }
 
+    // LocalStorage fallback for user stickers
+    const uid = state.currentUser ? state.currentUser.id : 'guest';
+    const cachedStickers = localStorage.getItem(`tcg_user_stickers_${uid}`) || localStorage.getItem('tcg_user_stickers');
+    if ((!state.userStickers || state.userStickers.length === 0) && cachedStickers) {
+        try {
+            state.userStickers = JSON.parse(cachedStickers);
+        } catch (_) {}
+    }
+
+    initStickersPicker();
     populateDefaultGridStructure();
     applyGlobalStylesToInputs();
 }
@@ -369,21 +371,23 @@ function renderSlotStickers($container, stickers, slotId) {
     });
 }
 
-// 6. Slot Interactions: Click to select & Smooth Drag to reorder
+// 6. Slot Interactions: Click to select & Real-Time Drag & Drop Reorder
 let draggedSlotId = null;
+let lastReorderTargetId = null;
 
 function bindSlotInteractions() {
-    const $slots = $('.custom-viewport-frame .tile');
+    const $container = $('#custom-grid-container');
+    const $slots = $container.children('.tile');
 
-    // Smooth Drag-and-Drop:
-    // Keeps active slot steady under cursor, highlights candidate drop targets without intermediate DOM jumping,
-    // and commits the new grid position smoothly on mouse release (drop).
-    $slots.on('dragstart', function(e) {
+    // Real-Time Drag-and-Drop:
+    // Slots reorder dynamically in real time without empty spaces or holes, preserving rectangular grid
+    $slots.off('dragstart dragend dragover dragleave drop').on('dragstart', function(e) {
         if ($(e.target).closest('.slot-resize-dot, .sticker-item, .btn-floating-customize').length > 0) {
             e.preventDefault();
             return false;
         }
         draggedSlotId = $(this).data('slot-id');
+        lastReorderTargetId = null;
         $(this).addClass('is-dragging');
         e.originalEvent.dataTransfer.effectAllowed = 'move';
         e.originalEvent.dataTransfer.setData('text/plain', draggedSlotId);
@@ -391,17 +395,24 @@ function bindSlotInteractions() {
 
     $slots.on('dragend', function() {
         $(this).removeClass('is-dragging');
-        $('.custom-viewport-frame .tile').removeClass('drag-over');
+        $('.custom-viewport-frame .tile').removeClass('drag-over is-dragging');
+        if (draggedSlotId) {
+            commitCurrentGridOrder();
+        }
         draggedSlotId = null;
+        lastReorderTargetId = null;
     });
 
     $slots.on('dragover', function(e) {
         e.preventDefault();
         e.originalEvent.dataTransfer.dropEffect = 'move';
         const targetSlotId = $(this).data('slot-id');
-        if (draggedSlotId && targetSlotId !== draggedSlotId) {
-            $('.custom-viewport-frame .tile').removeClass('drag-over');
-            $(this).addClass('drag-over');
+
+        if (draggedSlotId && targetSlotId && targetSlotId !== draggedSlotId) {
+            if (lastReorderTargetId !== targetSlotId) {
+                lastReorderTargetId = targetSlotId;
+                handleRealtimeReorder(draggedSlotId, targetSlotId);
+            }
         }
     });
 
@@ -411,16 +422,21 @@ function bindSlotInteractions() {
 
     $slots.on('drop', function(e) {
         e.preventDefault();
-        $(this).removeClass('drag-over');
-        const targetSlotId = $(this).data('slot-id');
-
-        if (draggedSlotId && targetSlotId && draggedSlotId !== targetSlotId) {
-            reorderSlots(draggedSlotId, targetSlotId);
+        $('.custom-viewport-frame .tile').removeClass('drag-over is-dragging');
+        if (draggedSlotId) {
+            commitCurrentGridOrder();
         }
+        draggedSlotId = null;
+        lastReorderTargetId = null;
+    });
+
+    $container.off('dragover').on('dragover', function(e) {
+        e.preventDefault();
+        e.originalEvent.dataTransfer.dropEffect = 'move';
     });
 
     // Clicking slot selects it (showing 8 dots + 'Personalizar' button)
-    $slots.on('click', function(e) {
+    $slots.off('click').on('click', function(e) {
         if ($(e.target).closest('.slot-resize-dot, .sticker-item').length > 0) return;
 
         const slotId = $(this).data('slot-id');
@@ -440,18 +456,53 @@ function bindSlotInteractions() {
     bind8ResizeDots();
 }
 
-function reorderSlots(fromId, toId) {
+function handleRealtimeReorder(fromId, toId) {
+    const $container = $('#custom-grid-container');
+    const $fromEl = $container.children(`[data-slot-id="${fromId}"]`);
+    const $toEl = $container.children(`[data-slot-id="${toId}"]`);
+    if (!$fromEl.length || !$toEl.length) return;
+
+    const allSlots = Array.from($container.children('.tile'));
+    const fromIdx = allSlots.indexOf($fromEl[0]);
+    const toIdx = allSlots.indexOf($toEl[0]);
+    if (fromIdx === -1 || toIdx === -1) return;
+
+    if (fromIdx < toIdx) {
+        $toEl.after($fromEl);
+    } else {
+        $toEl.before($fromEl);
+    }
+
+    // Sync order in active state immediately
     const state = window.CustomStoreState;
     const target = state.currentTargetView;
     const gridData = state.currentDevice === 'mobile' ? state.gridMobile[target] : state.gridPc[target];
+    gridData.order = Array.from($container.children('.tile')).map(el => $(el).data('slot-id'));
+}
 
-    const oldIndex = gridData.order.indexOf(fromId);
-    const newIndex = gridData.order.indexOf(toId);
+function commitCurrentGridOrder() {
+    const state = window.CustomStoreState;
+    const target = state.currentTargetView;
+    const gridData = state.currentDevice === 'mobile' ? state.gridMobile[target] : state.gridPc[target];
+    const currentOrder = Array.from($('#custom-grid-container').children('.tile')).map(el => $(el).data('slot-id'));
+    if (currentOrder.length > 0) {
+        gridData.order = currentOrder;
+    }
 
-    if (oldIndex > -1 && newIndex > -1) {
-        gridData.order.splice(oldIndex, 1);
-        gridData.order.splice(newIndex, 0, fromId);
-        renderGrid();
+    if (state.currentUser && state.currentUser.id && state.currentUser.id !== '00000000-0000-0000-0000-000000000000') {
+        try {
+            const payload = {
+                user_id: state.currentUser.id,
+                global_styles: state.globalStyles,
+                slots_config: state.slotsConfig,
+                grid_pc: state.gridPc,
+                grid_mobile: state.gridMobile,
+                updated_at: new Date().toISOString()
+            };
+            localStorage.setItem(`tcg_customization_${state.currentUser.id}`, JSON.stringify(payload));
+        } catch (e) {
+            console.warn('Error caching reordered grid in localStorage:', e);
+        }
     }
 }
 
@@ -804,22 +855,157 @@ function resetActiveSlotToGlobal() {
     renderGrid();
 }
 
-// 11. Stickers Picker Popup
+// 11. User Stickers Picker Popup (Phase 2: Custom User Stickers)
 function initStickersPicker() {
+    const state = window.CustomStoreState;
     const $picker = $('#stickers-picker-popup');
     $picker.empty();
 
-    TEST_STICKERS.forEach(stk => {
-        const $item = $(`
-            <div class="picker-sticker-item" title="Agregar ${stk.name}">
-                <img src="${stk.url}" alt="${stk.name}">
+    if (!state.userStickers || state.userStickers.length === 0) {
+        $picker.append(`
+            <div class="stickers-empty-notice">
+                <i class="fas fa-images"></i>
+                <span>No tienes stickers subidos aún.</span>
+                <span style="font-size: 0.7rem; color: #a29bfe;">Haz clic en "+ Subir Sticker" para agregar stickers PNG o WebP.</span>
             </div>
         `);
+        return;
+    }
+
+    state.userStickers.forEach(stk => {
+        const $item = $(`
+            <div class="picker-sticker-item" title="Agregar ${stk.name || 'Sticker'} al slot">
+                <img src="${stk.url}" alt="${stk.name || 'Sticker'}">
+                <div class="picker-sticker-del-btn" title="Eliminar de mi biblioteca">&times;</div>
+            </div>
+        `);
+
         $item.on('click', function(e) {
             e.stopPropagation();
             addStickerToCurrentSlot(stk);
         });
+
+        $item.find('.picker-sticker-del-btn').on('click', function(e) {
+            e.stopPropagation();
+            deleteUserSticker(stk.id, stk.url);
+        });
+
         $picker.append($item);
+    });
+}
+
+async function handleUserStickerUpload(file) {
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+        Swal.fire('Formato no válido', 'Por favor selecciona un archivo de imagen (PNG o WebP recomendado).', 'warning');
+        return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+        Swal.fire('Archivo muy pesado', 'El tamaño máximo permitido para un sticker es de 5MB.', 'warning');
+        return;
+    }
+
+    Swal.fire({
+        title: 'Subiendo sticker...',
+        text: 'Optimizando y guardando imagen transparente',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+    });
+
+    try {
+        let secureUrl = null;
+        if (typeof CloudinaryUpload !== 'undefined' && CloudinaryUpload.uploadImage) {
+            secureUrl = await CloudinaryUpload.uploadImage(file);
+        } else {
+            throw new Error('Módulo de subida Cloudinary no disponible.');
+        }
+
+        const state = window.CustomStoreState;
+        if (!state.userStickers) state.userStickers = [];
+
+        const newSticker = {
+            id: `usr_stk_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+            name: file.name.replace(/\.[^/.]+$/, '').trim() || 'Sticker',
+            url: secureUrl,
+            created_at: new Date().toISOString()
+        };
+
+        state.userStickers.unshift(newSticker);
+        state.globalStyles.user_stickers = state.userStickers;
+
+        // Cache locally
+        const uid = state.currentUser ? state.currentUser.id : 'guest';
+        try {
+            localStorage.setItem(`tcg_user_stickers_${uid}`, JSON.stringify(state.userStickers));
+            localStorage.setItem('tcg_user_stickers', JSON.stringify(state.userStickers));
+        } catch (e) {
+            console.warn('Error caching user stickers:', e);
+        }
+
+        // If a slot is currently selected, add it immediately to that slot
+        if (state.selectedSlotId) {
+            addStickerToCurrentSlot(newSticker);
+        }
+
+        initStickersPicker();
+
+        Swal.fire({
+            icon: 'success',
+            title: '¡Sticker Subido!',
+            text: 'Tu sticker se ha añadido a tu biblioteca.',
+            timer: 1500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+        });
+    } catch (err) {
+        console.error('Error uploading sticker:', err);
+        Swal.fire('Error al subir', err.message || 'No se pudo subir la imagen.', 'error');
+    }
+}
+
+async function deleteUserSticker(stkId, stkUrl) {
+    const res = await Swal.fire({
+        title: '¿Eliminar sticker?',
+        text: 'Se eliminará de tu biblioteca personal de stickers.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ff4757',
+        cancelButtonColor: '#a4b0be',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    });
+
+    if (!res.isConfirmed) return;
+
+    const state = window.CustomStoreState;
+    state.userStickers = (state.userStickers || []).filter(s => s.id !== stkId);
+    state.globalStyles.user_stickers = state.userStickers;
+
+    const uid = state.currentUser ? state.currentUser.id : 'guest';
+    try {
+        localStorage.setItem(`tcg_user_stickers_${uid}`, JSON.stringify(state.userStickers));
+        localStorage.setItem('tcg_user_stickers', JSON.stringify(state.userStickers));
+    } catch (e) {}
+
+    initStickersPicker();
+
+    // Delete image token from Cloudinary if available
+    if (typeof CloudinaryUpload !== 'undefined' && CloudinaryUpload.deleteImage) {
+        try {
+            await CloudinaryUpload.deleteImage(stkUrl);
+        } catch (_) {}
+    }
+
+    Swal.fire({
+        icon: 'success',
+        title: 'Sticker eliminado',
+        timer: 1200,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
     });
 }
 
@@ -884,6 +1070,8 @@ async function saveCustomizationsToSupabase() {
     });
 
     try {
+        state.globalStyles.user_stickers = state.userStickers || [];
+
         const payload = {
             user_id: state.currentUser.id,
             global_styles: state.globalStyles,
@@ -1027,6 +1215,15 @@ function bindEvents() {
     $('#unit-custom-modal-backdrop').on('click', function(e) {
         if ($(e.target).is('#unit-custom-modal-backdrop')) {
             $(this).removeClass('active');
+        }
+    });
+
+    // User Sticker Upload File Input
+    $('#input-upload-user-sticker').off('change').on('change', async function() {
+        const file = this.files && this.files[0];
+        if (file) {
+            await handleUserStickerUpload(file);
+            $(this).val('');
         }
     });
 
