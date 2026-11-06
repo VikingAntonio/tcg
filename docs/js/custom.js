@@ -1084,6 +1084,9 @@ function addStickerToCurrentSlot(stkTemplate) {
 
     state.activeStickerIdx = stickers.length - 1;
     renderGrid();
+
+    // Auto-close customization modal so user directly sees and can manipulate the placed sticker in the slot
+    $('#unit-custom-modal-backdrop').removeClass('active');
 }
 
 // 12. Save Customizations to Supabase
