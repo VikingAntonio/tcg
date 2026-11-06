@@ -54,7 +54,7 @@ window.CustomStoreState = {
     currentTargetView: 'admin', // 'admin' or 'public'
     selectedSlotId: null,
     activeStickerIdx: null,
-    userStickers: [], // Phase 2: User custom uploaded stickers
+    availableStickers: [], // Stickers catalog from admin (packages.html)
 
     // Global Visual Settings (Only 4 Properties: Fondo, Borde, Letra, Tipografía)
     globalStyles: {
@@ -81,7 +81,8 @@ window.CustomStoreState = {
 $(document).ready(async function() {
     initThemeManager();
     await initSession();
-    initStickersPicker();
+    await checkStickerPaymentCallback();
+    await loadAvailableStickers();
     bindEvents();
     await loadCustomizations();
     renderGrid();
@@ -189,9 +190,6 @@ async function loadCustomizations() {
         if (data) {
             if (data.global_styles) {
                 state.globalStyles = { ...state.globalStyles, ...data.global_styles };
-                if (data.global_styles.user_stickers && Array.isArray(data.global_styles.user_stickers)) {
-                    state.userStickers = data.global_styles.user_stickers;
-                }
             }
             if (data.slots_config) state.slotsConfig = data.slots_config;
             if (data.grid_pc && Object.keys(data.grid_pc).length > 0) state.gridPc = data.grid_pc;
@@ -201,16 +199,7 @@ async function loadCustomizations() {
         console.warn('Error fetching store_customizations from Supabase:', e);
     }
 
-    // LocalStorage fallback for user stickers
-    const uid = state.currentUser ? state.currentUser.id : 'guest';
-    const cachedStickers = localStorage.getItem(`tcg_user_stickers_${uid}`) || localStorage.getItem('tcg_user_stickers');
-    if ((!state.userStickers || state.userStickers.length === 0) && cachedStickers) {
-        try {
-            state.userStickers = JSON.parse(cachedStickers);
-        } catch (_) {}
-    }
-
-    initStickersPicker();
+    renderStickersPicker();
     populateDefaultGridStructure();
     applyGlobalStylesToInputs();
 }
@@ -855,158 +844,205 @@ function resetActiveSlotToGlobal() {
     renderGrid();
 }
 
-// 11. User Stickers Picker Popup (Phase 2: Custom User Stickers)
-function initStickersPicker() {
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+// 11. Central Sticker Catalog (Managed only by Admin from packages.html)
+async function loadAvailableStickers() {
+    const state = window.CustomStoreState;
+    try {
+        if (typeof _supabase !== 'undefined') {
+            const { data, error } = await _supabase
+                .from('stickers')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (!error && data) {
+                state.availableStickers = data;
+            } else {
+                state.availableStickers = [];
+            }
+        }
+    } catch (err) {
+        console.warn('Notice loading stickers catalog:', err);
+        state.availableStickers = [];
+    }
+    renderStickersPicker();
+}
+
+function renderStickersPicker() {
     const state = window.CustomStoreState;
     const $picker = $('#stickers-picker-popup');
     $picker.empty();
 
-    if (!state.userStickers || state.userStickers.length === 0) {
+    const userRole = (state.currentUser?.role || 'starter').toLowerCase();
+    const purchasedStickers = (state.currentUser?.purchased_sticker_ids || '')
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean);
+
+    // Filter stickers for current plan
+    const visibleStickers = (state.availableStickers || []).filter(stk => {
+        // If sale_status is oculto, only admin can see it
+        if (stk.sale_status === 'oculto' && userRole !== 'admin') {
+            return false;
+        }
+
+        // If it's a paid sticker, it is visible so user can purchase it
+        if (stk.sale_status === 'de_paga') {
+            return true;
+        }
+
+        // For regular/free stickers, check target_roles
+        const roles = stk.target_roles || ['starter', 'premium', 'tienda'];
+        if (userRole === 'admin') return true;
+        return roles.includes(userRole);
+    });
+
+    if (visibleStickers.length === 0) {
         $picker.append(`
             <div class="stickers-empty-notice">
-                <i class="fas fa-images"></i>
-                <span>No tienes stickers subidos aún.</span>
-                <span style="font-size: 0.7rem; color: #a29bfe;">Haz clic en "+ Subir Sticker" para agregar stickers PNG o WebP.</span>
+                <span>No hay stickers disponibles en este momento.</span>
             </div>
         `);
         return;
     }
 
-    state.userStickers.forEach(stk => {
+    visibleStickers.forEach(stk => {
+        const isPaid = stk.sale_status === 'de_paga';
+        const isPurchased = purchasedStickers.includes(String(stk.id));
+        const requiresPurchase = isPaid && !isPurchased && userRole !== 'admin';
+        const price = Number(stk.price_mxn) || 25;
+
         const $item = $(`
-            <div class="picker-sticker-item" title="Agregar ${stk.name || 'Sticker'} al slot">
-                <img src="${stk.url}" alt="${stk.name || 'Sticker'}">
-                <div class="picker-sticker-del-btn" title="Eliminar de mi biblioteca">&times;</div>
+            <div class="picker-sticker-item ${requiresPurchase ? 'paid-sticker' : ''}" title="${requiresPurchase ? `Comprar sticker ($${price} MXN)` : 'Agregar sticker al slot'}">
+                <img src="${stk.url}" alt="${escapeHtml(stk.name || 'Sticker')}">
+                ${requiresPurchase ? `
+                    <div class="sticker-lock-badge" title="Sticker de Pago"><i class="fas fa-lock"></i></div>
+                    <div class="sticker-price-tag">$${price}</div>
+                ` : ''}
             </div>
         `);
 
-        $item.on('click', function(e) {
+        $item.on('click', async function(e) {
             e.stopPropagation();
-            addStickerToCurrentSlot(stk);
-        });
-
-        $item.find('.picker-sticker-del-btn').on('click', function(e) {
-            e.stopPropagation();
-            deleteUserSticker(stk.id, stk.url);
+            if (requiresPurchase) {
+                await purchaseStickerViaStripe(stk);
+            } else {
+                addStickerToCurrentSlot(stk);
+            }
         });
 
         $picker.append($item);
     });
 }
 
-async function handleUserStickerUpload(file) {
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-        Swal.fire('Formato no válido', 'Por favor selecciona un archivo de imagen (PNG o WebP recomendado).', 'warning');
+// Purchase Paid Sticker via Stripe Checkout
+async function purchaseStickerViaStripe(stk) {
+    const state = window.CustomStoreState;
+    if (!state.currentUser || !state.currentUser.id || state.currentUser.id === '00000000-0000-0000-0000-000000000000') {
+        Swal.fire('Inicia sesión', 'Debes iniciar sesión para comprar stickers de personalización.', 'info');
         return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-        Swal.fire('Archivo muy pesado', 'El tamaño máximo permitido para un sticker es de 5MB.', 'warning');
-        return;
-    }
+    const price = Number(stk.price_mxn) || 25;
 
-    Swal.fire({
-        title: 'Subiendo sticker...',
-        text: 'Optimizando y guardando imagen transparente',
-        allowOutsideClick: false,
-        didOpen: () => { Swal.showLoading(); }
-    });
-
-    try {
-        let secureUrl = null;
-        if (typeof CloudinaryUpload !== 'undefined' && CloudinaryUpload.uploadImage) {
-            secureUrl = await CloudinaryUpload.uploadImage(file);
-        } else {
-            throw new Error('Módulo de subida Cloudinary no disponible.');
-        }
-
-        const state = window.CustomStoreState;
-        if (!state.userStickers) state.userStickers = [];
-
-        const newSticker = {
-            id: `usr_stk_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-            name: file.name.replace(/\.[^/.]+$/, '').trim() || 'Sticker',
-            url: secureUrl,
-            created_at: new Date().toISOString()
-        };
-
-        state.userStickers.unshift(newSticker);
-        state.globalStyles.user_stickers = state.userStickers;
-
-        // Cache locally
-        const uid = state.currentUser ? state.currentUser.id : 'guest';
-        try {
-            localStorage.setItem(`tcg_user_stickers_${uid}`, JSON.stringify(state.userStickers));
-            localStorage.setItem('tcg_user_stickers', JSON.stringify(state.userStickers));
-        } catch (e) {
-            console.warn('Error caching user stickers:', e);
-        }
-
-        // If a slot is currently selected, add it immediately to that slot
-        if (state.selectedSlotId) {
-            addStickerToCurrentSlot(newSticker);
-        }
-
-        initStickersPicker();
-
-        Swal.fire({
-            icon: 'success',
-            title: '¡Sticker Subido!',
-            text: 'Tu sticker se ha añadido a tu biblioteca.',
-            timer: 1500,
-            showConfirmButton: false,
-            toast: true,
-            position: 'top-end'
-        });
-    } catch (err) {
-        console.error('Error uploading sticker:', err);
-        Swal.fire('Error al subir', err.message || 'No se pudo subir la imagen.', 'error');
-    }
-}
-
-async function deleteUserSticker(stkId, stkUrl) {
     const res = await Swal.fire({
-        title: '¿Eliminar sticker?',
-        text: 'Se eliminará de tu biblioteca personal de stickers.',
-        icon: 'warning',
+        title: `Desbloquear Sticker`,
+        html: `
+            <div style="text-align: center; margin: 15px 0;">
+                <img src="${stk.url}" style="max-width: 110px; max-height: 110px; object-fit: contain; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));">
+                <h4 style="color: #00d2ff; margin-top: 12px; font-weight: 800;">${escapeHtml(stk.name || 'Sticker Especial')}</h4>
+                <div style="font-size: 1.2rem; color: #ffd700; font-weight: 900; margin-top: 6px;">$${price} MXN</div>
+                <p style="font-size: 0.8rem; color: #94a3b8; margin-top: 8px;">Pago único para desbloquear este sticker para siempre en tu tienda.</p>
+            </div>
+        `,
         showCancelButton: true,
-        confirmButtonColor: '#ff4757',
-        cancelButtonColor: '#a4b0be',
-        confirmButtonText: 'Sí, eliminar',
+        confirmButtonColor: '#635BFF',
+        cancelButtonColor: '#475569',
+        confirmButtonText: 'Comprar con Tarjeta (Stripe)',
         cancelButtonText: 'Cancelar'
     });
 
     if (!res.isConfirmed) return;
 
-    const state = window.CustomStoreState;
-    state.userStickers = (state.userStickers || []).filter(s => s.id !== stkId);
-    state.globalStyles.user_stickers = state.userStickers;
-
-    const uid = state.currentUser ? state.currentUser.id : 'guest';
-    try {
-        localStorage.setItem(`tcg_user_stickers_${uid}`, JSON.stringify(state.userStickers));
-        localStorage.setItem('tcg_user_stickers', JSON.stringify(state.userStickers));
-    } catch (e) {}
-
-    initStickersPicker();
-
-    // Delete image token from Cloudinary if available
-    if (typeof CloudinaryUpload !== 'undefined' && CloudinaryUpload.deleteImage) {
-        try {
-            await CloudinaryUpload.deleteImage(stkUrl);
-        } catch (_) {}
-    }
-
     Swal.fire({
-        icon: 'success',
-        title: 'Sticker eliminado',
-        timer: 1200,
-        showConfirmButton: false,
-        toast: true,
-        position: 'top-end'
+        title: 'Conectando con Stripe...',
+        text: 'Preparando la pasarela de pago seguro.',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
     });
+
+    try {
+        const returnUrl = window.location.origin + window.location.pathname;
+        const { data: { session } } = await _supabase.auth.getSession();
+        const token = session?.access_token || '';
+
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/create-checkout-session`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${token || SUPABASE_KEY}`
+            },
+            body: JSON.stringify({
+                user_id: state.currentUser.id,
+                purchase_type: 'sticker',
+                sticker_id: stk.id,
+                return_url: returnUrl
+            })
+        });
+
+        const data = await response.json();
+        if (!response.ok || !data.url) {
+            throw new Error(data.error || 'Error al conectar con Stripe.');
+        }
+
+        window.location.href = data.url;
+
+    } catch (err) {
+        console.error('Error initiating sticker checkout:', err);
+        Swal.fire('Error de Pago', err.message || 'No se pudo iniciar el proceso de compra.', 'error');
+    }
+}
+
+// Check if returning from a successful Stripe Sticker payment
+async function checkStickerPaymentCallback() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment') === 'success' && params.get('type') === 'sticker') {
+        const stickerId = params.get('sticker_id');
+        const state = window.CustomStoreState;
+
+        if (state.currentUser && stickerId) {
+            const curPurchased = (state.currentUser.purchased_sticker_ids || '').split(',').map(s => s.trim()).filter(Boolean);
+            if (!curPurchased.includes(stickerId)) {
+                curPurchased.push(stickerId);
+                state.currentUser.purchased_sticker_ids = curPurchased.join(',');
+
+                // Update in Supabase
+                try {
+                    await _supabase
+                        .from('usuarios')
+                        .update({ purchased_sticker_ids: state.currentUser.purchased_sticker_ids })
+                        .eq('id', state.currentUser.id);
+                } catch (e) {
+                    console.warn('Notice updating purchased stickers:', e);
+                }
+            }
+
+            Swal.fire({
+                icon: 'success',
+                title: '¡Sticker Desbloqueado!',
+                text: 'El sticker ya está listo para que lo agregues a tus slots.',
+                confirmButtonColor: '#00d2ff'
+            });
+
+            // Clean URL params
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    }
 }
 
 function addStickerToCurrentSlot(stkTemplate) {
@@ -1070,8 +1106,6 @@ async function saveCustomizationsToSupabase() {
     });
 
     try {
-        state.globalStyles.user_stickers = state.userStickers || [];
-
         const payload = {
             user_id: state.currentUser.id,
             global_styles: state.globalStyles,
@@ -1215,15 +1249,6 @@ function bindEvents() {
     $('#unit-custom-modal-backdrop').on('click', function(e) {
         if ($(e.target).is('#unit-custom-modal-backdrop')) {
             $(this).removeClass('active');
-        }
-    });
-
-    // User Sticker Upload File Input
-    $('#input-upload-user-sticker').off('change').on('change', async function() {
-        const file = this.files && this.files[0];
-        if (file) {
-            await handleUserStickerUpload(file);
-            $(this).val('');
         }
     });
 

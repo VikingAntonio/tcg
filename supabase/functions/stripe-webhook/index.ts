@@ -79,7 +79,7 @@ serve(async (req) => {
         const session = event.data.object;
         const userId = session.client_reference_id || session.metadata?.user_id;
         const customerId = session.customer;
-        const purchaseType = session.metadata?.purchase_type || (session.mode === "payment" ? "spirit" : "subscription");
+        const purchaseType = session.metadata?.purchase_type || (session.mode === "payment" ? (session.metadata?.sticker_id ? "sticker" : "spirit") : "subscription");
 
         if (purchaseType === "spirit") {
           // Assistant unlock
@@ -114,6 +114,30 @@ serve(async (req) => {
               await supabase
                 .from("usuarios")
                 .update(updates)
+                .eq("id", userId);
+            }
+          }
+        } else if (purchaseType === "sticker") {
+          // Sticker unlock
+          const stickerId = session.metadata?.sticker_id;
+          if (userId && stickerId) {
+            const { data: user } = await supabase
+              .from("usuarios")
+              .select("id, purchased_sticker_ids")
+              .eq("id", userId)
+              .maybeSingle();
+
+            if (user) {
+              const currentPurchased = (user.purchased_sticker_ids || "").split(",").map((s: string) => s.trim()).filter(Boolean);
+              if (!currentPurchased.includes(stickerId.toString())) {
+                currentPurchased.push(stickerId.toString());
+              }
+
+              await supabase
+                .from("usuarios")
+                .update({
+                  purchased_sticker_ids: currentPurchased.join(",")
+                })
                 .eq("id", userId);
             }
           }

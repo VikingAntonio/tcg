@@ -517,6 +517,87 @@
             </div>
         </div>
 
+        <!-- SECTION 2.5: STICKERS MANAGEMENT (ADMIN ONLY) -->
+        <div class="section-box" id="section-stickers-manager">
+            <h2 class="section-title">Stickers Habilitados por Paquete</h2>
+
+            <!-- Sticker Upload Box (Cloudinary + Supabase) -->
+            <div style="background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px; padding: 18px; margin-bottom: 24px;">
+                <h3 style="font-size: 0.88rem; font-weight: 800; color: #00d2ff; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px;">
+                    Subir Nuevo Sticker
+                </h3>
+                <div class="clean-form-grid" style="margin-bottom: 12px;">
+                    <div class="clean-field">
+                        <label>Nombre del Sticker</label>
+                        <input type="text" id="new-sticker-name" class="clean-input" placeholder="Ej: Dragón Brillante">
+                    </div>
+                    <div class="clean-field">
+                        <label>Estado Inicial</label>
+                        <select id="new-sticker-status" class="clean-select">
+                            <option value="disponible">Disponible (Incluido según planes)</option>
+                            <option value="de_paga">De Paga (Requiere compra)</option>
+                            <option value="oculto">Oculto</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="clean-form-grid" style="margin-bottom: 12px;">
+                    <div class="clean-field" id="new-sticker-price-box">
+                        <label>Precio en Pesos Mexicanos ($ MXN)</label>
+                        <input type="number" step="1" min="5" id="new-sticker-price" class="clean-input" value="25" placeholder="25">
+                    </div>
+                    <div class="clean-field">
+                        <label>Stripe Price ID (Opcional)</label>
+                        <input type="text" id="new-sticker-stripe-id" class="clean-input" placeholder="price_...">
+                    </div>
+                </div>
+
+                <div class="clean-field" style="margin-bottom: 14px;">
+                    <label>Archivo Sticker (PNG, WebP o GIF transparente)</label>
+                    <label class="file-drop-area" id="drop-zone-sticker">
+                        <div style="font-weight: 700; color: #fff; font-size: 0.85rem;" id="sticker-file-label">Arrastra una imagen de sticker aquí o haz clic para seleccionar</div>
+                        <input type="file" id="input-sticker-file" accept="image/png,image/webp,image/gif" style="display: none;">
+                    </label>
+                    <input type="hidden" id="new-sticker-image-url">
+                </div>
+
+                <div style="display: flex; justify-content: flex-end;">
+                    <button type="button" class="btn-action-primary" id="btn-save-new-sticker">
+                        Guardar Sticker en Catálogo
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stickers Plan Filter Tabs -->
+            <div class="assistant-tabs-container">
+                <button type="button" class="assistant-tab-btn sticker-tab-btn active" data-pkg="starter">Starter</button>
+                <button type="button" class="assistant-tab-btn sticker-tab-btn" data-pkg="premium">Premium</button>
+                <button type="button" class="assistant-tab-btn sticker-tab-btn" data-pkg="tienda">Tienda</button>
+            </div>
+
+            <div class="assistant-controls-bar">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 0.8rem; font-weight: 800; color: #cbd5e1; text-transform: uppercase;">Catálogo de Stickers</span>
+                </div>
+
+                <div style="max-width: 300px; width: 100%;">
+                    <input type="text" id="sticker-search-input" class="clean-input" placeholder="Buscar sticker..." style="padding: 6px 12px; font-size: 0.8rem;">
+                </div>
+            </div>
+
+            <div class="assistants-grid" id="stickers-grid-container">
+                <div style="text-align: center; padding: 20px; color: #94a3b8; grid-column: 1 / -1;">
+                    Cargando catálogo de stickers...
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; margin-top: 14px;">
+                <button type="button" class="btn-action-primary" id="btn-save-all-stickers">
+                    GUARDAR CAMBIOS DE STICKERS
+                </button>
+            </div>
+        </div>
+
         <!-- SECTION 3: BROADCAST NOTIFICATIONS -->
         <div class="section-box">
             <h2 class="section-title">Notificaciones</h2>
@@ -609,8 +690,10 @@
     <script>
         let currentUserId = null;
         let allAvailableSpirits = [];
+        let allAvailableStickers = [];
         let packagesData = {};
         let activeAssistantPkg = 'starter';
+        let activeStickerPkg = 'starter';
         let packageAssistantsState = {
             starter: [],
             premium: [],
@@ -626,11 +709,71 @@
             await initPackagesPage();
 
             // Assistant Tab Switching
-            $('.assistant-tab-btn').click(function() {
-                $('.assistant-tab-btn').removeClass('active');
+            $('.assistant-tabs-container .assistant-tab-btn:not(.sticker-tab-btn)').click(function() {
+                $('.assistant-tabs-container .assistant-tab-btn:not(.sticker-tab-btn)').removeClass('active');
                 $(this).addClass('active');
                 activeAssistantPkg = $(this).data('pkg');
                 renderAssistantsGrid();
+            });
+
+            // Stickers Tab Switching
+            $('.sticker-tab-btn').click(function() {
+                $('.sticker-tab-btn').removeClass('active');
+                $(this).addClass('active');
+                activeStickerPkg = $(this).data('pkg');
+                renderStickersGrid();
+            });
+
+            // Sticker Search Filter
+            $('#sticker-search-input').on('input', function() {
+                const term = $(this).val().toLowerCase();
+                $('.sticker-admin-card').each(function() {
+                    const name = $(this).data('name').toLowerCase();
+                    if (name.includes(term)) {
+                        $(this).show();
+                    } else {
+                        $(this).hide();
+                    }
+                });
+            });
+
+            // Drag & drop for Sticker image upload
+            const $stickerDropZone = $('#drop-zone-sticker');
+            const $stickerFileInput = $('#input-sticker-file');
+
+            $stickerDropZone.on('click', function() { $stickerFileInput.click(); });
+
+            $stickerDropZone.on('dragover dragenter', function(e) {
+                e.preventDefault(); e.stopPropagation();
+                $(this).addClass('dragover');
+            });
+
+            $stickerDropZone.on('dragleave drop', function(e) {
+                e.preventDefault(); e.stopPropagation();
+                $(this).removeClass('dragover');
+            });
+
+            $stickerDropZone.on('drop', async function(e) {
+                const files = e.originalEvent.dataTransfer.files;
+                if (files && files.length > 0) {
+                    await handleStickerFileUpload(files[0]);
+                }
+            });
+
+            $stickerFileInput.on('change', async function() {
+                if (this.files && this.files.length > 0) {
+                    await handleStickerFileUpload(this.files[0]);
+                }
+            });
+
+            // Save new sticker button
+            $('#btn-save-new-sticker').click(async function() {
+                await saveNewSticker();
+            });
+
+            // Save all stickers changes button
+            $('#btn-save-all-stickers').click(async function() {
+                await saveAllStickersChanges();
             });
 
             // Assistant Search Filter
@@ -733,6 +876,7 @@
             $('#authenticated-content').show();
 
             await loadSpiritsList();
+            await loadStickersList();
             await loadPackagesTable();
             await loadUsersDropdown();
             await loadRegisteredDomains();
@@ -741,6 +885,274 @@
         async function loadSpiritsList() {
             const { data } = await _supabase.from('spirits').select('id, name, sale_status, price_mxn, stripe_price_id').order('name', { ascending: true });
             allAvailableSpirits = data || [];
+        }
+
+        async function loadStickersList() {
+            try {
+                const { data, error } = await _supabase
+                    .from('stickers')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (!error && data) {
+                    allAvailableStickers = data;
+                } else {
+                    allAvailableStickers = [];
+                }
+            } catch (err) {
+                console.warn('Notice loading stickers:', err);
+                allAvailableStickers = [];
+            }
+            renderStickersGrid();
+        }
+
+        function renderStickersGrid() {
+            const $container = $('#stickers-grid-container');
+            $container.empty();
+
+            if (!allAvailableStickers || allAvailableStickers.length === 0) {
+                $container.html('<div style="text-align: center; color: #94a3b8; grid-column: 1/-1; padding: 20px;">No hay stickers registrados en el sistema. Sube uno arriba.</div>');
+                return;
+            }
+
+            allAvailableStickers.forEach(stk => {
+                const roles = stk.target_roles || ['starter', 'premium', 'tienda'];
+                const isIncludedInCurrentPkg = roles.includes(activeStickerPkg);
+                const globalStatus = stk.sale_status || 'disponible';
+                const price = Number(stk.price_mxn) || 25;
+                const stripePriceId = stk.stripe_price_id || '';
+
+                let currentTabStatus = globalStatus;
+                if (globalStatus !== 'de_paga') {
+                    currentTabStatus = isIncludedInCurrentPkg ? 'disponible' : 'oculto';
+                }
+
+                const $card = $(`
+                    <div class="assistant-config-card sticker-admin-card" data-name="${escapeHtml(stk.name)}" data-id="${stk.id}">
+                        <div class="assistant-card-header">
+                            <span class="assistant-card-title" title="${escapeHtml(stk.name)}">${escapeHtml(stk.name)}</span>
+                            <span class="status-indicator-badge badge-${currentTabStatus}">
+                                ${currentTabStatus === 'disponible' ? 'Disponible' : (currentTabStatus === 'de_paga' ? 'De Paga' : 'Oculto')}
+                            </span>
+                        </div>
+
+                        <div style="display: flex; align-items: center; justify-content: center; height: 90px; background: rgba(0,0,0,0.3); border-radius: 8px; margin: 4px 0 8px;">
+                            <img src="${stk.url}" alt="${escapeHtml(stk.name)}" style="max-height: 80px; max-width: 80px; object-fit: contain;">
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <label style="font-size: 0.72rem; color: #94a3b8; font-weight: 700; text-transform: uppercase;">Estado en Plan (${activeStickerPkg.toUpperCase()})</label>
+                            <select class="sticker-status-select" data-id="${stk.id}">
+                                <option value="disponible" ${currentTabStatus === 'disponible' ? 'selected' : ''}>✅ Disponible (Incluido gratis)</option>
+                                <option value="de_paga" ${currentTabStatus === 'de_paga' ? 'selected' : ''}>💰 De Paga (Micropago)</option>
+                                <option value="oculto" ${currentTabStatus === 'oculto' ? 'selected' : ''}>🔒 Oculto (No visible)</option>
+                            </select>
+                        </div>
+
+                        <div class="sticker-price-fields" style="display: ${currentTabStatus === 'de_paga' ? 'flex' : 'none'}; flex-direction: column; gap: 8px; margin-top: 4px; padding-top: 8px; border-top: 1px dashed rgba(255, 215, 0, 0.3);">
+                            <div class="assistant-price-row">
+                                <label style="font-size: 0.75rem; color: #ffd700; font-weight: 800; white-space: nowrap;">Precio $ MXN:</label>
+                                <input type="number" step="1" min="5" class="clean-input sticker-price-input" data-id="${stk.id}" value="${price}" style="padding: 4px 8px; font-size: 0.8rem;">
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 2px;">
+                                <label style="font-size: 0.68rem; color: #94a3b8;">Stripe Price ID (Opcional):</label>
+                                <input type="text" class="clean-input sticker-stripe-input" data-id="${stk.id}" value="${escapeHtml(stripePriceId)}" placeholder="price_..." style="padding: 4px 8px; font-size: 0.8rem;">
+                            </div>
+                        </div>
+
+                        <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+                            <button type="button" class="btn-icon-del btn-del-sticker" data-id="${stk.id}" title="Eliminar Sticker" style="width: 28px; height: 28px; font-size: 0.75rem;">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `);
+
+                $card.find('.sticker-status-select').change(function() {
+                    const newStatus = $(this).val();
+                    const $badge = $card.find('.status-indicator-badge');
+                    $badge.removeClass('badge-disponible badge-de_paga badge-oculto').addClass('badge-' + newStatus);
+                    $badge.text(newStatus === 'disponible' ? 'Disponible' : (newStatus === 'de_paga' ? 'De Paga' : 'Oculto'));
+
+                    if (newStatus === 'de_paga') {
+                        $card.find('.sticker-price-fields').slideDown(150);
+                    } else {
+                        $card.find('.sticker-price-fields').slideUp(150);
+                    }
+                });
+
+                $card.find('.btn-del-sticker').click(async function(e) {
+                    e.stopPropagation();
+                    await deleteSticker(stk.id, stk.name);
+                });
+
+                $container.append($card);
+            });
+
+            // Re-apply search filter
+            const searchTerm = $('#sticker-search-input').val().toLowerCase();
+            if (searchTerm) {
+                $('#sticker-search-input').trigger('input');
+            }
+        }
+
+        async function handleStickerFileUpload(file) {
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                Swal.fire('Formato no válido', 'Por favor selecciona un archivo de imagen (PNG o WebP transparente recomendado).', 'warning');
+                return;
+            }
+
+            $('#sticker-file-label').html('<i class="fas fa-spinner fa-spin"></i> Subiendo a Cloudinary...');
+
+            try {
+                const url = await CloudinaryUpload.uploadImage(file);
+                $('#new-sticker-image-url').val(url);
+                $('#sticker-file-label').text('Sticker subido a Cloudinary: ' + file.name);
+                if (!$('#new-sticker-name').val().trim()) {
+                    const cleanName = file.name.replace(/\.[^/.]+$/, '').trim();
+                    $('#new-sticker-name').val(cleanName);
+                }
+                Swal.fire({ icon: 'success', title: 'Sticker subido', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false });
+            } catch (e) {
+                $('#sticker-file-label').text('Arrastra una imagen de sticker aquí o haz clic para seleccionar');
+                Swal.fire('Error', 'No se pudo subir a Cloudinary: ' + e.message, 'error');
+            }
+        }
+
+        async function saveNewSticker() {
+            const name = $('#new-sticker-name').val().trim();
+            const status = $('#new-sticker-status').val();
+            const price = parseFloat($('#new-sticker-price').val()) || 25;
+            const stripePriceId = $('#new-sticker-stripe-id').val().trim() || null;
+            const imageUrl = $('#new-sticker-image-url').val().trim();
+
+            if (!imageUrl) {
+                Swal.fire('Falta imagen', 'Por favor selecciona o arrastra una imagen de sticker.', 'warning');
+                return;
+            }
+
+            if (!name) {
+                Swal.fire('Falta nombre', 'Por favor ingresa un nombre para el sticker.', 'warning');
+                return;
+            }
+
+            Swal.fire({ title: 'Guardando sticker...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+            try {
+                const payload = {
+                    name: name,
+                    url: imageUrl,
+                    sale_status: status,
+                    price_mxn: price,
+                    stripe_price_id: stripePriceId,
+                    target_roles: ['starter', 'premium', 'tienda']
+                };
+
+                const { data, error } = await _supabase.from('stickers').insert([payload]).select().single();
+                if (error) throw error;
+
+                allAvailableStickers.unshift(data);
+                renderStickersGrid();
+
+                // Reset fields
+                $('#new-sticker-name').val('');
+                $('#new-sticker-image-url').val('');
+                $('#new-sticker-stripe-id').val('');
+                $('#new-sticker-price').val('25');
+                $('#sticker-file-label').text('Arrastra una imagen de sticker aquí o haz clic para seleccionar');
+
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Sticker Guardado!',
+                    text: 'El sticker está disponible en el catálogo de personalización.',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+            } catch (err) {
+                console.error('Error saving sticker:', err);
+                Swal.fire('Error', 'No se pudo guardar el sticker en la base de datos: ' + err.message, 'error');
+            }
+        }
+
+        async function saveAllStickersChanges() {
+            Swal.fire({ title: 'Guardando configuración de stickers...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+            try {
+                const cards = $('.sticker-admin-card');
+                for (let i = 0; i < cards.length; i++) {
+                    const $c = $(cards[i]);
+                    const stkId = $c.data('id');
+                    const status = $c.find('.sticker-status-select').val();
+                    const price = parseFloat($c.find('.sticker-price-input').val()) || 25;
+                    const stripePriceId = $c.find('.sticker-stripe-input').val().trim() || null;
+
+                    const match = allAvailableStickers.find(s => String(s.id) === String(stkId));
+                    if (!match) continue;
+
+                    let roles = match.target_roles || ['starter', 'premium', 'tienda'];
+
+                    if (status === 'disponible') {
+                        if (!roles.includes(activeStickerPkg)) roles.push(activeStickerPkg);
+                    } else if (status === 'oculto') {
+                        roles = roles.filter(r => r !== activeStickerPkg);
+                    }
+
+                    match.sale_status = status;
+                    match.price_mxn = price;
+                    match.stripe_price_id = stripePriceId;
+                    match.target_roles = roles;
+
+                    await _supabase
+                        .from('stickers')
+                        .update({
+                            sale_status: status,
+                            price_mxn: price,
+                            stripe_price_id: stripePriceId,
+                            target_roles: roles
+                        })
+                        .eq('id', stkId);
+                }
+
+                renderStickersGrid();
+
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Cambios Guardados!',
+                    text: 'Se actualizó el catálogo de stickers en tiempo real.',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Error', 'No se pudieron guardar los cambios: ' + err.message, 'error');
+            }
+        }
+
+        async function deleteSticker(stkId, name) {
+            const { isConfirmed } = await Swal.fire({
+                title: '¿Eliminar sticker?',
+                text: `Se eliminará "${name}" del catálogo central de la tienda.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ff4757',
+                confirmButtonText: 'Sí, eliminar'
+            });
+
+            if (isConfirmed) {
+                try {
+                    await _supabase.from('stickers').delete().eq('id', stkId);
+                    allAvailableStickers = allAvailableStickers.filter(s => String(s.id) !== String(stkId));
+                    renderStickersGrid();
+                    Swal.fire({ icon: 'success', title: 'Sticker eliminado', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false });
+                } catch (err) {
+                    Swal.fire('Error', 'No se pudo eliminar: ' + err.message, 'error');
+                }
+            }
         }
 
         async function loadPackagesTable() {

@@ -54,7 +54,7 @@ serve(async (req) => {
       });
     }
 
-    // Determine purchase type: 'subscription' (default) or 'spirit' (one-time micro-payment for 3D assistant)
+    // Determine purchase type: 'subscription' (default), 'spirit' (3D assistant), or 'sticker' (sticker purchase)
     const purchaseType = reqBody.purchase_type || "subscription";
 
     // Fetch user from DB
@@ -148,6 +148,50 @@ serve(async (req) => {
 
       params.append("success_url", `${redirectOrigin}?payment=success&type=spirit&spirit_id=${spirit.id}&session_id={CHECKOUT_SESSION_ID}`);
       params.append("cancel_url", `${redirectOrigin}?payment=canceled&type=spirit`);
+
+    } else if (purchaseType === "sticker") {
+      // ONE-TIME MICRO-PAYMENT FOR STICKER
+      const stickerId = reqBody.sticker_id;
+      if (!stickerId) {
+        return new Response(JSON.stringify({ error: "Falta proporcionar el ID del sticker (sticker_id)." }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      // Security: Query stickers table directly via service role to get verified server-side price
+      const { data: sticker, error: stickerErr } = await supabase
+        .from("stickers")
+        .select("id, name, price_mxn, stripe_price_id, sale_status")
+        .eq("id", stickerId)
+        .maybeSingle();
+
+      if (stickerErr || !sticker) {
+        return new Response(JSON.stringify({ error: "El sticker seleccionado no fue encontrado." }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      params.append("mode", "payment");
+      params.append("metadata[purchase_type]", "sticker");
+      params.append("metadata[sticker_id]", sticker.id.toString());
+      params.append("metadata[sticker_name]", sticker.name || "Sticker");
+
+      if (sticker.stripe_price_id && sticker.stripe_price_id.trim().startsWith("price_")) {
+        params.append("line_items[0][price]", sticker.stripe_price_id.trim());
+        params.append("line_items[0][quantity]", "1");
+      } else {
+        const priceAmount = Math.max(10, Math.round((Number(sticker.price_mxn) || 25) * 100)); // in cents
+        params.append("line_items[0][price_data][currency]", "mxn");
+        params.append("line_items[0][price_data][unit_amount]", priceAmount.toString());
+        params.append("line_items[0][price_data][product_data][name]", `Sticker: ${sticker.name}`);
+        params.append("line_items[0][price_data][product_data][description]", "Desbloqueo permanente de Sticker en Viking TCG.");
+        params.append("line_items[0][quantity]", "1");
+      }
+
+      params.append("success_url", `${redirectOrigin}?payment=success&type=sticker&sticker_id=${sticker.id}&session_id={CHECKOUT_SESSION_ID}`);
+      params.append("cancel_url", `${redirectOrigin}?payment=canceled&type=sticker`);
 
     } else {
       // SUBSCRIPTION PURCHASE (300 MXN MONTHLY)
