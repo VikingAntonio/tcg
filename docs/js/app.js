@@ -1123,11 +1123,21 @@ async function openCardModal($slot) {
 
         $("#card-name").text(name);
 
-        function setOrHideField(valSelector, itemSelector, valStr) {
+        function setOrHideField(valSelector, itemSelector, valStr, isPrice = false) {
             const cleanVal = (valStr || "").toString().trim();
-            if (cleanVal && cleanVal !== "-") {
-                $(valSelector).text(cleanVal);
-                $(itemSelector).show();
+            if (cleanVal && cleanVal !== "-" && cleanVal !== "null" && cleanVal !== "undefined") {
+                if (isPrice) {
+                    const num = parseFloat(cleanVal.replace(/[^0-9.]/g, ''));
+                    if (isNaN(num) || num <= 0) {
+                        $(itemSelector).hide();
+                        return;
+                    }
+                    $(valSelector).text(cleanVal.startsWith('$') ? cleanVal : `$${cleanVal}`);
+                    $(itemSelector).show();
+                } else {
+                    $(valSelector).text(cleanVal);
+                    $(itemSelector).show();
+                }
             } else {
                 $(itemSelector).hide();
             }
@@ -1136,8 +1146,8 @@ async function openCardModal($slot) {
         setOrHideField("#card-rarity", "#rarity-item", rarity);
         setOrHideField("#card-expansion", "#expansion-item", expansion);
         setOrHideField("#card-condition", "#condition-item", condition);
-        setOrHideField("#card-quantity", "#quantity-item", quantity);
-        setOrHideField("#card-price", "#price-item", price);
+        setOrHideField("#card-quantity", "#quantity-item", (quantity && quantity !== '0') ? quantity : '');
+        setOrHideField("#card-price", "#price-item", price, true);
         setOrHideField("#card-language", "#language-item", language);
         setOrHideField("#card-edition", "#edition-item", edition);
         setOrHideField("#card-description", "#description-item", description);
@@ -3039,8 +3049,10 @@ function renderBinder(binder) {
                     'data-mask': slotData.custom_mask_url || '',
                     'data-expansion': slotData.expansion || '',
                     'data-condition': slotData.condition || '',
-                    'data-quantity': '1',
+                    'data-quantity': (slotData.quantity !== undefined && slotData.quantity !== null && slotData.quantity !== '') ? slotData.quantity : '1',
                     'data-price': slotData.price || '',
+                    'data-language': slotData.language || '',
+                    'data-edition': slotData.edition || '',
                     'data-description': slotData.description || '',
                     'data-extra-images': JSON.stringify(slotData.extra_images || [])
                 });

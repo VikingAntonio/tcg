@@ -120,6 +120,121 @@
             justify-content: center !important;
             border-radius: 6px !important;
             overflow: hidden !important;
+            background: rgba(255, 255, 255, 0.04) !important;
+            border: 1px dashed rgba(255, 255, 255, 0.18) !important;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5) !important;
+            transition: border-color 0.2s ease, transform 0.2s ease !important;
+        }
+
+        .admin-grid-preview .card-slot:hover {
+            border-color: #8b5cf6 !important;
+        }
+
+        .admin-grid-preview .card-slot img.tcg-card {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: fill !important;
+            display: block !important;
+            border-radius: 5px !important;
+        }
+
+        .admin-page-item {
+            background: rgba(15, 23, 42, 0.8) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 16px !important;
+            padding: 20px !important;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
+        }
+
+        .admin-grid-preview {
+            height: auto !important;
+            min-height: 280px !important;
+            max-width: 480px !important;
+            width: 100% !important;
+            margin: 0 auto !important;
+            padding: 12px !important;
+            box-sizing: border-box !important;
+            background: rgba(0, 0, 0, 0.3) !important;
+            border-radius: 12px !important;
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        }
+
+        /* Mobile responsive adjustments for real binder sheet look without overlapping */
+        @media (max-width: 640px) {
+            #authenticated-content {
+                padding-left: 8px !important;
+                padding-right: 8px !important;
+                padding-top: 80px !important;
+            }
+
+            .admin-page-item {
+                padding: 12px 10px !important;
+                margin-bottom: 20px !important;
+                border-radius: 14px !important;
+            }
+
+            .admin-page-item h3 {
+                font-size: 1.1rem !important;
+                margin-bottom: 12px !important;
+            }
+
+            .admin-grid-preview {
+                height: auto !important;
+                min-height: auto !important;
+                max-width: 100% !important;
+                width: 100% !important;
+                padding: 8px !important;
+                box-sizing: border-box !important;
+            }
+
+            /* Layout gaps and slots behavior on mobile */
+            .admin-grid-preview.grid-layout-3x3 {
+                grid-template-columns: repeat(3, 1fr) !important;
+                grid-template-rows: repeat(3, auto) !important;
+                gap: 6px !important;
+            }
+
+            .admin-grid-preview.grid-layout-4x4 {
+                grid-template-columns: repeat(4, 1fr) !important;
+                grid-template-rows: repeat(4, auto) !important;
+                gap: 4px !important;
+            }
+
+            .admin-grid-preview.grid-layout-4x3 {
+                grid-template-columns: repeat(4, 1fr) !important;
+                grid-template-rows: repeat(3, auto) !important;
+                gap: 5px !important;
+            }
+
+            .admin-grid-preview.grid-layout-2x2 {
+                grid-template-columns: repeat(2, 1fr) !important;
+                grid-template-rows: repeat(2, auto) !important;
+                gap: 10px !important;
+            }
+
+            .admin-grid-preview.grid-layout-1x1 {
+                display: flex !important;
+                justify-content: center !important;
+                align-items: center !important;
+                padding: 15px !important;
+            }
+
+            .admin-grid-preview.grid-layout-1x1 .card-slot {
+                width: 70% !important;
+                max-width: 220px !important;
+            }
+
+            .admin-grid-preview .card-slot {
+                width: 100% !important;
+                height: auto !important;
+                aspect-ratio: 2.5 / 3.5 !important;
+                border-radius: 4px !important;
+            }
+
+            .slot-empty-label {
+                font-size: 9px !important;
+                letter-spacing: 0.5px !important;
+            }
         }
 
         .card-preview-thumb-box {
@@ -366,11 +481,21 @@
                     <!-- Condition & Stock -->
                     <div class="form-group">
                         <label><i class="fas fa-shield-alt"></i> Estado de Conservación</label>
-                        <input type="text" id="slot-condition">
+                        <input type="text" id="slot-condition" placeholder="Ej: NM, LP, MP, Mint">
                     </div>
                     <div class="form-group">
                         <label><i class="fas fa-layer-group" style="color: #00d2ff;"></i> Stock / Existencia</label>
                         <input type="number" id="slot-quantity" min="0" value="1" style="border-color: rgba(0, 210, 255, 0.4) !important; color: #00d2ff !important; font-weight: 800 !important;">
+                    </div>
+
+                    <!-- E-commerce extra fields: Language & Edition -->
+                    <div class="form-group">
+                        <label><i class="fas fa-globe"></i> Idioma</label>
+                        <input type="text" id="slot-language" placeholder="Ej: Español, Inglés, Japonés">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-certificate"></i> Edición</label>
+                        <input type="text" id="slot-edition" placeholder="Ej: 1ra Edición, Unlimited, Promo">
                     </div>
                 </div>
             </div>
