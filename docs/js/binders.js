@@ -173,9 +173,33 @@ $(document).ready(async function() {
             if (localAlbumSlots.length > 0) {
                 let slotsToUpsert = localAlbumSlots.map(s => { const { id, obtained, created_at, ...rest } = s; return rest; });
                 let { error: slotErr } = await _supabase.from('binder_card_slots').upsert(slotsToUpsert, { onConflict: 'page_id,slot_index' });
-                if (slotErr && slotErr.message && (slotErr.message.includes('cost_price') || slotErr.message.includes('column'))) {
-                    slotsToUpsert = slotsToUpsert.map(s => { const { cost_price, ...rest } = s; return rest; });
-                    await _supabase.from('binder_card_slots').upsert(slotsToUpsert, { onConflict: 'page_id,slot_index' });
+                if (slotErr && slotErr.message && (slotErr.message.includes('column') || slotErr.message.includes('schema cache'))) {
+                    // Stripping optional columns that might not exist in Supabase schema
+                    const optionalCols = ['quantity', 'language', 'edition', 'cost_price', 'description', 'extra_images'];
+                    let fallbackSlots = slotsToUpsert.map(s => {
+                        const copy = { ...s };
+                        optionalCols.forEach(col => {
+                            if (slotErr.message.includes(`'${col}'`) || slotErr.message.includes(col)) {
+                                delete copy[col];
+                            }
+                        });
+                        return copy;
+                    });
+                    const retry = await _supabase.from('binder_card_slots').upsert(fallbackSlots, { onConflict: 'page_id,slot_index' });
+                    if (retry.error) {
+                        // Extreme fallback: keep only guaranteed base columns
+                        fallbackSlots = slotsToUpsert.map(s => ({
+                            page_id: s.page_id,
+                            slot_index: s.slot_index,
+                            image_url: s.image_url,
+                            name: s.name,
+                            rarity: s.rarity,
+                            expansion: s.expansion,
+                            condition: s.condition,
+                            price: s.price
+                        }));
+                        await _supabase.from('binder_card_slots').upsert(fallbackSlots, { onConflict: 'page_id,slot_index' });
+                    }
                 }
             }
 
@@ -229,6 +253,8 @@ $(document).ready(async function() {
             price: $('#slot-price').val() || '',
             cost_price: $('#slot-cost-price').val() || '',
             quantity: parseInt($('#slot-quantity').val(), 10) >= 0 ? parseInt($('#slot-quantity').val(), 10) : 1,
+            language: $('#slot-language').val() || '',
+            edition: $('#slot-edition').val() || '',
             description: $('#slot-description').val() || '',
             extra_images: currentSlotExtraImages || [],
             obtained: true
@@ -240,14 +266,40 @@ $(document).ready(async function() {
                 .upsert([cardData], { onConflict: 'page_id,slot_index' })
                 .select();
 
-            if (error && error.message && (error.message.includes('cost_price') || error.message.includes('description') || error.message.includes('column'))) {
+            // Intelligent schema-aware fallback: if any column is missing in schema cache, remove and retry
+            if (error && error.message && (error.message.includes('column') || error.message.includes('schema cache'))) {
                 const fallbackData = { ...cardData };
-                if (error.message.includes('cost_price')) delete fallbackData.cost_price;
-                if (error.message.includes('description')) delete fallbackData.description;
-                const retry = await _supabase
+                const optionalCols = ['quantity', 'language', 'edition', 'cost_price', 'description', 'extra_images'];
+                optionalCols.forEach(col => {
+                    if (error.message.includes(`'${col}'`) || error.message.includes(col)) {
+                        delete fallbackData[col];
+                    }
+                });
+
+                let retry = await _supabase
                     .from('binder_card_slots')
                     .upsert([fallbackData], { onConflict: 'page_id,slot_index' })
                     .select();
+
+                if (retry.error && retry.error.message && (retry.error.message.includes('column') || retry.error.message.includes('schema cache'))) {
+                    // If multiple optional columns are missing, strip all non-core columns
+                    const coreOnlyData = {
+                        page_id: currentPageId,
+                        slot_index: currentSlotIndex,
+                        image_url: imageUrl,
+                        name: $('#slot-name').val() || '',
+                        rarity: $('#slot-rarity').val() || '',
+                        expansion: $('#slot-expansion').val() || '',
+                        condition: $('#slot-condition').val() || 'M',
+                        price: $('#slot-price').val() || '',
+                        obtained: true
+                    };
+                    retry = await _supabase
+                        .from('binder_card_slots')
+                        .upsert([coreOnlyData], { onConflict: 'page_id,slot_index' })
+                        .select();
+                }
+
                 error = retry.error;
                 data = retry.data;
             }
@@ -543,11 +595,11 @@ function renderAlbumPagesLocal(pages) {
             const slot = localAlbumSlots.find(s => s.page_id === page.id && s.slot_index === i);
             const $slot = $(`<div class="card-slot" data-index="${i}"></div>`);
             if (slot && slot.image_url) {
-                let slotHtml = `<img src="${slot.image_url}" class="tcg-card">`;
-                if (slot.price) slotHtml += `<div style="position: absolute; top: 2px; right: 2px; background: rgba(0,255,136,0.9); color: #000; font-weight: 900; font-size: 10px; padding: 1px 4px; border-radius: 4px;">$${slot.price}</div>`;
+                let slotHtml = `<img src="${slot.image_url}" class="tcg-card" alt="${slot.name || 'Carta'}">`;
+                if (slot.price) slotHtml += `<div style="position: absolute; top: 2px; right: 2px; background: rgba(0,255,136,0.9); color: #000; font-weight: 900; font-size: 10px; padding: 1px 4px; border-radius: 4px; z-index: 2;">$${slot.price}</div>`;
                 $slot.html(slotHtml);
             } else {
-                $slot.html('<div style="color:#444; font-size:10px; text-align:center; padding-top:10px;">Vacío</div>');
+                $slot.html('<div class="slot-empty-label" style="color: rgba(255,255,255,0.25); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; text-align: center; display: flex; align-items: center; justify-content: center; height: 100%; width: 100%;">Vacío</div>');
             }
             $grid.append($slot);
         }
@@ -573,7 +625,7 @@ async function deletePage(id) {
 
 async function loadSlotData(pageId, slotIndex) {
     const data = localAlbumSlots.find(s => s.page_id === pageId && s.slot_index === slotIndex);
-    $('#slot-image-url, #slot-name, #slot-rarity, #slot-expansion, #slot-condition, #slot-price, #slot-cost-price, #slot-quantity, #slot-description').val('');
+    $('#slot-image-url, #slot-name, #slot-rarity, #slot-expansion, #slot-condition, #slot-price, #slot-cost-price, #slot-quantity, #slot-language, #slot-edition, #slot-description').val('');
     $('#slot-quantity').val(1);
     currentSlotExtraImages = [];
 
@@ -586,6 +638,8 @@ async function loadSlotData(pageId, slotIndex) {
         $('#slot-price').val(data.price || '');
         $('#slot-cost-price').val(data.cost_price || '');
         $('#slot-quantity').val(data.quantity !== undefined && data.quantity !== null ? data.quantity : 1);
+        $('#slot-language').val(data.language || '');
+        $('#slot-edition').val(data.edition || '');
         $('#slot-description').val(data.description || '');
         if (data.extra_images && Array.isArray(data.extra_images)) {
             currentSlotExtraImages = [...data.extra_images];
