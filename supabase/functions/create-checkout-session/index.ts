@@ -9,6 +9,31 @@ const corsHeaders = {
 // Fallback price in MXN for premium subscription if not set in DB package_configs
 const DEFAULT_PREMIUM_PRICE_MXN = 300;
 
+
+async function resolvePromoPrice(supabase: any, productId: string, category: string, basePrice: number): Promise<{ price: number, isLimited: boolean, isExpired: boolean }> {
+  try {
+    const { data: promo } = await supabase
+      .from('product_promotions')
+      .select('*')
+      .eq('product_id', productId)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if (!promo) return { price: basePrice, isLimited: false, isExpired: false };
+
+    const now = new Date();
+    if (!promo.is_permanent) {
+      if (promo.start_date && new Date(promo.start_date) > now) return { price: basePrice, isLimited: false, isExpired: false };
+      if (promo.end_date && new Date(promo.end_date) < now) {
+        return { price: basePrice, isLimited: promo.is_limited_time, isExpired: promo.is_limited_time };
+      }
+    }
+    return { price: Number(promo.promo_price || basePrice), isLimited: Boolean(promo.is_limited_time), isExpired: false };
+  } catch (e) {
+    return { price: basePrice, isLimited: false, isExpired: false };
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
