@@ -79,7 +79,7 @@ serve(async (req) => {
         const session = event.data.object;
         const userId = session.client_reference_id || session.metadata?.user_id;
         const customerId = session.customer;
-        const purchaseType = session.metadata?.purchase_type || (session.mode === "payment" ? (session.metadata?.sticker_id ? "sticker" : "spirit") : "subscription");
+        const purchaseType = session.metadata?.purchase_type || (session.mode === "payment" ? (session.metadata?.accessory_id ? "accessory" : (session.metadata?.sticker_id ? "sticker" : "spirit")) : "subscription");
 
         if (purchaseType === "spirit") {
           // Assistant unlock
@@ -137,6 +137,30 @@ serve(async (req) => {
                 .from("usuarios")
                 .update({
                   purchased_sticker_ids: currentPurchased.join(",")
+                })
+                .eq("id", userId);
+            }
+          }
+        } else if (purchaseType === "accessory") {
+          // Accessory unlock
+          const accessoryId = session.metadata?.accessory_id;
+          if (userId && accessoryId) {
+            const { data: user } = await supabase
+              .from("usuarios")
+              .select("id, purchased_accessory_ids")
+              .eq("id", userId)
+              .maybeSingle();
+
+            if (user) {
+              const currentPurchased = (user.purchased_accessory_ids || "").split(",").map((s: string) => s.trim()).filter(Boolean);
+              if (!currentPurchased.includes(accessoryId.toString())) {
+                currentPurchased.push(accessoryId.toString());
+              }
+
+              await supabase
+                .from("usuarios")
+                .update({
+                  purchased_accessory_ids: currentPurchased.join(",")
                 })
                 .eq("id", userId);
             }

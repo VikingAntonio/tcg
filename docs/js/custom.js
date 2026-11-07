@@ -1010,38 +1010,20 @@ async function purchaseStickerViaStripe(stk) {
 
 // Check if returning from a successful Stripe Sticker payment
 async function checkStickerPaymentCallback() {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('payment') === 'success' && params.get('type') === 'sticker') {
-        const stickerId = params.get('sticker_id');
-        const state = window.CustomStoreState;
-
-        if (state.currentUser && stickerId) {
-            const curPurchased = (state.currentUser.purchased_sticker_ids || '').split(',').map(s => s.trim()).filter(Boolean);
-            if (!curPurchased.includes(stickerId)) {
-                curPurchased.push(stickerId);
-                state.currentUser.purchased_sticker_ids = curPurchased.join(',');
-
-                // Update in Supabase
-                try {
-                    await _supabase
-                        .from('usuarios')
-                        .update({ purchased_sticker_ids: state.currentUser.purchased_sticker_ids })
-                        .eq('id', state.currentUser.id);
-                } catch (e) {
-                    console.warn('Notice updating purchased stickers:', e);
+    if (window.TCGPurchase) {
+        await window.TCGPurchase.checkPostPaymentCallback({
+            sticker: (stkData) => {
+                const state = window.CustomStoreState;
+                if (stkData && state.selectedSlotId) {
+                    addStickerToCurrentSlot({
+                        id: stkData.id,
+                        name: stkData.name,
+                        url: stkData.url
+                    });
                 }
+                renderStickersPicker();
             }
-
-            Swal.fire({
-                icon: 'success',
-                title: '¡Sticker Desbloqueado!',
-                text: 'El sticker ya está listo para que lo agregues a tus slots.',
-                confirmButtonColor: '#00d2ff'
-            });
-
-            // Clean URL params
-            window.history.replaceState({}, document.title, window.location.pathname);
-        }
+        });
     }
 }
 

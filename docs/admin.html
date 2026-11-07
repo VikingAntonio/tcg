@@ -2876,57 +2876,224 @@
             display: block;
         }
 
-        /* Custom Accessory Grid */
-        .accessory-grid {
+        /* Deluxe Spacious Accessories Modal (No scrollbars, high-end presentation) */
+        #accessories-modal.overlay .overlay-content.accessories-overlay-large {
+            max-width: 980px;
+            width: 95vw;
+            padding: 28px 32px;
+            border-radius: 24px;
+            background: radial-gradient(circle at 50% 15%, #152238 0%, #080d1a 100%);
+            border: 1.5px solid rgba(0, 210, 255, 0.35);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(0, 210, 255, 0.15);
+            max-height: 94vh;
+            overflow: hidden !important;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+        }
+
+        .selected-acc-preview-container {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
-            gap: 10px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            margin-bottom: 20px;
             width: 100%;
         }
-        .accessory-item {
-            position: relative;
+
+        .selected-acc-preview-card {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
-            border: 2px solid transparent;
+            transition: all 0.25s ease;
+        }
+
+        .selected-acc-preview-card:hover {
+            border-color: rgba(0, 210, 255, 0.4);
+            background: rgba(0, 210, 255, 0.05);
+        }
+
+        .acc-preview-box {
+            width: 80px;
+            height: 105px;
             border-radius: 8px;
             overflow: hidden;
-            background: rgba(0,0,0,0.3);
-            aspect-ratio: 1;
+            background: rgba(0,0,0,0.4);
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s;
+            margin: 6px 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        .accessory-item.type-sleeves {
-            aspect-ratio: 2/3;
-        }
-        .accessory-item.type-coin {
-            border-radius: 50%;
-        }
-        .accessory-item img {
+
+        .acc-preview-box img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
-        .accessory-item:hover {
-            border-color: rgba(0, 210, 255, 0.4);
-            transform: scale(1.05);
+
+        .acc-tabs-nav {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 16px;
         }
+
+        .acc-tab-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #94a3b8;
+            padding: 8px 24px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .acc-tab-btn.active {
+            background: linear-gradient(135deg, rgba(0, 210, 255, 0.25) 0%, rgba(0, 136, 255, 0.25) 100%);
+            border-color: #00d2ff;
+            color: #00d2ff;
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.35);
+        }
+
+        .acc-tabs-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden !important;
+        }
+
+        .acc-tab-pane {
+            display: none;
+            width: 100%;
+            height: 100%;
+            overflow: hidden !important;
+        }
+
+        .acc-tab-pane.active {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden !important;
+        }
+
+        /* Custom Accessory Grid - Spacious & Scrollbar Free */
+        .accessory-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 14px;
+            width: 100%;
+            align-content: start;
+            overflow: hidden !important;
+        }
+
+        .accessory-item {
+            position: relative;
+            cursor: pointer;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            background: rgba(15, 23, 42, 0.8);
+            aspect-ratio: 2/3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .accessory-item.type-sleeves {
+            aspect-ratio: 2/3;
+        }
+        .accessory-item.type-deckbox {
+            aspect-ratio: 1/1;
+        }
+        .accessory-item.type-coin {
+            aspect-ratio: 1/1;
+            border-radius: 50%;
+        }
+        .accessory-item.type-mats {
+            aspect-ratio: 16/9;
+        }
+
+        .accessory-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.25s ease;
+        }
+
+        .accessory-item:hover {
+            border-color: rgba(0, 210, 255, 0.5);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 210, 255, 0.2);
+        }
+
         .accessory-item.selected {
             border-color: #00d2ff;
-            box-shadow: 0 0 10px rgba(0, 210, 255, 0.6);
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.7);
         }
+
+        /* Grayscale for locked/paid items */
+        .accessory-item.is-locked img {
+            filter: grayscale(1) opacity(0.6);
+        }
+
+        .accessory-item.is-locked:hover img {
+            filter: grayscale(0.4) opacity(0.85);
+        }
+
+        .accessory-lock-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(5, 10, 20, 0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .accessory-lock-overlay i {
+            color: #ffd700;
+            font-size: 1.1rem;
+            filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
+        }
+
+        .accessory-lock-overlay span {
+            color: #ffd700;
+            font-size: 0.75rem;
+            font-weight: 800;
+            background: rgba(0,0,0,0.7);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
         .accessory-item.none-option {
             background: rgba(255,255,255,0.03);
-            border: 1px dashed rgba(255,255,255,0.2);
-            font-size: 10px;
-            color: rgba(255,255,255,0.4);
+            border: 1px dashed rgba(255,255,255,0.25);
+            font-size: 11px;
+            color: rgba(255,255,255,0.6);
             text-align: center;
             text-transform: uppercase;
-            font-weight: bold;
+            font-weight: 800;
         }
+
         .accessory-item.none-option.selected {
             border: 2px solid #00d2ff;
             color: #00d2ff;
+            background: rgba(0, 210, 255, 0.08);
         }
 
         /* Upcoming message */
@@ -2987,11 +3154,14 @@
     </style>
 
     <div id="accessories-modal" class="overlay">
-        <div class="overlay-content" style="max-width: 600px; width: 95%;">
+        <div class="overlay-content accessories-overlay-large">
             <span id="close-accessories-modal" class="close-btn">&times;</span>
 
-            <div class="modal-header-simple" style="margin-bottom: 20px; text-align: center;">
-                <h2>personaliza tu deck</h2>
+            <div class="modal-header-simple" style="margin-bottom: 16px; text-align: center; display: flex; align-items: center; justify-content: space-between;">
+                <h2 style="margin: 0; font-size: 1.4rem; font-weight: 900; letter-spacing: 0.5px; background: linear-gradient(135deg, #fff 40%, #00d2ff 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">PERSONALIZA TU DECK</h2>
+                <a href="accesorios.html" target="_blank" style="color: #00d2ff; font-size: 0.8rem; font-weight: 800; text-decoration: none; display: flex; align-items: center; gap: 6px; background: rgba(0, 210, 255, 0.1); padding: 5px 12px; border-radius: 50px; border: 1px solid rgba(0, 210, 255, 0.3);">
+                    <i class="fas fa-shopping-bag"></i> Catálogo Completo
+                </a>
             </div>
 
             <!-- Preview of Selected Accessories -->
@@ -3098,6 +3268,7 @@
     <script src="js/cart.js"></script>
     <script src="js/viking-data.js"></script>
     <script src="js/supabase-config.js"></script>
+    <script src="js/tcg-purchase-anim.js"></script>
     <script src="js/michatbot.js"></script>
 
     <script src="js/ztext.js"></script>

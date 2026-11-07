@@ -692,13 +692,44 @@ function removeCardFromDeck(card) {
 // Load and Render Accessories in Modal
 async function loadAndRenderAccessories() {
     try {
-        const { data: accessories, error } = await _supabase
-            .from('viking_data')
+        let accessories = [];
+        // First try accessories table
+        const { data: accData, error: accErr } = await _supabase
+            .from('accessories')
             .select('*')
-            .or('type.eq.accessories,type.eq.accessory');
+            .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (!accErr && accData && accData.length > 0) {
+            accessories = accData;
+        } else {
+            // Fallback to viking_data
+            const { data: vikData } = await _supabase
+                .from('viking_data')
+                .select('*')
+                .or('type.eq.accessories,type.eq.accessory');
 
+            accessories = (vikData || []).map(v => {
+                const r = (v.rarity || '').toLowerCase();
+                const e = (v.expansion || '').toLowerCase();
+                let cat = 'sleeves';
+                if (r.includes('mat') || e.includes('mat')) cat = 'mats';
+                else if (r === 'deckbox' || e === 'deckbox') cat = 'deckbox';
+                else if (r === 'coin' || e === 'coin') cat = 'coin';
+
+                return {
+                    id: v.id,
+                    name: v.name,
+                    image_url: v.image_url,
+                    category: cat,
+                    sale_status: 'disponible',
+                    price_mxn: 25,
+                    target_roles: ['starter', 'premium', 'tienda']
+                };
+            });
+        }
+
+        const userRole = (currentUser?.role || 'starter').toLowerCase();
+        const isAdmin = userRole === 'admin';
         const types = ['sleeves', 'deckbox', 'coin', 'mats'];
 
         types.forEach(key => {
@@ -707,13 +738,12 @@ async function loadAndRenderAccessories() {
 
             // Filter accessories for current type
             const filtered = (accessories || []).filter(acc => {
-                const r = (acc.rarity || '').toLowerCase();
-                const e = (acc.expansion || '').toLowerCase();
+                if (acc.sale_status === 'oculto' && !isAdmin) return false;
+                const cat = (acc.category || acc.rarity || acc.expansion || '').toLowerCase();
                 if (key === 'mats') {
-                    return r === 'mats' || r === 'playmat' || r === 'playmats' || r === 'mat' ||
-                           e === 'mats' || e === 'playmat' || e === 'playmats' || e === 'mat';
+                    return cat === 'mats' || cat === 'playmat' || cat === 'playmats' || cat === 'mat';
                 }
-                return r === key || e === key;
+                return cat === key;
             });
 
             // Set current selected values on previews
@@ -741,11 +771,63 @@ async function loadAndRenderAccessories() {
 
             filtered.forEach(acc => {
                 const isSelected = acc.image_url === activeVal;
+                const isPaid = (acc.sale_status === 'de_paga');
+                const isOwned = window.TCGPurchase?.hasUserPurchased('accessory', acc.id, currentUser);
+                const roles = acc.target_roles || ['starter', 'premium', 'tienda'];
+                const isIncludedInPlan = roles.includes(userRole) || isAdmin;
+                const canUse = isOwned || (isIncludedInPlan && !isPaid);
+                const isLocked = !canUse;
+                const price = Math.max(5, Number(acc.price_mxn) || 25);
+
                 const $item = $(`
-                    <div class="accessory-item ${isSelected ? 'selected' : ''}" data-type="${key}" data-value="${acc.image_url}" title="${acc.name}">
+                    <div class="accessory-item type-${key} ${isSelected ? 'selected' : ''} ${isLocked ? 'is-locked' : ''}" data-type="${key}" data-value="${acc.image_url}" data-id="${acc.id}" data-locked="${isLocked ? '1' : '0'}" title="${escapeHtml(acc.name)}">
                         <img src="${acc.image_url}" onerror="this.src='https://via.placeholder.com/150?text=Error'">
+                        ${isLocked ? `
+                            <div class="accessory-lock-overlay">
+                                <i class="fas fa-lock"></i>
+                                <span>$${price}</span>
+                            </div>
+                        ` : ''}
                     </div>
                 `);
+
+                $item.on('click', async function(e) {
+                    if (isLocked) {
+                        e.stopPropagation();
+                        if (window.TCGPurchase) {
+                            await window.TCGPurchase.purchaseItemViaStripe('accessory', acc, {
+                                onSuccess: () => {
+                                    window.TCGPurchase.playAcquisitionAnimation({
+                                        imageUrl: acc.image_url,
+                                        name: acc.name,
+                                        category: key,
+                                        targetElement: $previewBox,
+                                        onComplete: () => {
+                                            loadAndRenderAccessories();
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                        return;
+                    }
+
+                    const val = $item.attr('data-value') || null;
+                    if (key === 'sleeves') selectedSleeves = val;
+                    else if (key === 'deckbox') selectedDeckbox = val;
+                    else if (key === 'coin') selectedCoin = val;
+                    else if (key === 'mats') selectedMats = val;
+
+                    $item.siblings().removeClass('selected');
+                    $item.addClass('selected');
+
+                    if (val) {
+                        $previewBox.html(`<img src="${val}" style="width:100%;height:100%;object-fit:cover;">`);
+                    } else {
+                        $previewBox.html(`<span class="acc-preview-none">Ninguno</span>`);
+                    }
+                });
+
                 $grid.append($item);
             });
         });
