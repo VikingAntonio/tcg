@@ -107,46 +107,27 @@ $(document).ready(async function() {
         window.setupMultiMaskField('#slot-custom-mask', '#slot-multi-mask-rows-container', '#btn-slot-add-mask-row');
     }
 
-    // Check if user just returned from a Stripe payment
-    function checkPostPaymentRedirect() {
+    // Check if user just returned from a Stripe payment (Unifies Accessory, Spirit, Sticker, and Subscription)
+    async function checkPostPaymentRedirect() {
         const urlParams = new URLSearchParams(window.location.search);
         const paymentStatus = urlParams.get('payment');
         const paymentType = urlParams.get('type');
-        const spiritId = urlParams.get('spirit_id');
 
         if (paymentStatus === 'success') {
-            if (paymentType === 'spirit' && spiritId) {
-                // Instantly update user in DB to unlock and select purchased spirit
-                _supabase.from('usuarios').select('purchased_spirit_ids, allowed_spirit_ids').eq('id', currentUser.id).single()
-                    .then(({ data: user }) => {
-                        if (user) {
-                            const purchased = (user.purchased_spirit_ids || '').split(',').map(s => s.trim()).filter(Boolean);
-                            if (!purchased.includes(spiritId.toString())) {
-                                purchased.push(spiritId.toString());
+            if (paymentType === 'spirit' || paymentType === 'accessory') {
+                if (window.TCGPurchase) {
+                    await window.TCGPurchase.checkPostPaymentCallback({
+                        spirit: (spiritData) => {
+                            if (spiritData?.id) {
+                                currentUser.selected_spirit_id = spiritData.id;
                             }
-                            const allowed = (user.allowed_spirit_ids || '').split(',').map(s => s.trim()).filter(Boolean);
-                            if (!allowed.includes(spiritId.toString()) && user.allowed_spirit_ids !== 'all') {
-                                allowed.push(spiritId.toString());
-                            }
-                            const updates = {
-                                purchased_spirit_ids: purchased.join(','),
-                                selected_spirit_id: spiritId
-                            };
-                            if (user.allowed_spirit_ids !== 'all') updates.allowed_spirit_ids = allowed.join(',');
-
-                            return _supabase.from('usuarios').update(updates).eq('id', currentUser.id);
+                            loadSpirits();
+                        },
+                        accessory: (accData) => {
+                            loadAndRenderAccessories();
                         }
-                    })
-                    .then(() => {
-                        Swal.fire({
-                            title: '¡Pago Exitoso!',
-                            text: '¡Tu nuevo Asistente 3D ha sido desbloqueado permanentemente y seleccionado!',
-                            icon: 'success'
-                        });
-                        // Clean up URL parameters
-                        window.history.replaceState({}, document.title, window.location.pathname);
-                        loadSpirits();
                     });
+                }
             } else {
                 Swal.fire({
                     title: '¡Suscripción Activada!',
@@ -2812,20 +2793,52 @@ async function editDeck(deck) {
 
 async function loadAndRenderAccessories() {
     try {
-        const { data: accessories, error } = await _supabase
-            .from('viking_data')
+        let accessories = [];
+        // First try accessories table
+        const { data: accData, error: accErr } = await _supabase
+            .from('accessories')
             .select('*')
-            .or('type.eq.accessories,type.eq.accessory');
+            .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (!accErr && accData && accData.length > 0) {
+            accessories = accData;
+        } else {
+            // Fallback to viking_data
+            const { data: vikData } = await _supabase
+                .from('viking_data')
+                .select('*')
+                .or('type.eq.accessories,type.eq.accessory');
 
-        renderAccessoriesGrid(accessories || []);
+            accessories = (vikData || []).map(v => {
+                const r = (v.rarity || '').toLowerCase();
+                const e = (v.expansion || '').toLowerCase();
+                let cat = 'sleeves';
+                if (r.includes('mat') || e.includes('mat')) cat = 'mats';
+                else if (r === 'deckbox' || e === 'deckbox') cat = 'deckbox';
+                else if (r === 'coin' || e === 'coin') cat = 'coin';
+
+                return {
+                    id: v.id,
+                    name: v.name,
+                    image_url: v.image_url,
+                    category: cat,
+                    sale_status: 'disponible',
+                    price_mxn: 25,
+                    target_roles: ['starter', 'premium', 'tienda']
+                };
+            });
+        }
+
+        renderAccessoriesGrid(accessories);
     } catch (err) {
         console.error("Error al cargar accesorios:", err);
     }
 }
 
 function renderAccessoriesGrid(accessories) {
+    const userRole = (currentUser?.role || 'starter').toLowerCase();
+    const isAdmin = userRole === 'admin';
+
     const sections = [
         { key: 'sleeves', gridId: '#grid-sleeves', nameId: '#selected-sleeves-name', selectedVal: window.selectedSleeves, previewBoxId: '#preview-box-sleeves' },
         { key: 'deckbox', gridId: '#grid-deckbox', nameId: '#selected-deckbox-name', selectedVal: window.selectedDeckbox, previewBoxId: '#preview-box-deckbox' },
@@ -2838,13 +2851,13 @@ function renderAccessoriesGrid(accessories) {
         $grid.empty();
 
         const filtered = accessories.filter(acc => {
-            const r = (acc.rarity || '').toLowerCase();
-            const e = (acc.expansion || '').toLowerCase();
+            if (acc.sale_status === 'oculto' && !isAdmin) return false;
+
+            const cat = (acc.category || acc.rarity || acc.expansion || '').toLowerCase();
             if (key === 'mats') {
-                return r === 'mats' || r === 'playmat' || r === 'playmats' || r === 'mat' ||
-                       e === 'mats' || e === 'playmat' || e === 'playmats' || e === 'mat';
+                return cat === 'mats' || cat === 'playmat' || cat === 'playmats' || cat === 'mat';
             }
-            return r === key || e === key;
+            return cat === key;
         });
 
         // Name and Preview display
@@ -2864,7 +2877,6 @@ function renderAccessoriesGrid(accessories) {
         }
 
         if (filtered.length === 0) {
-            // Show custom message
             let typeLabel = key;
             if (key === 'sleeves') typeLabel = 'Sleeves (Micas)';
             if (key === 'deckbox') typeLabel = 'Deckboxes';
@@ -2885,20 +2897,90 @@ function renderAccessoriesGrid(accessories) {
         const isNoneSelected = !selectedVal;
         const $noneItem = $(`
             <div class="accessory-item none-option type-${key} ${isNoneSelected ? 'selected' : ''}" data-value="">
-                <div style="font-size: 10px; opacity: 0.7;">Ninguno</div>
+                <div>Ninguno</div>
             </div>
         `);
         $grid.append($noneItem);
 
-        // Render DB options
+        // Render DB options with paid / unlocked / plan states
         filtered.forEach(acc => {
             const isSelected = acc.image_url === selectedVal;
+            const isPaid = (acc.sale_status === 'de_paga');
+            const isOwned = window.TCGPurchase?.hasUserPurchased('accessory', acc.id, currentUser);
+            const roles = acc.target_roles || ['starter', 'premium', 'tienda'];
+            const isIncludedInPlan = roles.includes(userRole) || isAdmin;
+            const canUse = isOwned || (isIncludedInPlan && !isPaid);
+            const isLocked = !canUse;
+            const price = Math.max(5, Number(acc.price_mxn) || 25);
+
             const $item = $(`
-                <div class="accessory-item type-${key} ${isSelected ? 'selected' : ''}" data-value="${acc.image_url}" title="${acc.name}">
-                    <img src="${acc.image_url}" alt="${acc.name}" onerror="this.src='https://via.placeholder.com/150?text=Error'">
+                <div class="accessory-item type-${key} ${isSelected ? 'selected' : ''} ${isLocked ? 'is-locked' : ''}" data-value="${acc.image_url}" data-id="${acc.id}" data-locked="${isLocked ? '1' : '0'}" title="${escapeHtml(acc.name)}">
+                    <img src="${acc.image_url}" alt="${escapeHtml(acc.name)}" onerror="this.src='https://via.placeholder.com/150?text=Error'">
+                    ${isLocked ? `
+                        <div class="accessory-lock-overlay">
+                            <i class="fas fa-lock"></i>
+                            <span>$${price}</span>
+                        </div>
+                    ` : ''}
                     <div class="accessory-zoom-btn" data-url="${acc.image_url}"><i class="fas fa-search"></i></div>
                 </div>
             `);
+
+            // Zoom handler
+            $item.find('.accessory-zoom-btn').on('click', function(e) {
+                e.stopPropagation();
+                Swal.fire({
+                    title: acc.name,
+                    imageUrl: acc.image_url,
+                    imageAlt: acc.name,
+                    showConfirmButton: false,
+                    showCloseButton: true,
+                    background: '#1a1a1a',
+                    color: '#fff'
+                });
+            });
+
+            // Selection / Purchase click
+            $item.on('click', async function(e) {
+                if (isLocked) {
+                    e.stopPropagation();
+                    // Prompt purchase directly in the modal
+                    if (window.TCGPurchase) {
+                        await window.TCGPurchase.purchaseItemViaStripe('accessory', acc, {
+                            onSuccess: () => {
+                                window.TCGPurchase.playAcquisitionAnimation({
+                                    imageUrl: acc.image_url,
+                                    name: acc.name,
+                                    category: key,
+                                    targetElement: previewBoxId,
+                                    onComplete: () => {
+                                        loadAndRenderAccessories();
+                                    }
+                                });
+                            }
+                        });
+                    }
+                    return;
+                }
+
+                // Normal selection for unlocked items
+                const val = $item.attr('data-value') || null;
+                if (key === 'sleeves') window.selectedSleeves = val;
+                else if (key === 'deckbox') window.selectedDeckbox = val;
+                else if (key === 'coin') window.selectedCoin = val;
+                else if (key === 'mats') window.selectedMats = val;
+
+                $item.siblings().removeClass('selected');
+                $item.addClass('selected');
+
+                $(nameId).text(acc.name || 'Ninguno');
+                if (val) {
+                    $previewBox.html(`<img src="${val}" alt="${acc.name}" onerror="this.src='https://via.placeholder.com/150?text=Error'">`);
+                } else {
+                    $previewBox.html(`<span class="acc-preview-none">Ninguno</span>`);
+                }
+            });
+
             $grid.append($item);
         });
     });

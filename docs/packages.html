@@ -756,6 +756,66 @@
             </div>
         </div>
 
+        <!-- SECTION 2.6: ACCESSORIES MANAGEMENT (ADMIN ONLY) -->
+        <div class="section-box accessories-mgmt-section" id="section-accessories-manager">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+                <h2 class="section-title">Administración de Accesorios</h2>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <a href="accesorios.html" class="btn-text-nav" style="background: rgba(0, 210, 255, 0.15); border: 1px solid #00d2ff; color: #00d2ff; font-weight: 800; font-size: 0.82rem; padding: 6px 16px; border-radius: 8px; text-decoration: none;" target="_blank">
+                        <i class="fas fa-external-link-alt"></i> Ver Catálogo Público
+                    </a>
+                    <button type="button" class="btn-action-primary" id="btn-open-create-acc-modal" style="padding: 8px 18px; font-size: 0.82rem; font-weight: 800;">
+                        <i class="fas fa-plus"></i> Nuevo Accesorio
+                    </button>
+                </div>
+            </div>
+
+            <!-- Category Filter Tabs -->
+            <div class="assistant-tabs-container" id="acc-admin-tabs">
+                <button type="button" class="assistant-tab-btn active" data-cat="all">Todos</button>
+                <button type="button" class="assistant-tab-btn" data-cat="sleeves">Sleeves</button>
+                <button type="button" class="assistant-tab-btn" data-cat="deckbox">Decks</button>
+                <button type="button" class="assistant-tab-btn" data-cat="coin">Coins</button>
+                <button type="button" class="assistant-tab-btn" data-cat="mats">Playmat</button>
+            </div>
+
+            <!-- Direct Drag & Drop Zone for Accessories -->
+            <div class="sticker-dropzone-modern" id="accessory-drag-drop-zone">
+                <i class="fas fa-cloud-upload-alt" style="font-size: 2.2rem; color: #00d2ff;"></i>
+                <div style="font-weight: 800; color: #fff; font-size: 1.05rem;" id="accessory-drag-label">
+                    Arrastra diseños de accesorios aquí o haz clic para cargar
+                </div>
+                <div style="font-size: 0.8rem; color: #94a3b8;">
+                    Formatos recomendados: PNG, WebP o JPG. Los diseños se subirán a Cloudinary y se asignarán a la categoría activa.
+                </div>
+                <input type="file" id="input-accessory-file" accept="image/*" multiple style="display: none;">
+            </div>
+
+            <div class="assistant-controls-bar" style="margin-top: 24px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 0.85rem; font-weight: 800; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.5px;">
+                        Catálogo de Accesorios (<span id="accessories-count-badge">0</span>)
+                    </span>
+                </div>
+
+                <div style="max-width: 300px; width: 100%;">
+                    <input type="text" id="accessory-search-input" class="clean-input" placeholder="Buscar accesorio..." style="padding: 7px 14px; font-size: 0.82rem;">
+                </div>
+            </div>
+
+            <div class="assistants-grid" id="accessories-grid-container" style="margin-top: 16px;">
+                <div style="text-align: center; padding: 30px; color: #94a3b8; grid-column: 1 / -1;">
+                    Cargando catálogo de accesorios...
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+                <button type="button" class="btn-action-primary" id="btn-save-all-accessories" style="padding: 12px 28px; font-weight: 800;">
+                    GUARDAR CAMBIOS DE ACCESORIOS
+                </button>
+            </div>
+        </div>
+
         <!-- SECTION 3: BROADCAST NOTIFICATIONS -->
         <div class="section-box">
             <h2 class="section-title">Notificaciones</h2>
@@ -849,6 +909,8 @@
         let currentUserId = null;
         let allAvailableSpirits = [];
         let allAvailableStickers = [];
+        let allAvailableAccessories = [];
+        let activeAccessoryCategory = 'all';
         let packagesData = {};
         let activeAssistantPkg = 'starter';
         let activeStickerPkg = 'starter';
@@ -920,6 +982,70 @@
             // Save all stickers changes button
             $('#btn-save-all-stickers').click(async function() {
                 await saveAllStickersChanges();
+            });
+
+            // Accessories Category Tabs Switching
+            $('#acc-admin-tabs .assistant-tab-btn').click(function() {
+                $('#acc-admin-tabs .assistant-tab-btn').removeClass('active');
+                $(this).addClass('active');
+                activeAccessoryCategory = $(this).data('cat') || 'all';
+                renderAccessoriesGrid();
+            });
+
+            // Accessories Search Filter
+            $('#accessory-search-input').on('input', function() {
+                const term = $(this).val().toLowerCase();
+                $('.accessory-stage-card').each(function() {
+                    const name = ($(this).data('name') || '').toLowerCase();
+                    const cat = ($(this).data('category') || '').toLowerCase();
+                    if (name.includes(term) || cat.includes(term)) {
+                        $(this).show();
+                    } else {
+                        $(this).hide();
+                    }
+                });
+            });
+
+            // Accessories Drag & Drop Upload
+            const $accDropZone = $('#accessory-drag-drop-zone');
+            const $accFileInput = $('#input-accessory-file');
+
+            $accDropZone.on('click', function() { $accFileInput.click(); });
+
+            $accDropZone.on('dragover dragenter', function(e) {
+                e.preventDefault(); e.stopPropagation();
+                $(this).addClass('dragover');
+            });
+
+            $accDropZone.on('dragleave drop', function(e) {
+                e.preventDefault(); e.stopPropagation();
+                $(this).removeClass('dragover');
+            });
+
+            $accDropZone.on('drop', async function(e) {
+                e.preventDefault(); e.stopPropagation();
+                $(this).removeClass('dragover');
+                const files = e.originalEvent.dataTransfer.files;
+                if (files && files.length > 0) {
+                    await handleAccessoryFilesBatch(files);
+                }
+            });
+
+            $accFileInput.on('change', async function() {
+                if (this.files && this.files.length > 0) {
+                    await handleAccessoryFilesBatch(this.files);
+                    $(this).val('');
+                }
+            });
+
+            // Save all accessories changes button
+            $('#btn-save-all-accessories').click(async function() {
+                await saveAllAccessoriesChanges();
+            });
+
+            // Create new accessory modal button
+            $('#btn-open-create-acc-modal').click(function() {
+                openCreateAccessoryModal();
             });
 
             // Assistant Search Filter
@@ -1023,6 +1149,7 @@
 
             await loadSpiritsList();
             await loadStickersList();
+            await loadAccessoriesList();
             await loadPackagesTable();
             await loadUsersDropdown();
             await loadRegisteredDomains();
@@ -1297,6 +1424,544 @@
                     allAvailableStickers = allAvailableStickers.filter(s => String(s.id) !== String(stkId));
                     renderStickersGrid();
                     Swal.fire({ icon: 'success', title: 'Sticker eliminado', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false });
+                } catch (err) {
+                    Swal.fire('Error', 'No se pudo eliminar: ' + err.message, 'error');
+                }
+            }
+        }
+
+        // ==========================================
+        // ACCESSORIES MANAGEMENT FUNCTIONS
+        // ==========================================
+
+        async function loadAccessoriesList() {
+            try {
+                // Try loading from accessories table first
+                const { data, error } = await _supabase
+                    .from('accessories')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (!error && data) {
+                    allAvailableAccessories = data;
+                } else {
+                    // Fallback to viking_data accessories if table not yet populated
+                    const { data: vikData } = await _supabase
+                        .from('viking_data')
+                        .select('*')
+                        .or('type.eq.accessories,type.eq.accessory');
+
+                    if (vikData && vikData.length > 0) {
+                        allAvailableAccessories = vikData.map(v => {
+                            const r = (v.rarity || '').toLowerCase();
+                            const e = (v.expansion || '').toLowerCase();
+                            let cat = 'sleeves';
+                            if (r.includes('mat') || e.includes('mat')) cat = 'mats';
+                            else if (r === 'deckbox' || e === 'deckbox') cat = 'deckbox';
+                            else if (r === 'coin' || e === 'coin') cat = 'coin';
+
+                            return {
+                                id: v.id,
+                                name: v.name,
+                                image_url: v.image_url,
+                                category: cat,
+                                sale_status: 'disponible',
+                                price_mxn: 25,
+                                target_roles: ['starter', 'premium', 'tienda']
+                            };
+                        });
+                    } else {
+                        allAvailableAccessories = [];
+                    }
+                }
+            } catch (err) {
+                console.warn('Notice loading accessories:', err);
+                allAvailableAccessories = [];
+            }
+            renderAccessoriesGrid();
+        }
+
+        function renderAccessoriesGrid() {
+            const $container = $('#accessories-grid-container');
+            $container.empty();
+
+            // Filter by active category tab
+            const filtered = (allAvailableAccessories || []).filter(acc => {
+                if (activeAccessoryCategory === 'all') return true;
+                return (acc.category || '').toLowerCase() === activeAccessoryCategory;
+            });
+
+            $('#accessories-count-badge').text(filtered.length);
+
+            if (filtered.length === 0) {
+                let catLabel = 'accesorios';
+                if (activeAccessoryCategory === 'sleeves') catLabel = 'sleeves';
+                else if (activeAccessoryCategory === 'deckbox') catLabel = 'decks';
+                else if (activeAccessoryCategory === 'coin') catLabel = 'coins';
+                else if (activeAccessoryCategory === 'mats') catLabel = 'playmats';
+
+                $container.html(`<div style="text-align: center; color: #94a3b8; grid-column: 1/-1; padding: 30px;">No hay ${catLabel} registrados. Puedes arrastrar imágenes arriba o hacer clic en "Nuevo Accesorio" para comenzar.</div>`);
+                return;
+            }
+
+            filtered.forEach(acc => {
+                const roles = acc.target_roles || ['starter', 'premium', 'tienda'];
+                const isStarter = roles.includes('starter');
+                const isPremium = roles.includes('premium');
+                const isTienda = roles.includes('tienda');
+                const isPaid = (acc.sale_status === 'de_paga');
+                const isHidden = (acc.sale_status === 'oculto');
+                const price = Math.max(5, Number(acc.price_mxn) || 25);
+                const category = (acc.category || 'sleeves').toLowerCase();
+
+                let catBadgeText = 'Sleeve';
+                if (category === 'deckbox') catBadgeText = 'Deck';
+                else if (category === 'coin') catBadgeText = 'Coin';
+                else if (category === 'mats') catBadgeText = 'Playmat';
+
+                let imgAspectStyle = 'aspect-ratio: 2/3;';
+                if (category === 'coin') imgAspectStyle = 'aspect-ratio: 1; border-radius: 50%;';
+                else if (category === 'mats') imgAspectStyle = 'aspect-ratio: 16/9;';
+
+                const $card = $(`
+                    <div class="sticker-stage-card accessory-stage-card" data-name="${escapeHtml(acc.name || '')}" data-category="${category}" data-id="${acc.id}">
+                        <div style="position: absolute; top: 12px; left: 12px; z-index: 10; display: flex; gap: 6px;">
+                            <span style="background: rgba(0, 210, 255, 0.2); border: 1px solid #00d2ff; color: #00d2ff; font-size: 0.68rem; font-weight: 800; padding: 2px 8px; border-radius: 4px; text-transform: uppercase;">
+                                ${catBadgeText}
+                            </span>
+                            ${isHidden ? '<span style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #ef4444; font-size: 0.68rem; font-weight: 800; padding: 2px 8px; border-radius: 4px;">OCULTO</span>' : ''}
+                        </div>
+
+                        <div style="position: absolute; top: 10px; right: 10px; z-index: 10; display: flex; gap: 6px;">
+                            <button type="button" class="sticker-card-delete-btn btn-edit-acc-name" data-id="${acc.id}" title="Editar Información" style="position: static; background: rgba(0, 210, 255, 0.2); color: #00d2ff;">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button type="button" class="sticker-card-delete-btn btn-del-acc" data-id="${acc.id}" title="Eliminar Accesorio" style="position: static;">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+
+                        <div class="sticker-visual-stage" style="margin-top: 25px;">
+                            <img src="${acc.image_url}" alt="${escapeHtml(acc.name || 'Accesorio')}" class="sticker-visual-img" style="${imgAspectStyle} max-height: 160px; object-fit: contain;">
+                        </div>
+
+                        <div style="text-align: center; margin: 4px 0 8px 0;">
+                            <span class="acc-card-name-display" style="font-weight: 800; font-size: 0.88rem; color: #fff;">${escapeHtml(acc.name || 'Accesorio')}</span>
+                        </div>
+
+                        <!-- Package Availability Checkboxes -->
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <label style="font-size: 0.72rem; color: #94a3b8; font-weight: 800; text-transform: uppercase; text-align: center; letter-spacing: 0.5px;">
+                                Disponible Gratis en Paquetes
+                            </label>
+                            <div class="plan-pills-row">
+                                <label class="plan-check-pill ${isStarter ? 'checked' : ''}">
+                                    <input type="checkbox" class="chk-acc-pkg" value="starter" ${isStarter ? 'checked' : ''}>
+                                    <span>Starter</span>
+                                </label>
+                                <label class="plan-check-pill ${isPremium ? 'checked' : ''}">
+                                    <input type="checkbox" class="chk-acc-pkg" value="premium" ${isPremium ? 'checked' : ''}>
+                                    <span>Premium</span>
+                                </label>
+                                <label class="plan-check-pill ${isTienda ? 'checked' : ''}">
+                                    <input type="checkbox" class="chk-acc-pkg" value="tienda" ${isTienda ? 'checked' : ''}>
+                                    <span>Tienda</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Paid Toggle and Price -->
+                        <div class="toggle-switch-container">
+                            <span class="toggle-switch-label">
+                                <i class="fas fa-coins" style="color: ${isPaid ? '#ffd700' : '#94a3b8'};"></i>
+                                ¿Es de paga?
+                            </span>
+                            <label class="switch-toggle-btn">
+                                <input type="checkbox" class="chk-acc-paid-toggle" ${isPaid ? 'checked' : ''}>
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="acc-price-drawer" style="display: ${isPaid ? 'block' : 'none'};">
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255, 215, 0, 0.25);">
+                                <label style="font-size: 0.76rem; color: #ffd700; font-weight: 800; white-space: nowrap;">Precio ($ MXN):</label>
+                                <input type="number" step="1" min="5" class="clean-input acc-price-input" data-id="${acc.id}" value="${price}" style="width: 100px; padding: 4px 8px; font-size: 0.82rem; text-align: right; color: #ffd700; font-weight: 700;">
+                            </div>
+                        </div>
+                    </div>
+                `);
+
+                // Event handlers
+                $card.find('.chk-acc-pkg').change(function() {
+                    const $label = $(this).closest('.plan-check-pill');
+                    if ($(this).is(':checked')) {
+                        $label.addClass('checked');
+                    } else {
+                        $label.removeClass('checked');
+                    }
+                });
+
+                $card.find('.chk-acc-paid-toggle').change(function() {
+                    const checked = $(this).is(':checked');
+                    const $drawer = $card.find('.acc-price-drawer');
+                    const $icon = $card.find('.toggle-switch-label i');
+                    if (checked) {
+                        $drawer.slideDown(150);
+                        $icon.css('color', '#ffd700');
+                    } else {
+                        $drawer.slideUp(150);
+                        $icon.css('color', '#94a3b8');
+                    }
+                });
+
+                $card.find('.btn-edit-acc-name').click(async function(e) {
+                    e.stopPropagation();
+                    await editAccessoryInfo(acc);
+                });
+
+                $card.find('.btn-del-acc').click(async function(e) {
+                    e.stopPropagation();
+                    await deleteAccessory(acc.id, acc.name || 'Accesorio');
+                });
+
+                $container.append($card);
+            });
+
+            // Re-apply search filter if active
+            const searchTerm = $('#accessory-search-input').val().toLowerCase();
+            if (searchTerm) {
+                $('#accessory-search-input').trigger('input');
+            }
+        }
+
+        async function handleAccessoryFilesBatch(files) {
+            if (!files || files.length === 0) return;
+
+            const validFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+            if (validFiles.length === 0) {
+                Swal.fire('Formato no válido', 'Por favor arrastra o selecciona archivos de imagen (PNG, WebP o JPG).', 'warning');
+                return;
+            }
+
+            $('#accessory-drag-label').html('<i class="fas fa-spinner fa-spin"></i> Subiendo accesorios...');
+            Swal.fire({
+                title: 'Cargando accesorios...',
+                html: `Procesando <b>${validFiles.length}</b> diseño(s) a Cloudinary...`,
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            let uploadedCount = 0;
+            const targetCat = (activeAccessoryCategory === 'all') ? 'sleeves' : activeAccessoryCategory;
+
+            try {
+                for (let i = 0; i < validFiles.length; i++) {
+                    const file = validFiles[i];
+                    const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+                    const secureUrl = await CloudinaryUpload.uploadImage(file);
+
+                    const payload = {
+                        name: cleanName.charAt(0).toUpperCase() + cleanName.slice(1),
+                        image_url: secureUrl,
+                        category: targetCat,
+                        sale_status: 'disponible',
+                        price_mxn: 25.00,
+                        stripe_price_id: null,
+                        target_roles: ['starter', 'premium', 'tienda']
+                    };
+
+                    const { data, error } = await _supabase.from('accessories').insert([payload]).select().single();
+                    if (!error && data) {
+                        allAvailableAccessories.unshift(data);
+                    } else {
+                        // Fallback: local memory object if accessories table insert pending
+                        allAvailableAccessories.unshift({ ...payload, id: 'temp_' + Date.now() + '_' + i });
+                    }
+                    uploadedCount++;
+                }
+
+                $('#accessory-drag-label').text('Arrastra diseños de accesorios aquí o haz clic para cargar');
+                renderAccessoriesGrid();
+
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Accesorios Cargados!',
+                    text: `Se subieron ${uploadedCount} diseño(s) con éxito a la categoría ${targetCat.toUpperCase()}.`,
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 2500
+                });
+            } catch (e) {
+                console.error('Error uploading accessories batch:', e);
+                $('#accessory-drag-label').text('Arrastra diseños de accesorios aquí o haz clic para cargar');
+                Swal.fire('Error al cargar', 'Ocurrió un detalle al procesar los accesorios: ' + e.message, 'error');
+            }
+        }
+
+        async function openCreateAccessoryModal() {
+            const { value: formValues } = await Swal.fire({
+                title: 'Nuevo Accesorio',
+                background: '#0d1527',
+                color: '#fff',
+                html: `
+                    <div style="display: flex; flex-direction: column; gap: 12px; text-align: left; margin-top: 10px;">
+                        <div>
+                            <label style="font-size: 0.8rem; font-weight: 700; color: #00d2ff;">Nombre del accesorio:</label>
+                            <input id="swal-acc-name" class="swal2-input" placeholder="Ej: Dragon Shield Cosmic" style="margin: 6px 0; width: 100%; box-sizing: border-box; background: #162035; color: #fff; border: 1px solid #334155;">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.8rem; font-weight: 700; color: #00d2ff;">Categoría:</label>
+                            <select id="swal-acc-cat" class="swal2-input" style="margin: 6px 0; width: 100%; box-sizing: border-box; background: #162035; color: #fff; border: 1px solid #334155;">
+                                <option value="sleeves">Sleeves (Micas)</option>
+                                <option value="deckbox">Decks (Portadecks)</option>
+                                <option value="coin">Coins (Monedas)</option>
+                                <option value="mats">Playmat (Tapete)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size: 0.8rem; font-weight: 700; color: #00d2ff;">Subir Diseño (Imagen):</label>
+                            <input type="file" id="swal-acc-file" accept="image/*" class="swal2-file" style="margin: 6px 0; width: 100%; box-sizing: border-box;">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.8rem; font-weight: 700; color: #00d2ff;">O URL directa:</label>
+                            <input id="swal-acc-url" class="swal2-input" placeholder="https://..." style="margin: 6px 0; width: 100%; box-sizing: border-box; background: #162035; color: #fff; border: 1px solid #334155;">
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px;">
+                            <label style="font-size: 0.8rem; font-weight: 700; color: #ffd700;">¿Es de paga?</label>
+                            <input type="checkbox" id="swal-acc-ispaid" style="width: 18px; height: 18px; accent-color: #ffd700;">
+                        </div>
+                        <div id="swal-acc-price-box" style="display: none;">
+                            <label style="font-size: 0.8rem; font-weight: 700; color: #ffd700;">Precio en Pesos ($ MXN):</label>
+                            <input type="number" id="swal-acc-price" class="swal2-input" value="25" min="5" style="margin: 6px 0; width: 100%; box-sizing: border-box; background: #162035; color: #ffd700; border: 1px solid #ffd700;">
+                        </div>
+                    </div>
+                `,
+                didOpen: () => {
+                    const chk = document.getElementById('swal-acc-ispaid');
+                    const priceBox = document.getElementById('swal-acc-price-box');
+                    chk.addEventListener('change', () => {
+                        priceBox.style.display = chk.checked ? 'block' : 'none';
+                    });
+                },
+                showCancelButton: true,
+                confirmButtonText: 'Guardar Accesorio',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#00d2ff',
+                cancelButtonColor: '#334155',
+                preConfirm: async () => {
+                    const name = $('#swal-acc-name').val().trim();
+                    const category = $('#swal-acc-cat').val();
+                    const fileInput = document.getElementById('swal-acc-file');
+                    let imageUrl = $('#swal-acc-url').val().trim();
+                    const isPaid = $('#swal-acc-ispaid').is(':checked');
+                    const price = Math.max(5, Number($('#swal-acc-price').val()) || 25);
+
+                    if (!name) {
+                        Swal.showValidationMessage('El nombre es obligatorio');
+                        return false;
+                    }
+
+                    if (fileInput.files && fileInput.files.length > 0) {
+                        try {
+                            imageUrl = await CloudinaryUpload.uploadImage(fileInput.files[0]);
+                        } catch (err) {
+                            Swal.showValidationMessage('Error al subir a Cloudinary: ' + err.message);
+                            return false;
+                        }
+                    }
+
+                    if (!imageUrl) {
+                        Swal.showValidationMessage('Debes subir un archivo o indicar una URL de imagen');
+                        return false;
+                    }
+
+                    return { name, category, imageUrl, isPaid, price };
+                }
+            });
+
+            if (formValues) {
+                try {
+                    const payload = {
+                        name: formValues.name,
+                        image_url: formValues.imageUrl,
+                        category: formValues.category,
+                        sale_status: formValues.isPaid ? 'de_paga' : 'disponible',
+                        price_mxn: formValues.price,
+                        stripe_price_id: null,
+                        target_roles: ['starter', 'premium', 'tienda']
+                    };
+
+                    const { data, error } = await _supabase.from('accessories').insert([payload]).select().single();
+                    if (!error && data) {
+                        allAvailableAccessories.unshift(data);
+                    } else {
+                        allAvailableAccessories.unshift({ ...payload, id: 'temp_' + Date.now() });
+                    }
+
+                    renderAccessoriesGrid();
+                    Swal.fire({ icon: 'success', title: 'Accesorio Creado', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
+                } catch (e) {
+                    Swal.fire('Error', 'No se pudo guardar: ' + e.message, 'error');
+                }
+            }
+        }
+
+        async function editAccessoryInfo(acc) {
+            const isPaid = acc.sale_status === 'de_paga';
+            const isHidden = acc.sale_status === 'oculto';
+
+            const { value: formValues } = await Swal.fire({
+                title: 'Editar Accesorio',
+                background: '#0d1527',
+                color: '#fff',
+                html: `
+                    <div style="display: flex; flex-direction: column; gap: 12px; text-align: left; margin-top: 10px;">
+                        <div>
+                            <label style="font-size: 0.8rem; font-weight: 700; color: #00d2ff;">Nombre:</label>
+                            <input id="swal-edit-acc-name" class="swal2-input" value="${escapeHtml(acc.name || '')}" style="margin: 6px 0; width: 100%; box-sizing: border-box; background: #162035; color: #fff; border: 1px solid #334155;">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.8rem; font-weight: 700; color: #00d2ff;">Categoría:</label>
+                            <select id="swal-edit-acc-cat" class="swal2-input" style="margin: 6px 0; width: 100%; box-sizing: border-box; background: #162035; color: #fff; border: 1px solid #334155;">
+                                <option value="sleeves" ${acc.category === 'sleeves' ? 'selected' : ''}>Sleeves (Micas)</option>
+                                <option value="deckbox" ${acc.category === 'deckbox' ? 'selected' : ''}>Decks (Portadecks)</option>
+                                <option value="coin" ${acc.category === 'coin' ? 'selected' : ''}>Coins (Monedas)</option>
+                                <option value="mats" ${acc.category === 'mats' ? 'selected' : ''}>Playmat (Tapete)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size: 0.8rem; font-weight: 700; color: #00d2ff;">Estado de Visibilidad:</label>
+                            <select id="swal-edit-acc-vis" class="swal2-input" style="margin: 6px 0; width: 100%; box-sizing: border-box; background: #162035; color: #fff; border: 1px solid #334155;">
+                                <option value="visible" ${!isHidden ? 'selected' : ''}>Activo (Visible)</option>
+                                <option value="oculto" ${isHidden ? 'selected' : ''}>Desactivado (Oculto)</option>
+                            </select>
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Guardar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#00d2ff',
+                cancelButtonColor: '#334155',
+                preConfirm: () => {
+                    const name = $('#swal-edit-acc-name').val().trim();
+                    const category = $('#swal-edit-acc-cat').val();
+                    const vis = $('#swal-edit-acc-vis').val();
+                    if (!name) {
+                        Swal.showValidationMessage('El nombre es obligatorio');
+                        return false;
+                    }
+                    return { name, category, vis };
+                }
+            });
+
+            if (formValues) {
+                try {
+                    let newStatus = acc.sale_status;
+                    if (formValues.vis === 'oculto') {
+                        newStatus = 'oculto';
+                    } else if (newStatus === 'oculto') {
+                        newStatus = isPaid ? 'de_paga' : 'disponible';
+                    }
+
+                    acc.name = formValues.name;
+                    acc.category = formValues.category;
+                    acc.sale_status = newStatus;
+
+                    await _supabase
+                        .from('accessories')
+                        .update({
+                            name: acc.name,
+                            category: acc.category,
+                            sale_status: acc.sale_status
+                        })
+                        .eq('id', acc.id);
+
+                    renderAccessoriesGrid();
+                    Swal.fire({ icon: 'success', title: 'Accesorio actualizado', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false });
+                } catch (e) {
+                    Swal.fire('Error', 'No se pudo actualizar: ' + e.message, 'error');
+                }
+            }
+        }
+
+        async function saveAllAccessoriesChanges() {
+            Swal.fire({ title: 'Guardando configuración de accesorios...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+            try {
+                const cards = $('.accessory-stage-card');
+                for (let i = 0; i < cards.length; i++) {
+                    const $c = $(cards[i]);
+                    const accId = $c.data('id');
+
+                    // Gather packages checked
+                    const roles = [];
+                    $c.find('.chk-acc-pkg:checked').each(function() {
+                        roles.push($(this).val());
+                    });
+
+                    // Gather paid status and price
+                    const isPaid = $c.find('.chk-acc-paid-toggle').is(':checked');
+                    const match = allAvailableAccessories.find(a => String(a.id) === String(accId));
+                    let saleStatus = isPaid ? 'de_paga' : 'disponible';
+                    if (match && match.sale_status === 'oculto') {
+                        saleStatus = 'oculto'; // Preserve hidden status if configured
+                    }
+
+                    const price = Math.max(5, parseFloat($c.find('.acc-price-input').val()) || 25);
+
+                    if (match) {
+                        match.target_roles = roles;
+                        match.sale_status = saleStatus;
+                        match.price_mxn = price;
+                        match.stripe_price_id = null;
+                    }
+
+                    await _supabase
+                        .from('accessories')
+                        .update({
+                            target_roles: roles,
+                            sale_status: saleStatus,
+                            price_mxn: price,
+                            stripe_price_id: null
+                        })
+                        .eq('id', accId);
+                }
+
+                renderAccessoriesGrid();
+
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Cambios Guardados!',
+                    text: 'Se actualizó la configuración de accesorios en tiempo real.',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Error', 'No se pudieron guardar los cambios: ' + err.message, 'error');
+            }
+        }
+
+        async function deleteAccessory(accId, name) {
+            const { isConfirmed } = await Swal.fire({
+                title: '¿Eliminar accesorio?',
+                text: `Se eliminará "${name}" del catálogo. Las compras previas de los usuarios se conservarán en su historial.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ff4757',
+                confirmButtonText: 'Sí, eliminar'
+            });
+
+            if (isConfirmed) {
+                try {
+                    await _supabase.from('accessories').delete().eq('id', accId);
+                    allAvailableAccessories = allAvailableAccessories.filter(a => String(a.id) !== String(accId));
+                    renderAccessoriesGrid();
+                    Swal.fire({ icon: 'success', title: 'Accesorio eliminado', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false });
                 } catch (err) {
                     Swal.fire('Error', 'No se pudo eliminar: ' + err.message, 'error');
                 }

@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo de Accesorios Deluxe - Viking TCG</title>
+    <link rel="icon" type="image/png" href="https://vikingtcg.xyz/favi.png">
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/tcg-purchase-anim.js"></script>
+
+    <style>
+        :root {
+            --tcg-accent: #00d2ff;
+            --tcg-gold: #ffd700;
+            --tcg-border: rgba(255, 255, 255, 0.12);
+        }
+
+        body {
+            background: radial-gradient(circle at 50% 15%, #131e33 0%, #060911 100%) !important;
+            min-height: 100vh;
+            color: #fff;
+            font-family: 'Montserrat', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            scrollbar-width: none !important;
+        }
+        body::-webkit-scrollbar { display: none !important; }
+
+        .catalog-container {
+            max-width: 1400px;
+            width: 94%;
+            margin: 0 auto;
+            padding: 90px 15px 120px 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        /* Hero Header */
+        .catalog-hero {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 32px 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .catalog-hero::before {
+            content: '';
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 250px;
+            height: 250px;
+            background: radial-gradient(circle, rgba(0, 210, 255, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .hero-title-group h1 {
+            font-size: 2.1rem;
+            font-weight: 900;
+            margin: 0 0 8px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: linear-gradient(135deg, #ffffff 30%, #00d2ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-title-group p {
+            margin: 0;
+            color: #94a3b8;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .hero-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn-catalog-nav {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--tcg-border);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.25s ease;
+        }
+
+        .btn-catalog-nav:hover {
+            border-color: var(--tcg-accent);
+            color: var(--tcg-accent);
+            transform: translateY(-2px);
+            background: rgba(0, 210, 255, 0.1);
+        }
+
+        /* Filter Tabs */
+        .category-filter-strip {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            padding: 14px 20px;
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .tabs-pill-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .tab-filter-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #94a3b8;
+            padding: 8px 18px;
+            border-radius: 50px;
+            font-size: 0.82rem;
+            font-weight: 800;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.25s ease;
+        }
+
+        .tab-filter-btn:hover {
+            color: #fff;
+            border-color: rgba(0, 210, 255, 0.4);
+        }
+
+        .tab-filter-btn.active {
+            background: linear-gradient(135deg, rgba(0, 210, 255, 0.25) 0%, rgba(0, 136, 255, 0.25) 100%);
+            border-color: #00d2ff;
+            color: #00d2ff;
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.3);
+        }
+
+        .search-box-wrapper {
+            position: relative;
+            min-width: 260px;
+        }
+
+        .search-box-wrapper input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 50px;
+            padding: 8px 16px 8px 38px;
+            color: #fff;
+            font-size: 0.85rem;
+            outline: none;
+            transition: all 0.2s;
+            box-sizing: border-box;
+        }
+
+        .search-box-wrapper input:focus {
+            border-color: #00d2ff;
+            box-shadow: 0 0 12px rgba(0, 210, 255, 0.4);
+        }
+
+        .search-box-wrapper i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+            font-size: 0.85rem;
+        }
+
+        /* Accessories Grid */
+        .accessories-deluxe-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 22px;
+            width: 100%;
+        }
+
+        .deluxe-acc-card {
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(12px);
+            border: 1.5px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            position: relative;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+
+        .deluxe-acc-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(0, 210, 255, 0.4);
+            box-shadow: 0 15px 35px rgba(0, 210, 255, 0.15), 0 5px 15px rgba(0,0,0,0.5);
+        }
+
+        /* Locked Card Styling (Grayscale) */
+        .deluxe-acc-card.is-locked {
+            border-color: rgba(255, 255, 255, 0.06);
+        }
+
+        .deluxe-acc-card.is-locked .acc-card-image-box img {
+            filter: grayscale(1) opacity(0.65) contrast(1.1);
+        }
+
+        .deluxe-acc-card.is-locked:hover .acc-card-image-box img {
+            filter: grayscale(0.5) opacity(0.85) contrast(1.1);
+        }
+
+        .acc-card-top-badges {
+            position: absolute;
+            top: 14px;
+            left: 14px;
+            right: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .acc-category-pill {
+            background: rgba(3, 7, 18, 0.75);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(0, 210, 255, 0.4);
+            color: #00d2ff;
+            font-size: 0.68rem;
+            font-weight: 800;
+            padding: 3px 10px;
+            border-radius: 50px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .acc-status-badge {
+            font-size: 0.68rem;
+            font-weight: 800;
+            padding: 3px 10px;
+            border-radius: 50px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            backdrop-filter: blur(8px);
+        }
+
+        .badge-owned {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid #10b981;
+            color: #10b981;
+        }
+
+        .badge-included {
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid #3b82f6;
+            color: #60a5fa;
+        }
+
+        .badge-paid {
+            background: rgba(245, 158, 11, 0.2);
+            border: 1px solid #f59e0b;
+            color: #fbbf24;
+        }
+
+        /* Card Image Box */
+        .acc-card-image-box {
+            position: relative;
+            width: 100%;
+            height: 250px;
+            background: radial-gradient(circle at center, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.95) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 25px 20px;
+            box-sizing: border-box;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .acc-card-image-box img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            border-radius: 10px;
+            transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.35s ease;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        .acc-card-image-box.type-coin img {
+            border-radius: 50%;
+        }
+
+        .deluxe-acc-card:hover .acc-card-image-box img {
+            transform: scale(1.06) rotate(1deg);
+        }
+
+        .acc-card-zoom-hint {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            opacity: 0;
+            transition: all 0.25s ease;
+        }
+
+        .deluxe-acc-card:hover .acc-card-zoom-hint {
+            opacity: 1;
+            transform: scale(1.05);
+        }
+
+        /* Card Bottom Info */
+        .acc-card-body {
+            padding: 18px 20px 20px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            flex-grow: 1;
+            justify-content: space-between;
+            background: rgba(10, 16, 30, 0.5);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .acc-card-title {
+            margin: 0;
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: #f8fafc;
+            line-height: 1.3;
+        }
+
+        .acc-card-meta-line {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .acc-price-tag {
+            font-size: 1.15rem;
+            font-weight: 900;
+            color: #ffd700;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+
+        .acc-free-tag {
+            font-size: 0.88rem;
+            font-weight: 800;
+            color: #38bdf8;
+        }
+
+        .btn-card-action {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.25s ease;
+        }
+
+        .btn-action-buy {
+            background: linear-gradient(135deg, #00d2ff 0%, #0077ff 100%);
+            color: #030a16;
+            box-shadow: 0 4px 15px rgba(0, 210, 255, 0.35);
+        }
+
+        .btn-action-buy:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 210, 255, 0.55);
+            filter: brightness(1.1);
+        }
+
+        .btn-action-owned {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid #10b981;
+            color: #10b981;
+            cursor: default;
+        }
+
+        .btn-action-use {
+            background: rgba(0, 210, 255, 0.12);
+            border: 1px solid #00d2ff;
+            color: #00d2ff;
+        }
+
+        .btn-action-use:hover {
+            background: #00d2ff;
+            color: #030a16;
+        }
+
+        /* Empty state */
+        .catalog-empty-notice {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 60px 20px;
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            color: #94a3b8;
+        }
+
+        .catalog-empty-notice i {
+            font-size: 2.5rem;
+            color: #64748b;
+            margin-bottom: 12px;
+        }
+
+        /* Responsive tweaks */
+        @media (max-width: 640px) {
+            .catalog-container {
+                padding: 80px 12px 100px 12px;
+            }
+            .hero-title-group h1 {
+                font-size: 1.6rem;
+            }
+            .accessories-deluxe-grid {
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+                gap: 14px;
+            }
+            .acc-card-image-box {
+                height: 180px;
+                padding: 15px 10px;
+            }
+            .acc-card-title {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body class="theme-dark">
+
+    <!-- Floating Top-Left Pill Panel (Platform standard) -->
+    <div class="top-left-panel" id="top-panel">
+        <div class="pill-panel">
+            <div class="pill-group" id="header-theme-group">
+                <button class="pill-icon theme-btn-small" data-theme="theme-light" title="Modo Claro"><i class="fas fa-sun"></i></button>
+                <button class="pill-icon theme-btn-small" data-theme="theme-purple" title="Modo Morado"><i class="fas fa-magic"></i></button>
+                <button class="pill-icon theme-btn-small" data-theme="theme-dark" title="Modo Oscuro"><i class="fas fa-moon"></i></button>
+            </div>
+
+            <a href="carrito.html" id="cart-btn" class="pill-icon" title="Carrito">
+                <i class="fas fa-shopping-cart"></i>
+                <span id="cart-count">0</span>
+            </a>
+
+            <div class="user-menu-container">
+                <button class="pill-icon" id="avatar-btn" title="Usuario">
+                    <i class="fas fa-user"></i>
+                </button>
+                <div class="user-dropdown-menu" id="user-dropdown">
+                    <div class="user-dropdown-info">
+                        <img id="dropdown-user-logo" src="" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; display: none;">
+                        <div class="user-dropdown-name" id="dropdown-user-name">Usuario</div>
+                        <div class="user-dropdown-role" id="dropdown-user-role" style="display: none;">Admin</div>
+                    </div>
+                    <a href="admin.html" class="menu-item" id="menu-btn-home"><i class="fas fa-home"></i> Mi Panel</a>
+                    <a href="binders.html" class="menu-item" id="menu-btn-albums"><i class="fas fa-book"></i> Mis Binders</a>
+                    <a href="admin.html#decks" class="menu-item" id="menu-btn-decks"><i class="fas fa-layer-group"></i> Mis Decks</a>
+                    <a href="perfil.html" class="menu-item"><i class="fas fa-user-cog"></i> Mi Perfil</a>
+                    <a href="packages.html" class="menu-item" id="menu-btn-packages"><i class="fas fa-box-open"></i> Planes y Dominios</a>
+                    <div class="menu-divider"></div>
+                    <a href="#" class="menu-item" id="menu-btn-logout" style="color: #ff4757;"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Catalog View -->
+    <div class="catalog-container">
+
+        <!-- Hero Header -->
+        <div class="catalog-hero">
+            <div class="hero-title-group">
+                <h1>Catálogo de Accesorios</h1>
+                <p>Personaliza tus cartas, tapetes y decks con diseños exclusivos de la colección Viking TCG.</p>
+            </div>
+            <div class="hero-actions">
+                <a href="admin.html" class="btn-catalog-nav">
+                    <i class="fas fa-arrow-left"></i> Volver a Decks
+                </a>
+            </div>
+        </div>
+
+        <!-- Filter Strip -->
+        <div class="category-filter-strip">
+            <div class="tabs-pill-row" id="catalog-filter-tabs">
+                <button type="button" class="tab-filter-btn active" data-category="all">Todos</button>
+                <button type="button" class="tab-filter-btn" data-category="sleeves">Sleeves</button>
+                <button type="button" class="tab-filter-btn" data-category="deckbox">Decks</button>
+                <button type="button" class="tab-filter-btn" data-category="coin">Coins</button>
+                <button type="button" class="tab-filter-btn" data-category="mats">Playmat</button>
+            </div>
+
+            <div class="search-box-wrapper">
+                <i class="fas fa-search"></i>
+                <input type="text" id="catalog-search-input" placeholder="Buscar por diseño o nombre...">
+            </div>
+        </div>
+
+        <!-- Accessories Deluxe Grid -->
+        <div class="accessories-deluxe-grid" id="accessories-grid">
+            <div class="catalog-empty-notice">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Cargando catálogo de accesorios...</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 3D Mascot Chatbot Integration -->
+    <script src="js/michatbot.js"></script>
+
+    <script>
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>"']/g, function(m) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+        });
+    }
+    window.escapeHtml = escapeHtml;
+
+        let currentUser = null;
+        let allAccessories = [];
+        let activeCategory = 'all';
+
+        $(document).ready(async function() {
+            initThemes();
+            await checkUserSession();
+            await loadCatalogAccessories();
+            bindCatalogEvents();
+
+            // Check if returning from a successful Stripe purchase
+            if (window.TCGPurchase) {
+                await window.TCGPurchase.checkPostPaymentCallback({
+                    accessory: (acc) => {
+                        renderCatalogGrid();
+                    }
+                });
+            }
+        });
+
+        function initThemes() {
+            const savedTheme = localStorage.getItem('tcg_theme') || 'theme-dark';
+            $('body').removeClass('theme-light theme-medium theme-dark theme-purple').addClass(savedTheme);
+            $('.theme-btn-small').removeClass('active');
+            $(`.theme-btn-small[data-theme="${savedTheme}"]`).addClass('active');
+
+            $('.theme-btn-small').on('click', function() {
+                const theme = $(this).data('theme');
+                $('body').removeClass('theme-light theme-medium theme-dark theme-purple').addClass(theme);
+                localStorage.setItem('tcg_theme', theme);
+                $('.theme-btn-small').removeClass('active');
+                $(this).addClass('active');
+            });
+
+            // Toggle avatar dropdown
+            $('#avatar-btn').on('click', function(e) {
+                e.stopPropagation();
+                $('#user-dropdown').toggleClass('show');
+            });
+            $(document).on('click', function(e) {
+                if (!$(e.target).closest('.user-menu-container').length) {
+                    $('#user-dropdown').removeClass('show');
+                }
+            });
+
+            $('#menu-btn-logout').on('click', async function(e) {
+                e.preventDefault();
+                if (window._supabase?.auth) await _supabase.auth.signOut();
+                localStorage.removeItem('tcg_session');
+                window.location.href = 'index.html';
+            });
+        }
+
+        async function checkUserSession() {
+            try {
+                if (window._supabase?.auth) {
+                    const { data: { session } } = await _supabase.auth.getSession();
+                    if (session?.user) {
+                        const { data: user } = await _supabase
+                            .from('usuarios')
+                            .select('*')
+                            .eq('id', session.user.id)
+                            .maybeSingle();
+                        if (user) {
+                            currentUser = user;
+                            localStorage.setItem('tcg_session', JSON.stringify(user));
+                            updateUserUI();
+                            return;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn('Session check notice:', e);
+            }
+
+            const cached = localStorage.getItem('tcg_session');
+            if (cached) {
+                try {
+                    currentUser = JSON.parse(cached);
+                    updateUserUI();
+                } catch (_) {}
+            }
+        }
+
+        function updateUserUI() {
+            if (!currentUser) return;
+            $('#dropdown-user-name').text(currentUser.store_name || currentUser.username || 'Usuario');
+            if (currentUser.role === 'admin') {
+                $('#dropdown-user-role').text('Administrador').show();
+            } else {
+                $('#dropdown-user-role').text((currentUser.role || 'Starter').toUpperCase()).show();
+            }
+            if (currentUser.store_logo) {
+                $('#dropdown-user-logo').attr('src', currentUser.store_logo).show();
+            }
+        }
+
+        async function loadCatalogAccessories() {
+            try {
+                // 1. Fetch from accessories table
+                const { data, error } = await _supabase
+                    .from('accessories')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (!error && data && data.length > 0) {
+                    allAccessories = data;
+                } else {
+                    // Fallback to viking_data
+                    const { data: vikData } = await _supabase
+                        .from('viking_data')
+                        .select('*')
+                        .or('type.eq.accessories,type.eq.accessory');
+
+                    if (vikData && vikData.length > 0) {
+                        allAccessories = vikData.map(v => {
+                            const r = (v.rarity || '').toLowerCase();
+                            const e = (v.expansion || '').toLowerCase();
+                            let cat = 'sleeves';
+                            if (r.includes('mat') || e.includes('mat')) cat = 'mats';
+                            else if (r === 'deckbox' || e === 'deckbox') cat = 'deckbox';
+                            else if (r === 'coin' || e === 'coin') cat = 'coin';
+
+                            return {
+                                id: v.id,
+                                name: v.name,
+                                image_url: v.image_url,
+                                category: cat,
+                                sale_status: 'disponible',
+                                price_mxn: 25,
+                                target_roles: ['starter', 'premium', 'tienda']
+                            };
+                        });
+                    } else {
+                        allAccessories = [];
+                    }
+                }
+            } catch (err) {
+                console.warn('Error loading accessories catalog:', err);
+                allAccessories = [];
+            }
+
+            renderCatalogGrid();
+        }
+
+        function renderCatalogGrid() {
+            const $grid = $('#accessories-grid');
+            $grid.empty();
+
+            const userRole = (currentUser?.role || 'starter').toLowerCase();
+            const isAdmin = userRole === 'admin';
+
+            // Filter items based on active category & visibility
+            const filtered = allAccessories.filter(item => {
+                // Hide 'oculto' items unless admin
+                if (item.sale_status === 'oculto' && !isAdmin) return false;
+
+                if (activeCategory === 'all') return true;
+                return (item.category || '').toLowerCase() === activeCategory;
+            });
+
+            if (filtered.length === 0) {
+                $grid.html(`
+                    <div class="catalog-empty-notice">
+                        <i class="fas fa-sparkles"></i>
+                        <p>No se encontraron diseños para esta categoría.</p>
+                    </div>
+                `);
+                return;
+            }
+
+            filtered.forEach(item => {
+                const isPaid = (item.sale_status === 'de_paga');
+                const isOwned = window.TCGPurchase?.hasUserPurchased('accessory', item.id, currentUser);
+                const roles = item.target_roles || ['starter', 'premium', 'tienda'];
+                const isIncludedInPlan = roles.includes(userRole) || isAdmin;
+
+                // An item is accessible if owned OR (included in plan AND not paid)
+                const canUse = isOwned || (isIncludedInPlan && !isPaid);
+                const isLocked = !canUse;
+                const price = Math.max(5, Number(item.price_mxn) || 25);
+                const category = (item.category || 'sleeves').toLowerCase();
+
+                let catLabel = 'Sleeve';
+                if (category === 'deckbox') catLabel = 'Deck';
+                else if (category === 'coin') catLabel = 'Coin';
+                else if (category === 'mats') catLabel = 'Playmat';
+
+                // Status badge logic
+                let statusBadgeHtml = '';
+                if (isOwned) {
+                    statusBadgeHtml = `<span class="acc-status-badge badge-owned"><i class="fas fa-check-circle"></i> Adquirido</span>`;
+                } else if (!isPaid && isIncludedInPlan) {
+                    statusBadgeHtml = `<span class="acc-status-badge badge-included"><i class="fas fa-gift"></i> En tu paquete</span>`;
+                } else {
+                    statusBadgeHtml = `<span class="acc-status-badge badge-paid"><i class="fas fa-lock"></i> De Paga</span>`;
+                }
+
+                // Action button logic
+                let actionBtnHtml = '';
+                if (isLocked) {
+                    actionBtnHtml = `
+                        <button type="button" class="btn-card-action btn-action-buy btn-buy-accessory" data-id="${item.id}">
+                            <i class="fas fa-shopping-cart"></i> Comprar ($${price} MXN)
+                        </button>
+                    `;
+                } else if (isOwned) {
+                    actionBtnHtml = `
+                        <div class="btn-card-action btn-action-owned">
+                            <i class="fas fa-check"></i> En tu Colección
+                        </div>
+                    `;
+                } else {
+                    actionBtnHtml = `
+                        <div class="btn-card-action btn-action-use">
+                            <i class="fas fa-unlock"></i> Disponible Gratis
+                        </div>
+                    `;
+                }
+
+                const $card = $(`
+                    <div class="deluxe-acc-card ${isLocked ? 'is-locked' : ''}" data-id="${item.id}" data-name="${escapeHtml(item.name || '')}" data-category="${category}">
+                        <div class="acc-card-top-badges">
+                            <span class="acc-category-pill">${catLabel}</span>
+                            ${statusBadgeHtml}
+                        </div>
+
+                        <div class="acc-card-image-box ${category === 'coin' ? 'type-coin' : ''}" data-url="${item.image_url}" title="Ver en grande">
+                            <img src="${item.image_url}" alt="${escapeHtml(item.name || 'Accesorio')}" onerror="this.src='https://via.placeholder.com/200?text=Accesorio'">
+                            <div class="acc-card-zoom-hint"><i class="fas fa-search-plus"></i></div>
+                        </div>
+
+                        <div class="acc-card-body">
+                            <div>
+                                <h3 class="acc-card-title">${escapeHtml(item.name || 'Accesorio')}</h3>
+                            </div>
+
+                            <div class="acc-card-meta-line">
+                                ${isPaid ? `<span class="acc-price-tag">$${price} MXN</span>` : `<span class="acc-free-tag">Incluido</span>`}
+                            </div>
+
+                            ${actionBtnHtml}
+                        </div>
+                    </div>
+                `);
+
+                // Zoom click
+                $card.find('.acc-card-image-box').on('click', function(e) {
+                    e.stopPropagation();
+                    Swal.fire({
+                        title: item.name,
+                        imageUrl: item.image_url,
+                        imageAlt: item.name,
+                        showConfirmButton: false,
+                        showCloseButton: true,
+                        background: '#0a101f',
+                        color: '#fff'
+                    });
+                });
+
+                // Buy click
+                $card.find('.btn-buy-accessory').on('click', async function(e) {
+                    e.stopPropagation();
+                    if (window.TCGPurchase) {
+                        await window.TCGPurchase.purchaseItemViaStripe('accessory', item);
+                    }
+                });
+
+                $grid.append($card);
+            });
+
+            // Re-apply search filter if typing
+            const searchVal = $('#catalog-search-input').val().toLowerCase();
+            if (searchVal) {
+                $('#catalog-search-input').trigger('input');
+            }
+        }
+
+        function bindCatalogEvents() {
+            // Category tab clicks
+            $('#catalog-filter-tabs .tab-filter-btn').on('click', function() {
+                $('#catalog-filter-tabs .tab-filter-btn').removeClass('active');
+                $(this).addClass('active');
+                activeCategory = $(this).data('category') || 'all';
+                renderCatalogGrid();
+            });
+
+            // Search input
+            $('#catalog-search-input').on('input', function() {
+                const term = $(this).val().toLowerCase().trim();
+                $('.deluxe-acc-card').each(function() {
+                    const name = ($(this).data('name') || '').toLowerCase();
+                    const cat = ($(this).data('category') || '').toLowerCase();
+                    if (!term || name.includes(term) || cat.includes(term)) {
+                        $(this).show();
+                    } else {
+                        $(this).hide();
+                    }
+                });
+            });
+        }
+    </script>
+</body>
+</html>

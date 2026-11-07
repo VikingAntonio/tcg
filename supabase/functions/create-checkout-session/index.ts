@@ -54,7 +54,7 @@ serve(async (req) => {
       });
     }
 
-    // Determine purchase type: 'subscription' (default), 'spirit' (3D assistant), or 'sticker' (sticker purchase)
+    // Determine purchase type: 'subscription' (default), 'spirit' (3D assistant), 'sticker' (sticker purchase), or 'accessory' (deck accessory)
     const purchaseType = reqBody.purchase_type || "subscription";
 
     // Fetch user from DB
@@ -197,6 +197,52 @@ serve(async (req) => {
 
       params.append("success_url", `${redirectOrigin}?payment=success&type=sticker&sticker_id=${sticker.id}&session_id={CHECKOUT_SESSION_ID}`);
       params.append("cancel_url", `${redirectOrigin}?payment=canceled&type=sticker`);
+
+    } else if (purchaseType === "accessory") {
+      // ONE-TIME MICRO-PAYMENT FOR ACCESSORY (SLEEVES, DECKS, COINS, PLAYMAT)
+      const accessoryId = reqBody.accessory_id;
+      if (!accessoryId) {
+        return new Response(JSON.stringify({ error: "Falta proporcionar el ID del accesorio (accessory_id)." }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      // Security: Query accessories table directly via service role to get verified server-side price.
+      // Frontend client input is strictly ignored to prevent price manipulation.
+      const { data: accessory, error: accErr } = await supabase
+        .from("accessories")
+        .select("id, name, price_mxn, stripe_price_id, sale_status, category")
+        .eq("id", accessoryId)
+        .maybeSingle();
+
+      if (accErr || !accessory) {
+        return new Response(JSON.stringify({ error: "El accesorio seleccionado no fue encontrado." }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      params.append("mode", "payment");
+      params.append("metadata[purchase_type]", "accessory");
+      params.append("metadata[accessory_id]", accessory.id.toString());
+      params.append("metadata[accessory_name]", accessory.name || "Accesorio");
+      params.append("metadata[accessory_category]", accessory.category || "sleeves");
+
+      if (accessory.stripe_price_id && accessory.stripe_price_id.trim().startsWith("price_")) {
+        params.append("line_items[0][price]", accessory.stripe_price_id.trim());
+        params.append("line_items[0][quantity]", "1");
+      } else {
+        const priceAmount = Math.max(1000, Math.round((Number(accessory.price_mxn) || 25) * 100)); // in cents, min 10 MXN
+        params.append("line_items[0][price_data][currency]", "mxn");
+        params.append("line_items[0][price_data][unit_amount]", priceAmount.toString());
+        params.append("line_items[0][price_data][product_data][name]", `Accesorio: ${accessory.name}`);
+        params.append("line_items[0][price_data][product_data][description]", `Desbloqueo permanente de Accesorio (${accessory.category}) en Viking TCG.`);
+        params.append("line_items[0][quantity]", "1");
+      }
+
+      params.append("success_url", `${redirectOrigin}?payment=success&type=accessory&accessory_id=${accessory.id}&session_id={CHECKOUT_SESSION_ID}`);
+      params.append("cancel_url", `${redirectOrigin}?payment=canceled&type=accessory`);
 
     } else {
       // SUBSCRIPTION PURCHASE (PREMIUM PLAN)
