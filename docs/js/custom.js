@@ -206,17 +206,92 @@ async function loadCustomizations() {
     applyGlobalStylesToInputs();
 }
 
+// Dynamically compute user-allowed slots matching exact admin.html / admin.js permissions
+function getUserAllowedSlots(target) {
+    const state = window.CustomStoreState;
+    const user = state.currentUser || {};
+    const baseSlots = target === 'admin' ? ADMIN_SLOTS : PUBLIC_SLOTS;
+
+    if (target === 'public') {
+        return [...baseSlots];
+    }
+
+    // Target is 'admin': Filter by role and permissions matching admin.html / admin.js exactly!
+    const isAdmin = (user.role === 'admin' || user.role === 'superadmin');
+    const isStore = (user.is_store || user.role === 'admin' || user.role === 'admin_store' || user.role === 'tienda');
+    const hasTracking = Boolean(user.has_tracking);
+    const hasClients = Boolean(user.has_clients);
+    const hasAuctions = Boolean(user.has_auctions);
+    const hasEvents = (user.has_events !== false);
+
+    return baseSlots.filter(s => {
+        // Admin-only slots: packages, usuarios, bdd
+        if (s.id === 'btn-users-panel' || s.id === 'btn-bdd-panel' || s.id === 'btn-packages') {
+            return isAdmin;
+        }
+        // Permission slots
+        if (s.id === 'btn-tracking') return hasTracking;
+        if (s.id === 'btn-clientes') return hasClients;
+        if (s.id === 'btn-subastas') return hasAuctions;
+        if (s.id === 'btn-claims') return isStore;
+        if (s.id === 'btn-eventos') return hasEvents;
+
+        // Standard slots accessible to any authenticated user
+        return true;
+    });
+}
+
+// Canonical relative ordering merge:
+// Merges savedOrder with allowedSlots so newly added slots (e.g. btn-accesorios)
+// automatically preserve their intended relative position instead of being pushed to the end.
+function mergeSlotOrder(savedOrder, allowedSlots) {
+    const allowedIds = new Set(allowedSlots.map(s => s.id));
+    const result = (Array.isArray(savedOrder) ? savedOrder : [])
+        .filter(id => allowedIds.has(id));
+
+    allowedSlots.forEach((slot, index) => {
+        if (!result.includes(slot.id)) {
+            let insertIndex = -1;
+            // Look for closest preceding slot already in result
+            for (let i = index - 1; i >= 0; i--) {
+                const prevId = allowedSlots[i].id;
+                const pos = result.indexOf(prevId);
+                if (pos !== -1) {
+                    insertIndex = pos + 1;
+                    break;
+                }
+            }
+            // If none precedes it, look for closest succeeding slot
+            if (insertIndex === -1) {
+                for (let i = index + 1; i < allowedSlots.length; i++) {
+                    const nextId = allowedSlots[i].id;
+                    const pos = result.indexOf(nextId);
+                    if (pos !== -1) {
+                        insertIndex = pos;
+                        break;
+                    }
+                }
+            }
+            if (insertIndex !== -1) {
+                result.splice(insertIndex, 0, slot.id);
+            } else {
+                result.push(slot.id);
+            }
+        }
+    });
+
+    return result;
+}
+
 function populateDefaultGridStructure() {
     const state = window.CustomStoreState;
 
     ['admin', 'public'].forEach(target => {
-        const slots = target === 'admin' ? ADMIN_SLOTS : PUBLIC_SLOTS;
+        const slots = getUserAllowedSlots(target);
 
         // PC Grid Defaults
         if (!state.gridPc[target]) state.gridPc[target] = { order: [], spans: {} };
-        if (!state.gridPc[target].order || state.gridPc[target].order.length === 0) {
-            state.gridPc[target].order = slots.map(s => s.id);
-        }
+        state.gridPc[target].order = mergeSlotOrder(state.gridPc[target].order, slots);
         slots.forEach(s => {
             if (!state.gridPc[target].spans[s.id]) {
                 state.gridPc[target].spans[s.id] = { ...s.defaultPcSpan };
@@ -225,9 +300,7 @@ function populateDefaultGridStructure() {
 
         // Mobile Grid Defaults
         if (!state.gridMobile[target]) state.gridMobile[target] = { order: [], spans: {} };
-        if (!state.gridMobile[target].order || state.gridMobile[target].order.length === 0) {
-            state.gridMobile[target].order = slots.map(s => s.id);
-        }
+        state.gridMobile[target].order = mergeSlotOrder(state.gridMobile[target].order, slots);
         slots.forEach(s => {
             if (!state.gridMobile[target].spans[s.id]) {
                 state.gridMobile[target].spans[s.id] = { ...s.defaultMobileSpan };
@@ -242,16 +315,14 @@ function renderGrid() {
     const isMobile = state.currentDevice === 'mobile';
     const target = state.currentTargetView;
     const gridData = isMobile ? state.gridMobile[target] : state.gridPc[target];
-    const availableSlots = target === 'admin' ? ADMIN_SLOTS : PUBLIC_SLOTS;
+    const availableSlots = getUserAllowedSlots(target);
     const slotMap = new Map(availableSlots.map(s => [s.id, s]));
 
     const $grid = $('#custom-grid-container');
     $grid.empty();
 
-    const renderedOrder = [...(gridData.order || [])];
-    availableSlots.forEach(s => {
-        if (!renderedOrder.includes(s.id)) renderedOrder.push(s.id);
-    });
+    const renderedOrder = mergeSlotOrder(gridData.order, availableSlots);
+    gridData.order = renderedOrder;
 
     const maxCols = isMobile ? 2 : 4;
 
@@ -769,7 +840,7 @@ function toggleUnitCustomBar(slotId) {
     state.selectedSlotId = slotId;
 
     // Find slot title
-    const currentSlots = state.currentTargetView === 'admin' ? ADMIN_SLOTS : PUBLIC_SLOTS;
+    const currentSlots = getUserAllowedSlots(state.currentTargetView);
     const slotMeta = currentSlots.find(s => s.id === slotId);
     $('#unit-modal-slot-title').text(slotMeta ? `Personalizar: ${slotMeta.title}` : 'Personalizar Slot');
 
@@ -1093,6 +1164,26 @@ async function saveCustomizationsToSupabase() {
     });
 
     try {
+        // Sanitize orders and spans before saving so unauthorized slots are never persisted
+        ['admin', 'public'].forEach(target => {
+            const allowed = getUserAllowedSlots(target);
+            ['gridPc', 'gridMobile'].forEach(gridKey => {
+                if (state[gridKey] && state[gridKey][target]) {
+                    const g = state[gridKey][target];
+                    if (Array.isArray(g.order)) {
+                        g.order = mergeSlotOrder(g.order, allowed);
+                    }
+                    if (g.spans) {
+                        const cleanSpans = {};
+                        allowed.forEach(s => {
+                            if (g.spans[s.id]) cleanSpans[s.id] = g.spans[s.id];
+                        });
+                        g.spans = cleanSpans;
+                    }
+                }
+            });
+        });
+
         const payload = {
             user_id: state.currentUser.id,
             global_styles: state.globalStyles,

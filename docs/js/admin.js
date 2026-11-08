@@ -5281,9 +5281,44 @@ function renderStoreCustomizationsOnAdmin(data) {
     const $tileGrid = $('.tile-grid');
     if (!$tileGrid.length) return;
 
-    // Reorder tiles if an order is defined
+    // Reorder tiles if an order is defined, merging relative positions for any newly added tiles
     if (adminGrid.order && Array.isArray(adminGrid.order) && adminGrid.order.length > 0) {
-        adminGrid.order.forEach(slotId => {
+        const domTileIds = [];
+        $tileGrid.children('.tile').each(function() {
+            if (this.id) domTileIds.push(this.id);
+        });
+
+        const domSet = new Set(domTileIds);
+        const effectiveOrder = adminGrid.order.filter(id => domSet.has(id));
+
+        domTileIds.forEach((id, idx) => {
+            if (!effectiveOrder.includes(id)) {
+                let insertIdx = -1;
+                for (let i = idx - 1; i >= 0; i--) {
+                    const prevPos = effectiveOrder.indexOf(domTileIds[i]);
+                    if (prevPos !== -1) {
+                        insertIdx = prevPos + 1;
+                        break;
+                    }
+                }
+                if (insertIdx === -1) {
+                    for (let i = idx + 1; i < domTileIds.length; i++) {
+                        const nextPos = effectiveOrder.indexOf(domTileIds[i]);
+                        if (nextPos !== -1) {
+                            insertIdx = nextPos;
+                            break;
+                        }
+                    }
+                }
+                if (insertIdx !== -1) {
+                    effectiveOrder.splice(insertIdx, 0, id);
+                } else {
+                    effectiveOrder.push(id);
+                }
+            }
+        });
+
+        effectiveOrder.forEach(slotId => {
             const $tile = $(`#${slotId}`);
             if ($tile.length) {
                 $tileGrid.append($tile);

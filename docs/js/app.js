@@ -5699,9 +5699,44 @@ function renderStoreCustomizationsOnPublic(data) {
     const $menuGrid = $('.home-menu-grid');
     if (!$menuGrid.length) return;
 
-    // Reorder public menu items
+    // Reorder public menu items, merging relative positions for any newly added items
     if (publicGrid.order && Array.isArray(publicGrid.order) && publicGrid.order.length > 0) {
-        publicGrid.order.forEach(slotId => {
+        const domSlots = [];
+        $('.home-menu-grid .home-menu-item').each(function() {
+            const v = $(this).data('view');
+            if (v) domSlots.push('public-' + v);
+        });
+        const domSet = new Set(domSlots);
+        const effectiveOrder = publicGrid.order.filter(id => domSet.has(id));
+
+        domSlots.forEach((id, idx) => {
+            if (!effectiveOrder.includes(id)) {
+                let insertIdx = -1;
+                for (let i = idx - 1; i >= 0; i--) {
+                    const prevPos = effectiveOrder.indexOf(domSlots[i]);
+                    if (prevPos !== -1) {
+                        insertIdx = prevPos + 1;
+                        break;
+                    }
+                }
+                if (insertIdx === -1) {
+                    for (let i = idx + 1; i < domSlots.length; i++) {
+                        const nextPos = effectiveOrder.indexOf(domSlots[i]);
+                        if (nextPos !== -1) {
+                            insertIdx = nextPos;
+                            break;
+                        }
+                    }
+                }
+                if (insertIdx !== -1) {
+                    effectiveOrder.splice(insertIdx, 0, id);
+                } else {
+                    effectiveOrder.push(id);
+                }
+            }
+        });
+
+        effectiveOrder.forEach(slotId => {
             const viewName = slotId.replace('public-', '');
             const $item = $(`.home-menu-item[data-view="${viewName}"]`);
             if ($item.length) {
