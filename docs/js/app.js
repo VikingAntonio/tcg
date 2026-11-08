@@ -379,7 +379,7 @@ $(document).ready(async function() {
     // --- Initial Entry Logic ---
     try {
         // Validation for the initial view (fixes common truncations like "albu")
-        const validViews = ['home', 'binders', 'albums', 'decks', 'auctions', 'sealed', 'preorders', 'wishlist', 'investments', 'claims', 'events', 'learn'];
+        const validViews = ['home', 'binders', 'albums', 'decks', 'auctions', 'sealed', 'preorders', 'wishlist', 'investments', 'claims', 'events'];
         if (!validViews.includes(initialView)) {
             if (initialView.startsWith('bind')) initialView = 'binders';
             else if (initialView.startsWith('albu')) initialView = 'albums';
@@ -391,7 +391,6 @@ $(document).ready(async function() {
             else if (initialView.startsWith('claim')) initialView = 'claims';
             else if (initialView.startsWith('auct') || initialView.startsWith('suba')) initialView = 'auctions';
             else if (initialView.startsWith('invest')) initialView = 'investments';
-            else if (initialView.startsWith('learn')) initialView = 'learn';
             else initialView = 'home';
         }
 
@@ -1413,7 +1412,7 @@ async function switchView(view, skipPush = false) {
     }
 
     // Robust View Validation (fixes common truncations like "albu")
-    const validViews = ['home', 'binders', 'albums', 'decks', 'auctions', 'sealed', 'preorders', 'wishlist', 'investments', 'claims', 'events', 'learn'];
+    const validViews = ['home', 'binders', 'albums', 'decks', 'auctions', 'sealed', 'preorders', 'wishlist', 'investments', 'claims', 'events'];
     const originalView = view;
     let wasCorrected = false;
 
@@ -1428,7 +1427,6 @@ async function switchView(view, skipPush = false) {
         else if (view.startsWith('claim')) view = 'claims';
         else if (view.startsWith('auct') || view.startsWith('suba')) view = 'auctions';
         else if (view.startsWith('invest')) view = 'investments';
-        else if (view.startsWith('learn')) view = 'learn';
         else view = 'home';
 
         if (view !== originalView) wasCorrected = true;
