@@ -156,7 +156,10 @@ $(document).ready(async function() {
                     text: 'Tu plan se ha actualizado con éxito. ¡Disfruta de todos los beneficios Premium!',
                     icon: 'success'
                 });
-                window.history.replaceState({}, document.title, window.location.pathname);
+                const cleanParams = new URLSearchParams(window.location.search);
+                ['payment', 'type', 'session_id'].forEach(p => cleanParams.delete(p));
+                const cleanParamStr = cleanParams.toString();
+                window.history.replaceState({}, document.title, window.location.pathname + (cleanParamStr ? '?' + cleanParamStr : '') + window.location.hash);
             }
         } else if (paymentStatus === 'canceled') {
             Swal.fire({
@@ -164,7 +167,10 @@ $(document).ready(async function() {
                 text: 'La transacción no se completó. Puedes intentarlo nuevamente cuando desees.',
                 icon: 'info'
             });
-            window.history.replaceState({}, document.title, window.location.pathname);
+            const cleanParams = new URLSearchParams(window.location.search);
+            ['payment', 'type', 'accessory_id', 'sticker_id', 'spirit_id', 'session_id'].forEach(p => cleanParams.delete(p));
+            const cleanParamStr = cleanParams.toString();
+            window.history.replaceState({}, document.title, window.location.pathname + (cleanParamStr ? '?' + cleanParamStr : '') + window.location.hash);
         }
     }
 
@@ -347,8 +353,8 @@ $(document).ready(async function() {
     });
 
     $(document).on('click', '#btn-wishlist, #menu-btn-wishlist', function(e) {
-        // Redirigir a Wantlist Pro
-        window.location.href = 'wantlist.html';
+        // Redirigir a Wanted
+        window.location.href = 'wanted.html';
     });
 
     $(document).on('click', '#btn-show-expansiones', function(e) {

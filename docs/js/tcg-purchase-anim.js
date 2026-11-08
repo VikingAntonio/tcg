@@ -443,7 +443,11 @@
 
             const itemName = item.name || 'Accesorio TCG';
             const price = Math.max(5, Number(item.price_mxn) || 25);
-            const returnUrl = window.location.origin + window.location.pathname;
+            // Preserve current query parameters (e.g., deckId) so returning from payment keeps the user in the exact same view/state
+            const currentParams = new URLSearchParams(window.location.search);
+            ['payment', 'type', 'accessory_id', 'sticker_id', 'spirit_id', 'session_id'].forEach(p => currentParams.delete(p));
+            const paramStr = currentParams.toString();
+            const returnUrl = window.location.origin + window.location.pathname + (paramStr ? '?' + paramStr : '');
 
             // Confirm intent with a sleek TCG modal
             const { isConfirmed } = await Swal.fire({
@@ -561,8 +565,12 @@
                 if (itemId && user) {
                     await this.recordUnlockInDatabase(paymentType, itemId, user);
 
-                    // Clean URL without reloading page
-                    window.history.replaceState({}, document.title, window.location.pathname);
+                    // Clean payment URL parameters without reloading page, preserving other state params (e.g., deckId)
+                    const cleanParams = new URLSearchParams(window.location.search);
+                    ['payment', 'type', 'accessory_id', 'sticker_id', 'spirit_id', 'session_id'].forEach(p => cleanParams.delete(p));
+                    const cleanParamStr = cleanParams.toString();
+                    const cleanUrl = window.location.pathname + (cleanParamStr ? '?' + cleanParamStr : '') + window.location.hash;
+                    window.history.replaceState({}, document.title, cleanUrl);
 
                     // Execute acquisition animation
                     const displayImg = itemData?.image_url || itemData?.url || itemData?.poster_url || '';
@@ -580,7 +588,11 @@
                     });
                 }
             } else if (paymentStatus === 'canceled') {
-                window.history.replaceState({}, document.title, window.location.pathname);
+                const cleanParams = new URLSearchParams(window.location.search);
+                ['payment', 'type', 'accessory_id', 'sticker_id', 'spirit_id', 'session_id'].forEach(p => cleanParams.delete(p));
+                const cleanParamStr = cleanParams.toString();
+                const cleanUrl = window.location.pathname + (cleanParamStr ? '?' + cleanParamStr : '') + window.location.hash;
+                window.history.replaceState({}, document.title, cleanUrl);
                 Swal.fire({
                     title: 'Pago Cancelado',
                     text: 'La transacción no se completó. Puedes intentarlo nuevamente cuando desees.',
