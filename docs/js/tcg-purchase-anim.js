@@ -444,8 +444,12 @@
             });
 
             try {
-                const { data: { session } } = await window._supabase.auth.getSession();
-                const token = session?.access_token || '';
+                const sbClient = window._supabase || (typeof _supabase !== 'undefined' ? _supabase : null);
+                let token = '';
+                if (sbClient && sbClient.auth) {
+                    const { data } = await sbClient.auth.getSession();
+                    token = data?.session?.access_token || '';
+                }
 
                 const bodyPayload = {
                     user_id: user.id,

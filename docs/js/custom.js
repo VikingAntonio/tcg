@@ -30,8 +30,10 @@ const ADMIN_SLOTS = [
     { id: 'btn-subastas', title: 'Subastas', defaultClass: 'tile-purple', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
     { id: 'btn-eventos', title: 'Eventos', defaultClass: 'tile-cyan', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
     { id: 'btn-show-investments', title: 'Inversiones', defaultClass: 'tile-green', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
+    { id: 'btn-accesorios', title: 'Accesorios', defaultClass: 'tile-cyan', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
     { id: 'btn-chatbot-config', title: 'Chatbot', defaultClass: 'tile-purple tile-wide', defaultPcSpan: { col: 2, row: 1 }, defaultMobileSpan: { col: 2, row: 1 } },
     { id: 'btn-widgets', title: 'Widgets', defaultClass: 'tile-blue', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
+    { id: 'btn-packages', title: 'Packages', defaultClass: 'tile-orange', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
     { id: 'btn-logout-tile', title: 'Salir', defaultClass: 'tile-pink', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } }
 ];
 
