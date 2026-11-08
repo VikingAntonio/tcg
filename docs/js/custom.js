@@ -20,7 +20,7 @@ const ADMIN_SLOTS = [
     { id: 'btn-show-spirits', title: 'Asistente', defaultClass: 'tile-yellow tile-tall', defaultPcSpan: { col: 1, row: 2 }, defaultMobileSpan: { col: 1, row: 1 } },
     { id: 'btn-users-panel', title: 'Usuarios', defaultClass: 'tile-pink', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
     { id: 'btn-bdd-panel', title: 'BDD', defaultClass: 'tile-yellow', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
-    { id: 'btn-wishlist', title: 'Wantlist Pro', defaultClass: 'tile-blue', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
+    { id: 'btn-wishlist', title: 'Wanted', defaultClass: 'tile-blue', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
     { id: 'btn-sealed', title: 'Producto Sellado', defaultClass: 'tile-cyan tile-wide', defaultPcSpan: { col: 2, row: 1 }, defaultMobileSpan: { col: 2, row: 1 } },
     { id: 'btn-tracking', title: 'Tracking', defaultClass: 'tile-blue', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
     { id: 'btn-preventas', title: 'Preventas', defaultClass: 'tile-yellow tile-wide', defaultPcSpan: { col: 2, row: 1 }, defaultMobileSpan: { col: 2, row: 1 } },
@@ -927,16 +927,15 @@ async function loadAvailableStickers() {
     const state = window.CustomStoreState;
     try {
         if (typeof _supabase !== 'undefined') {
-            const { data, error } = await _supabase
-                .from('stickers')
-                .select('*')
-                .order('created_at', { ascending: false });
+            const [stkRes, promoRes, giftRes] = await Promise.all([
+                _supabase.from('stickers').select('*').order('created_at', { ascending: false }),
+                _supabase.from('product_promotions').select('*').eq('status', 'active'),
+                _supabase.from('gift_campaigns').select('*').eq('status', 'active')
+            ]);
 
-            if (!error && data) {
-                state.availableStickers = data;
-            } else {
-                state.availableStickers = [];
-            }
+            state.availableStickers = stkRes.data || [];
+            state.storePromotions = promoRes.data || [];
+            state.storeGifts = giftRes.data || [];
         }
     } catch (err) {
         console.warn('Notice loading stickers catalog:', err);
@@ -987,14 +986,29 @@ function renderStickersPicker() {
         const isPaid = stk.sale_status === 'de_paga';
         const isPurchased = purchasedStickers.includes(String(stk.id));
         const requiresPurchase = isPaid && !isPurchased && userRole !== 'admin';
-        const price = Number(stk.price_mxn) || 25;
+        const basePrice = Number(stk.price_mxn) || 25;
+
+        const pricing = window.TCGPurchase?.resolveProductPricing({
+            id: stk.id,
+            category: 'stickers',
+            basePrice: basePrice,
+            promotions: state.storePromotions || [],
+            giftCampaigns: state.storeGifts || [],
+            user: state.currentUser
+        }) || { effectivePrice: basePrice, originalPrice: basePrice, hasPromo: false, isGift: false };
+
+        const priceTagHtml = pricing.isGift
+            ? 'GRATIS'
+            : pricing.hasPromo
+            ? `<span style="text-decoration:line-through;opacity:0.6;font-size:9px;">$${basePrice}</span> $${pricing.effectivePrice}`
+            : `$${basePrice}`;
 
         const $item = $(`
-            <div class="picker-sticker-item ${requiresPurchase ? 'paid-sticker' : ''}" title="${requiresPurchase ? `Comprar sticker ($${price} MXN)` : 'Agregar sticker al slot'}">
+            <div class="picker-sticker-item ${requiresPurchase ? 'paid-sticker' : ''}" title="${requiresPurchase ? `Comprar sticker ($${pricing.effectivePrice} MXN)` : 'Agregar sticker al slot'}">
                 <img src="${stk.url}" alt="${escapeHtml(stk.name || 'Sticker')}">
                 ${requiresPurchase ? `
-                    <div class="sticker-lock-badge" title="Sticker de Pago"><i class="fas fa-lock"></i></div>
-                    <div class="sticker-price-tag">$${price}</div>
+                    <div class="sticker-lock-badge" title="Sticker de Pago"><i class="fas ${pricing.isGift ? 'fa-gift' : 'fa-lock'}"></i></div>
+                    <div class="sticker-price-tag" style="${pricing.isGift ? 'background: linear-gradient(135deg, #a855f7, #7c3aed);' : pricing.hasPromo ? 'background: linear-gradient(135deg, #00d2ff, #0072ff);' : ''}">${priceTagHtml}</div>
                 ` : ''}
             </div>
         `);
@@ -1020,23 +1034,33 @@ async function purchaseStickerViaStripe(stk) {
         return;
     }
 
-    const price = Number(stk.price_mxn) || 25;
+    const basePrice = Number(stk.price_mxn) || 25;
+    const pricing = window.TCGPurchase?.resolveProductPricing({
+        id: stk.id,
+        category: 'stickers',
+        basePrice: basePrice,
+        promotions: state.storePromotions || [],
+        giftCampaigns: state.storeGifts || [],
+        user: state.currentUser
+    }) || { effectivePrice: basePrice, originalPrice: basePrice, hasPromo: false, isGift: false };
+
+    const effectivePrice = pricing.effectivePrice;
 
     const res = await Swal.fire({
-        title: `Desbloquear Sticker`,
+        title: `Desbloquear ${stk.name || 'Sticker'}`,
         html: `
-            <div style="text-align: center; margin: 15px 0;">
-                <img src="${stk.url}" style="max-width: 110px; max-height: 110px; object-fit: contain; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));">
-                <h4 style="color: #00d2ff; margin-top: 12px; font-weight: 800;">${escapeHtml(stk.name || 'Sticker Especial')}</h4>
-                <div style="font-size: 1.2rem; color: #ffd700; font-weight: 900; margin-top: 6px;">$${price} MXN</div>
-                <p style="font-size: 0.8rem; color: #94a3b8; margin-top: 8px;">Pago único para desbloquear este sticker para siempre en tu tienda.</p>
+            <div style="text-align: center; margin: 12px 0;">
+                <img src="${stk.url}" style="max-width: 110px; max-height: 110px; object-fit: contain; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5)); margin-bottom: 12px;">
+                <div style="font-size: 1.5rem; color: #c084fc; font-weight: 900;">$${effectivePrice} MXN</div>
             </div>
         `,
         showCancelButton: true,
-        confirmButtonColor: '#635BFF',
+        confirmButtonColor: '#a855f7',
         cancelButtonColor: '#475569',
-        confirmButtonText: 'Comprar con Tarjeta (Stripe)',
-        cancelButtonText: 'Cancelar'
+        confirmButtonText: 'Comprar',
+        cancelButtonText: 'Cancelar',
+        background: '#0d1527',
+        color: '#fff'
     });
 
     if (!res.isConfirmed) return;

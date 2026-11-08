@@ -1,4 +1,4 @@
-const STATIC_CACHE = 'viking-static-v198';
+const STATIC_CACHE = 'viking-static-v199';
 const IMAGE_CACHE = 'viking-images-v1';
 const DATA_CACHE = 'viking-data-v1';
 
@@ -16,6 +16,7 @@ const URLS_TO_CACHE = [
   './packages.html',
   './session-bridge.html',
   './js/viking-widget.js',
+  './wanted.html',
   './deseos.html',
   './preventas.html',
   './productoSellado.html',

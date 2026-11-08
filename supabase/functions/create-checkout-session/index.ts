@@ -161,11 +161,16 @@ serve(async (req) => {
 
       // If a Stripe Price ID is explicitly configured for this assistant, use it directly;
       // otherwise, securely create line_item using server-side validated price_mxn without requiring a Stripe Price ID.
-      if (spirit.stripe_price_id && spirit.stripe_price_id.trim().startsWith("price_")) {
+      // Resolve potential active promo price
+      const baseSpiritPrice = Number(spirit.price_mxn) || 50;
+      const promoInfo = await resolvePromoPrice(supabase, spirit.id.toString(), 'spirits', baseSpiritPrice);
+      const effectiveSpiritPrice = promoInfo.price;
+
+      if (!promoInfo.isLimited && promoInfo.price === baseSpiritPrice && spirit.stripe_price_id && spirit.stripe_price_id.trim().startsWith("price_")) {
         params.append("line_items[0][price]", spirit.stripe_price_id.trim());
         params.append("line_items[0][quantity]", "1");
       } else {
-        const priceAmount = Math.max(1000, Math.round((Number(spirit.price_mxn) || 50) * 100)); // in cents, min 10 MXN
+        const priceAmount = Math.max(1000, Math.round(effectiveSpiritPrice * 100)); // in cents, min 10 MXN
         params.append("line_items[0][price_data][currency]", "mxn");
         params.append("line_items[0][price_data][unit_amount]", priceAmount.toString());
         params.append("line_items[0][price_data][product_data][name]", `Asistente 3D: ${spirit.name}`);
@@ -206,13 +211,16 @@ serve(async (req) => {
       params.append("metadata[sticker_id]", sticker.id.toString());
       params.append("metadata[sticker_name]", sticker.name || "Sticker");
 
-      // If a Stripe Price ID is explicitly configured for this sticker, use it;
-      // otherwise, securely create line_item using server-side validated price_mxn without requiring a Stripe Price ID.
-      if (sticker.stripe_price_id && sticker.stripe_price_id.trim().startsWith("price_")) {
+      // Resolve potential active promo price
+      const baseStickerPrice = Number(sticker.price_mxn) || 25;
+      const promoInfo = await resolvePromoPrice(supabase, sticker.id.toString(), 'stickers', baseStickerPrice);
+      const effectiveStickerPrice = promoInfo.price;
+
+      if (!promoInfo.isLimited && promoInfo.price === baseStickerPrice && sticker.stripe_price_id && sticker.stripe_price_id.trim().startsWith("price_")) {
         params.append("line_items[0][price]", sticker.stripe_price_id.trim());
         params.append("line_items[0][quantity]", "1");
       } else {
-        const priceAmount = Math.max(1000, Math.round((Number(sticker.price_mxn) || 25) * 100)); // in cents, min 10 MXN
+        const priceAmount = Math.max(1000, Math.round(effectiveStickerPrice * 100)); // in cents, min 10 MXN
         params.append("line_items[0][price_data][currency]", "mxn");
         params.append("line_items[0][price_data][unit_amount]", priceAmount.toString());
         params.append("line_items[0][price_data][product_data][name]", `Sticker: ${sticker.name}`);
@@ -254,11 +262,16 @@ serve(async (req) => {
       params.append("metadata[accessory_name]", accessory.name || "Accesorio");
       params.append("metadata[accessory_category]", accessory.category || "sleeves");
 
-      if (accessory.stripe_price_id && accessory.stripe_price_id.trim().startsWith("price_")) {
+      // Resolve potential active promo price
+      const baseAccPrice = Number(accessory.price_mxn) || 25;
+      const promoInfo = await resolvePromoPrice(supabase, accessory.id.toString(), accessory.category || 'sleeves', baseAccPrice);
+      const effectiveAccPrice = promoInfo.price;
+
+      if (!promoInfo.isLimited && promoInfo.price === baseAccPrice && accessory.stripe_price_id && accessory.stripe_price_id.trim().startsWith("price_")) {
         params.append("line_items[0][price]", accessory.stripe_price_id.trim());
         params.append("line_items[0][quantity]", "1");
       } else {
-        const priceAmount = Math.max(1000, Math.round((Number(accessory.price_mxn) || 25) * 100)); // in cents, min 10 MXN
+        const priceAmount = Math.max(1000, Math.round(effectiveAccPrice * 100)); // in cents, min 10 MXN
         params.append("line_items[0][price_data][currency]", "mxn");
         params.append("line_items[0][price_data][unit_amount]", priceAmount.toString());
         params.append("line_items[0][price_data][product_data][name]", `Accesorio: ${accessory.name}`);
@@ -293,13 +306,17 @@ serve(async (req) => {
         subscriptionPriceMxn = DEFAULT_PREMIUM_PRICE_MXN;
       }
 
-      if (envPriceId && envPriceId.startsWith("price_")) {
+      // Resolve potential active promo price for plan_premium
+      const promoInfo = await resolvePromoPrice(supabase, "plan_premium", "planes", subscriptionPriceMxn);
+      const effectivePlanPrice = promoInfo.price;
+
+      if (!promoInfo.isLimited && promoInfo.price === subscriptionPriceMxn && envPriceId && envPriceId.startsWith("price_")) {
         params.append("line_items[0][price]", envPriceId);
         params.append("line_items[0][quantity]", "1");
       } else {
         // Create recurring subscription directly via price_data without needing a pre-created Stripe Price ID.
         // Works seamlessly in test mode (sk-test) and live mode (sk-live) without manual dashboard setup!
-        const unitAmountCents = Math.round(subscriptionPriceMxn * 100);
+        const unitAmountCents = Math.round(effectivePlanPrice * 100);
         params.append("line_items[0][price_data][currency]", "mxn");
         params.append("line_items[0][price_data][unit_amount]", unitAmountCents.toString());
         params.append("line_items[0][price_data][recurring][interval]", "month");

@@ -347,8 +347,8 @@ $(document).ready(async function() {
     });
 
     $(document).on('click', '#btn-wishlist, #menu-btn-wishlist', function(e) {
-        // Redirigir a Wantlist Pro
-        window.location.href = 'wantlist.html';
+        // Redirigir a Wanted
+        window.location.href = 'wanted.html';
     });
 
     $(document).on('click', '#btn-show-expansiones', function(e) {
@@ -3820,10 +3820,12 @@ async function deletePage(id) {
 async function loadSpirits() {
     $('#spirits-grid').html('<div class="loading">Cargando asistentes...</div>');
 
-    // Fetch spirits and user's selection & purchased spirits
-    const [spiritsRes, userRes] = await Promise.all([
+    // Fetch spirits, user's selection, purchased spirits, promotions, and gift campaigns
+    const [spiritsRes, userRes, promoRes, giftRes] = await Promise.all([
         _supabase.from('spirits').select('*').order('name', { ascending: true }),
-        _supabase.from('usuarios').select('selected_spirit_id, purchased_spirit_ids, allowed_spirit_ids, role').eq('id', currentUser.id).single()
+        _supabase.from('usuarios').select('selected_spirit_id, purchased_spirit_ids, allowed_spirit_ids, role').eq('id', currentUser.id).single(),
+        _supabase.from('product_promotions').select('*').eq('status', 'active'),
+        _supabase.from('gift_campaigns').select('*').eq('status', 'active')
     ]);
 
     if (spiritsRes.error || !spiritsRes.data) {
@@ -3880,7 +3882,21 @@ async function loadSpirits() {
             return;
         }
 
-        const priceDisplay = `$${priceMxn} MXN`;
+        // Real-time Pricing Hierarchy (Gift -> Promo -> Base)
+        const pricing = window.TCGPurchase?.resolveProductPricing({
+            id: spirit.id,
+            category: 'spirits',
+            basePrice: priceMxn,
+            promotions: promoRes.data || [],
+            giftCampaigns: giftRes.data || [],
+            user: currentUser
+        }) || { effectivePrice: priceMxn, originalPrice: priceMxn, hasPromo: false, isGift: false };
+
+        const priceDisplay = pricing.hasPromo
+            ? `<span style="text-decoration: line-through; opacity: 0.6; font-size: 0.7rem; margin-right: 4px;">$${priceMxn}</span> $${pricing.effectivePrice} MXN`
+            : pricing.isGift
+            ? '¡GRATIS!'
+            : `$${priceMxn} MXN`;
 
         const modelViewerHTML = `
             <model-viewer
@@ -3898,10 +3914,16 @@ async function loadSpirits() {
             ? `<div class="model-viewer-paid-wrapper">${modelViewerHTML}</div>`
             : modelViewerHTML;
 
+        const badgeBackground = pricing.isGift
+            ? 'linear-gradient(135deg, #a855f7, #7c3aed)'
+            : pricing.hasPromo
+            ? 'linear-gradient(135deg, #00d2ff, #0072ff)'
+            : 'linear-gradient(135deg, #ffd700, #ff9f43)';
+
         const $card = $(`
             <div class="spirit-card ${isSelected ? 'selected' : ''} ${isForSale ? 'spirit-card-for-sale' : ''}">
                 ${isSelected ? '<div class="badge-selected">Seleccionado</div>' : ''}
-                ${isForSale ? `<div class="badge-price-tag" style="position: absolute; top: 12px; right: 12px; background: linear-gradient(135deg, #ffd700, #ff9f43); color: #000; font-weight: 900; font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 10;">${priceDisplay}</div>` : ''}
+                ${isForSale ? `<div class="badge-price-tag" style="position: absolute; top: 12px; right: 12px; background: ${badgeBackground}; color: #000; font-weight: 900; font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 10;">${priceDisplay}</div>` : ''}
 
                 ${wrappedModelViewer}
                 <h3 style="${isForSale ? 'color: #ffd700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);' : ''}">${spirit.name}</h3>
@@ -3918,9 +3940,15 @@ async function loadSpirits() {
 
                 <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
                     ${isForSale ? `
-                        <button class="btn btn-buy-spirit" style="background: linear-gradient(135deg, #ffd700 0%, #ff9f43 100%); color: #000; font-weight: 900; font-size: 0.95rem; border: none; border-radius: 12px; padding: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 18px rgba(255, 215, 0, 0.5); text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.25s ease;">
-                            <i class="fas fa-unlock-alt"></i> Desbloquear ${priceDisplay}
-                        </button>
+                        ${pricing.isGift ? `
+                            <button class="btn btn-claim-spirit-gift" style="background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%); color: #fff; font-weight: 900; font-size: 0.95rem; border: none; border-radius: 12px; padding: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 18px rgba(168, 85, 247, 0.5); text-transform: uppercase; letter-spacing: 0.5px;">
+                                <i class="fas fa-gift"></i> Reclamar Regalo
+                            </button>
+                        ` : `
+                            <button class="btn btn-buy-spirit" data-price="${pricing.effectivePrice}" style="background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%); color: #fff; font-weight: 800; font-size: 0.95rem; border: none; border-radius: 12px; padding: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 18px rgba(168, 85, 247, 0.35); letter-spacing: 0.5px; transition: all 0.25s ease;">
+                                Adquirir $${pricing.effectivePrice} MXN
+                            </button>
+                        `}
                     ` : `
                         <button class="btn btn-select ${isSelected ? 'btn-success' : ''}" ${isSelected ? 'disabled' : ''}>
                             ${isSelected ? '<i class="fas fa-check-circle"></i> Seleccionado' : 'Seleccionar'}
@@ -3946,23 +3974,27 @@ async function loadSpirits() {
             window.editSpirit(spirit);
         });
 
-        // Assistant purchase handler (Clash Royale / game store style)
+        // Assistant purchase handler (Pastel Purple & Clean Text)
         $card.find('.btn-buy-spirit').click(async function() {
+            const rawEffective = $(this).data('price') || pricing.effectivePrice || priceMxn;
             Swal.fire({
-                title: `¿Desbloquear a ${spirit.name}?`,
+                title: `Desbloquear ${spirit.name}`,
                 html: `
-                    <p style="color: #cbd5e1; font-size: 0.9rem;">Obtén a <b>${escapeHtml(spirit.name)}</b> de forma permanente para tus pantallas de carga y asistente 3D interactivo.</p>
-                    <div style="font-size: 1.6rem; font-weight: 900; color: #ffd700; margin: 15px 0;">${priceDisplay} <span style="font-size: 0.8rem; color: #aaa;">(Pago único)</span></div>
-                    <p style="font-size: 0.78rem; color: #94a3b8;">Procesamiento seguro a través de Stripe.</p>
+                    <div style="text-align: center; margin: 12px 0;">
+                        <img src="${spirit.poster_url || 'https://vikingtcg.xyz/favi.png'}" style="max-height: 120px; border-radius: 12px; margin-bottom: 12px; object-fit: contain;">
+                        <div style="font-size: 1.5rem; font-weight: 900; color: #c084fc;">$${rawEffective} MXN</div>
+                    </div>
                 `,
-                icon: 'question',
                 showCancelButton: true,
-                confirmButtonColor: '#ffd700',
-                confirmButtonText: `<span style="color: #000; font-weight: 900;"><i class="fas fa-credit-card"></i> Pagar con Stripe</span>`,
-                cancelButtonText: 'Cancelar'
+                confirmButtonColor: '#a855f7',
+                cancelButtonColor: '#475569',
+                confirmButtonText: 'Comprar',
+                cancelButtonText: 'Cancelar',
+                background: '#0d1527',
+                color: '#fff'
             }).then(async (res) => {
                 if (res.isConfirmed) {
-                    await purchaseSpiritViaStripe(spirit);
+                    await purchaseSpiritViaStripe(Object.assign({}, spirit, { price_mxn: rawEffective }));
                 }
             });
         });

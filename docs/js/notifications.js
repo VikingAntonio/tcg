@@ -282,17 +282,38 @@
                 .order('created_at', { ascending: false })
                 .limit(15);
 
-            // 3. Fetch User States (read / deleted)
+            // 3. Fetch Active Gift Campaigns & User Claims
+            const giftsPromise = _supabase
+                .from('gift_campaigns')
+                .select('*')
+                .eq('status', 'active')
+                .order('created_at', { ascending: false });
+
+            const giftClaimsPromise = _supabase
+                .from('gift_claims')
+                .select('campaign_id')
+                .eq('user_id', user.id);
+
+            // 4. Fetch User States (read / deleted)
             const statesPromise = _supabase
                 .from('user_notification_states')
                 .select('*')
                 .eq('user_id', user.id);
 
-            const [salesRes, binderSalesRes, broadcastRes, statesRes] = await Promise.all([salesPromise, binderSalesPromise, broadcastPromise, statesPromise]);
+            const [salesRes, binderSalesRes, broadcastRes, giftsRes, giftClaimsRes, statesRes] = await Promise.all([
+                salesPromise,
+                binderSalesPromise,
+                broadcastPromise,
+                giftsPromise,
+                giftClaimsPromise,
+                statesPromise
+            ]);
 
             const sales = salesRes.data || [];
             const binderSales = binderSalesRes.data || [];
             const broadcasts = broadcastRes.data || [];
+            const rawGifts = giftsRes.data || [];
+            const claimedCampaignIds = (giftClaimsRes.data || []).map(c => String(c.campaign_id));
             const statesMap = {};
 
             if (statesRes.data) {
@@ -376,6 +397,57 @@
                 });
             });
 
+            // Add Gift Campaign items targeted to this user and not yet claimed
+            const now = new Date();
+            const userRole = (user.role || 'starter').toLowerCase();
+
+            rawGifts.forEach(gift => {
+                const giftId = String(gift.id);
+                // Skip if already claimed by this user
+                if (claimedCampaignIds.includes(giftId)) return;
+
+                // Check expiration
+                if (gift.expires_at && new Date(gift.expires_at) < now) return;
+
+                // Audience validation
+                if (gift.target_type === 'plan') {
+                    if (gift.target_plan && gift.target_plan.toLowerCase() !== userRole && userRole !== 'admin') {
+                        return;
+                    }
+                } else if (gift.target_type === 'specific_users') {
+                    const targetUsers = Array.isArray(gift.target_users) ? gift.target_users.map(String) : [];
+                    if (!targetUsers.includes(String(user.id)) && userRole !== 'admin') {
+                        return;
+                    }
+                }
+
+                const localState = statesMap[gift.id];
+                if (localState && localState.is_deleted) return;
+
+                // Build item descriptions
+                const items = Array.isArray(gift.items) ? gift.items : [];
+                const itemsSummary = items.map(it => `${it.quantity || 1}x ${it.name || 'Artículo'}`).join(', ');
+                const fullMsg = gift.custom_message || gift.description || '';
+                const bodyMsg = fullMsg ? `${fullMsg}\n🎁 Incluye: ${itemsSummary}` : `🎁 Incluye: ${itemsSummary}`;
+
+                const images = [];
+                if (gift.image_url) images.push(gift.image_url);
+                items.forEach(it => {
+                    if (it.image_url && !images.includes(it.image_url)) images.push(it.image_url);
+                });
+
+                combined.push({
+                    id: gift.id,
+                    type: 'gift',
+                    title: `🎁 ¡Regalo Disponible!: ${gift.title}`,
+                    body: bodyMsg,
+                    images: images,
+                    giftCampaign: gift,
+                    is_read: localState ? localState.is_read : false,
+                    created_at: gift.created_at
+                });
+            });
+
             // Sort combined list descending
             combined.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
 
@@ -427,6 +499,15 @@
                 imagesHtml = `<div class="notif-gallery">${item.images.map(img => `<img src="${img}" class="notif-gallery-img" onclick="openNotifImageModal('${img.replace(/'/g, "\\'")}')">`).join('')}</div>`;
             }
 
+            let giftClaimBtnHtml = '';
+            if (item.type === 'gift' && item.giftCampaign) {
+                giftClaimBtnHtml = `
+                    <button type="button" class="btn-claim-gift-action" data-gift-id="${item.id}">
+                        <i class="fas fa-gift"></i> Reclamar Regalo
+                    </button>
+                `;
+            }
+
             const $card = $(`
                 <div class="notification-card ${!isRead ? 'unread' : 'completed'}" data-id="${item.id}">
                     <div class="notif-title-row">
@@ -438,12 +519,27 @@
                     </div>
                     <div class="notif-body-text">${escapeHtml(item.body).replace(/\n/g, '<br>')}</div>
                     ${imagesHtml}
-                    <div class="notif-meta">
-                        <span class="notif-badge-type">${item.type === 'sale' ? 'VENTA' : 'NOVEDAD'}</span>
+                    ${giftClaimBtnHtml}
+                    <div class="notif-meta" style="margin-top: 8px;">
+                        <span class="notif-badge-type" style="${item.type === 'gift' ? 'background: rgba(168, 85, 247, 0.2); color: #c084fc; border-color: rgba(168, 85, 247, 0.4);' : ''}">${item.type === 'sale' ? 'VENTA' : item.type === 'gift' ? 'REGALO' : 'NOVEDAD'}</span>
                         <span>${dateStr}</span>
                     </div>
                 </div>
             `);
+
+            if (item.type === 'gift' && item.giftCampaign) {
+                $card.find('.btn-claim-gift-action').click(async function(e) {
+                    e.stopPropagation();
+                    const $btn = $(this);
+                    $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Reclamando...');
+                    try {
+                        await window.claimGiftItem(item.giftCampaign);
+                        await checkNotifications();
+                    } catch (err) {
+                        $btn.prop('disabled', false).html('<i class="fas fa-gift"></i> Reclamar Regalo');
+                    }
+                });
+            }
 
             $card.find('.btn-notif-action.strike').click(async function(e) {
                 e.stopPropagation();

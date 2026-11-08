@@ -1633,24 +1633,6 @@
                             </div>
                         </div>
 
-                        <!-- Individual Promo & Regalo Options -->
-                        <div class="item-quick-actions-row">
-                            <button type="button" class="btn-item-promo-action"
-                                data-id="${stk.id}"
-                                data-name="${escapeHtml(stk.name || 'Sticker')}"
-                                data-cat="stickers"
-                                data-price="${price}"
-                                data-img="${stk.url}">
-                                <i class="fas fa-tag"></i> Promoción
-                            </button>
-                            <button type="button" class="btn-item-gift-action"
-                                data-id="${stk.id}"
-                                data-name="${escapeHtml(stk.name || 'Sticker')}"
-                                data-cat="stickers"
-                                data-img="${stk.url}">
-                                <i class="fas fa-gift"></i> Regalo
-                            </button>
-                        </div>
                     </div>
                 `);
 
@@ -1993,24 +1975,6 @@
                             </div>
                         </div>
 
-                        <!-- Individual Promo & Regalo Options -->
-                        <div class="item-quick-actions-row">
-                            <button type="button" class="btn-item-promo-action"
-                                data-id="${acc.id}"
-                                data-name="${escapeHtml(acc.name || 'Accesorio')}"
-                                data-cat="${category}"
-                                data-price="${price}"
-                                data-img="${acc.image_url}">
-                                <i class="fas fa-tag"></i> Promoción
-                            </button>
-                            <button type="button" class="btn-item-gift-action"
-                                data-id="${acc.id}"
-                                data-name="${escapeHtml(acc.name || 'Accesorio')}"
-                                data-cat="${category}"
-                                data-img="${acc.image_url}">
-                                <i class="fas fa-gift"></i> Regalo
-                            </button>
-                        </div>
                     </div>
                 `);
 
@@ -2459,31 +2423,6 @@
                 $tbody.append(rowHtml);
             });
 
-            // Action options for Plans (Starter, Premium, Tienda)
-            const planActionsHtml = `
-                <tr style="background: rgba(0, 210, 255, 0.02);">
-                    <td class="col-service" style="font-weight: 800; color: #00d2ff;">Opciones del Plan</td>
-                    <td style="text-align: center;">
-                        <div style="display: flex; gap: 4px; justify-content: center;">
-                            <button type="button" class="btn-item-promo-action" data-id="plan_starter" data-name="Plan Starter" data-cat="planes" data-price="${packagesData['starter']?.price_mxn || 0}" data-img="https://vikingtcg.xyz/favi.png" style="padding: 4px 8px; font-size: 0.7rem;"><i class="fas fa-tag"></i> Promo</button>
-                            <button type="button" class="btn-item-gift-action" data-id="plan_starter" data-name="Plan Starter" data-cat="planes" data-img="https://vikingtcg.xyz/favi.png" style="padding: 4px 8px; font-size: 0.7rem;"><i class="fas fa-gift"></i> Regalo</button>
-                        </div>
-                    </td>
-                    <td style="text-align: center;">
-                        <div style="display: flex; gap: 4px; justify-content: center;">
-                            <button type="button" class="btn-item-promo-action" data-id="plan_premium" data-name="Plan Premium" data-cat="planes" data-price="${packagesData['premium']?.price_mxn || 300}" data-img="https://vikingtcg.xyz/favi.png" style="padding: 4px 8px; font-size: 0.7rem;"><i class="fas fa-tag"></i> Promo</button>
-                            <button type="button" class="btn-item-gift-action" data-id="plan_premium" data-name="Plan Premium" data-cat="planes" data-img="https://vikingtcg.xyz/favi.png" style="padding: 4px 8px; font-size: 0.7rem;"><i class="fas fa-gift"></i> Regalo</button>
-                        </div>
-                    </td>
-                    <td style="text-align: center;">
-                        <div style="display: flex; gap: 4px; justify-content: center;">
-                            <button type="button" class="btn-item-promo-action" data-id="plan_tienda" data-name="Plan Tienda" data-cat="planes" data-price="${packagesData['tienda']?.price_mxn || 500}" data-img="https://vikingtcg.xyz/favi.png" style="padding: 4px 8px; font-size: 0.7rem;"><i class="fas fa-tag"></i> Promo</button>
-                            <button type="button" class="btn-item-gift-action" data-id="plan_tienda" data-name="Plan Tienda" data-cat="planes" data-img="https://vikingtcg.xyz/favi.png" style="padding: 4px 8px; font-size: 0.7rem;"><i class="fas fa-gift"></i> Regalo</button>
-                        </div>
-                    </td>
-                </tr>
-            `;
-            $tbody.append(planActionsHtml);
         }
 
         function renderAssistantsGrid() {
@@ -2545,24 +2484,6 @@
                             </div>
                         </div>
 
-                        <!-- Individual Promo & Regalo Options -->
-                        <div class="item-quick-actions-row">
-                            <button type="button" class="btn-item-promo-action"
-                                data-id="${s.id}"
-                                data-name="${escapeHtml(s.name || 'Asistente')}"
-                                data-cat="spirits"
-                                data-price="${price}"
-                                data-img="${s.image_url || 'https://vikingtcg.xyz/favi.png'}">
-                                <i class="fas fa-tag"></i> Promoción
-                            </button>
-                            <button type="button" class="btn-item-gift-action"
-                                data-id="${s.id}"
-                                data-name="${escapeHtml(s.name || 'Asistente')}"
-                                data-cat="spirits"
-                                data-img="${s.image_url || 'https://vikingtcg.xyz/favi.png'}">
-                                <i class="fas fa-gift"></i> Regalo
-                            </button>
-                        </div>
                     </div>
                 `);
 

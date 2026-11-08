@@ -407,14 +407,15 @@
         }
 
         .btn-action-buy {
-            background: linear-gradient(135deg, #00d2ff 0%, #0077ff 100%);
-            color: #030a16;
-            box-shadow: 0 4px 15px rgba(0, 210, 255, 0.35);
+            background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+            color: #ffffff;
+            font-weight: 800;
+            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.35);
         }
 
         .btn-action-buy:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 210, 255, 0.55);
+            box-shadow: 0 6px 20px rgba(168, 85, 247, 0.55);
             filter: brightness(1.1);
         }
 
@@ -571,10 +572,14 @@
         let currentUser = null;
         let allAccessories = [];
         let activeCategory = 'all';
+        let storePromotions = [];
+        let storeGifts = [];
+        let storePacks = [];
 
         $(document).ready(async function() {
             initThemes();
             await checkUserSession();
+            await fetchPromosAndPacks();
             await loadCatalogAccessories();
             bindCatalogEvents();
 
@@ -763,8 +768,18 @@
                 // An item is accessible if owned OR (included in plan AND not paid)
                 const canUse = isOwned || (isIncludedInPlan && !isPaid);
                 const isLocked = !canUse;
-                const price = Math.max(5, Number(item.price_mxn) || 25);
+                const basePrice = Math.max(5, Number(item.price_mxn) || 25);
                 const category = (item.category || 'sleeves').toLowerCase();
+
+                // Resolve real-time pricing hierarchy (Gift -> Promo -> Base)
+                const pricing = window.TCGPurchase?.resolveProductPricing({
+                    id: item.id,
+                    category: category,
+                    basePrice: basePrice,
+                    promotions: storePromotions,
+                    giftCampaigns: storeGifts,
+                    user: currentUser
+                }) || { effectivePrice: basePrice, originalPrice: basePrice, hasPromo: false, isGift: false };
 
                 let catLabel = 'Sleeve';
                 if (category === 'deckbox') catLabel = 'Deck';
@@ -775,6 +790,10 @@
                 let statusBadgeHtml = '';
                 if (isOwned) {
                     statusBadgeHtml = `<span class="acc-status-badge badge-owned"><i class="fas fa-check-circle"></i> Adquirido</span>`;
+                } else if (pricing.isGift) {
+                    statusBadgeHtml = `<span class="acc-status-badge" style="background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4);"><i class="fas fa-gift"></i> Regalo</span>`;
+                } else if (pricing.hasPromo) {
+                    statusBadgeHtml = `<span class="acc-status-badge" style="background: rgba(0, 210, 255, 0.2); color: #00d2ff; border: 1px solid rgba(0, 210, 255, 0.4);"><i class="fas fa-tag"></i> Promo -${pricing.discountPercent}%</span>`;
                 } else if (!isPaid && isIncludedInPlan) {
                     statusBadgeHtml = `<span class="acc-status-badge badge-included"><i class="fas fa-check-circle"></i> Desbloqueado</span>`;
                 } else {
@@ -784,11 +803,19 @@
                 // Action button logic
                 let actionBtnHtml = '';
                 if (isLocked) {
-                    actionBtnHtml = `
-                        <button type="button" class="btn-card-action btn-action-buy btn-buy-accessory" data-id="${item.id}">
-                            <i class="fas fa-shopping-cart"></i> Comprar ($${price} MXN)
-                        </button>
-                    `;
+                    if (pricing.isGift) {
+                        actionBtnHtml = `
+                            <button type="button" class="btn-card-action btn-action-buy btn-claim-gift-direct" data-campaign-id="${pricing.giftCampaign?.id || ''}" style="background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%); color: #fff; border: none; font-weight: 800;">
+                                <i class="fas fa-gift"></i> Reclamar Gratis
+                            </button>
+                        `;
+                    } else {
+                        actionBtnHtml = `
+                            <button type="button" class="btn-card-action btn-action-buy btn-buy-accessory" data-id="${item.id}" data-price="${pricing.effectivePrice}">
+                                Adquirir $${pricing.effectivePrice} MXN
+                            </button>
+                        `;
+                    }
                 } else if (isOwned) {
                     actionBtnHtml = `
                         <div class="btn-card-action btn-action-owned">
@@ -821,7 +848,15 @@
                             </div>
 
                             <div class="acc-card-meta-line">
-                                ${isPaid ? `<span class="acc-price-tag">$${price} MXN</span>` : `<span class="acc-free-tag">Incluido</span>`}
+                                ${isPaid ? `
+                                    ${pricing.isGift ? `
+                                        <span class="acc-price-tag" style="text-decoration: line-through; opacity: 0.6; font-size: 0.75rem;">$${basePrice} MXN</span>
+                                        <span class="acc-free-tag" style="background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4);">GRATIS</span>
+                                    ` : pricing.hasPromo ? `
+                                        <span class="acc-price-tag" style="text-decoration: line-through; opacity: 0.6; font-size: 0.75rem;">$${basePrice} MXN</span>
+                                        <span class="acc-price-tag" style="color: #00ff88; font-weight: 900;">$${pricing.effectivePrice} MXN</span>
+                                    ` : `<span class="acc-price-tag">$${basePrice} MXN</span>`}
+                                ` : `<span class="acc-free-tag">Incluido</span>`}
                             </div>
 
                             ${actionBtnHtml}
@@ -847,7 +882,17 @@
                 $card.find('.btn-buy-accessory').on('click', async function(e) {
                     e.stopPropagation();
                     if (window.TCGPurchase) {
-                        await window.TCGPurchase.purchaseItemViaStripe('accessory', item);
+                        await window.TCGPurchase.purchaseItemViaStripe('accessory', Object.assign({}, item, { price_mxn: pricing.effectivePrice }));
+                    }
+                });
+
+                // Claim Gift click
+                $card.find('.btn-claim-gift-direct').on('click', async function(e) {
+                    e.stopPropagation();
+                    if (pricing.giftCampaign && typeof window.claimGiftItem === 'function') {
+                        await window.claimGiftItem(pricing.giftCampaign);
+                        await fetchPromosAndPacks();
+                        renderCatalogGrid();
                     }
                 });
 
@@ -885,18 +930,19 @@
             });
         }
 
-        // Load Promotions and Packs in Store
-        let storePromotions = [];
-        let storePacks = [];
-
+        // Load Promotions, Gifts, and Packs in Store
         async function fetchPromosAndPacks() {
             try {
-                const { data: pData } = await _supabase.from('product_promotions').select('*').eq('status', 'active');
-                storePromotions = pData || [];
-                const { data: pkData } = await _supabase.from('product_packs').select('*').eq('status', 'published');
-                storePacks = pkData || [];
+                const [pRes, pkRes, gRes] = await Promise.all([
+                    _supabase.from('product_promotions').select('*').eq('status', 'active'),
+                    _supabase.from('product_packs').select('*').eq('status', 'published'),
+                    _supabase.from('gift_campaigns').select('*').eq('status', 'active')
+                ]);
+                storePromotions = pRes.data || [];
+                storePacks = pkRes.data || [];
+                storeGifts = gRes.data || [];
             } catch (e) {
-                console.warn('Error loading store promos/packs:', e);
+                console.warn('Error loading store promos/packs/gifts:', e);
             }
         }
 
