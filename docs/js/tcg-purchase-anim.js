@@ -224,6 +224,103 @@
         },
 
         /**
+         * Resolves the effective pricing according to Viking TCG priority rules:
+         * 1. Gift campaign available for user ($0 / Gift) -> lowest price wins!
+         * 2. Active promotion within validity period -> discounted promo price (crossed out original)
+         * 3. Base price configured in Configuration & Packages
+         */
+        resolveProductPricing(params) {
+            const {
+                id,
+                category = '',
+                basePrice = 25,
+                promotions = [],
+                giftCampaigns = [],
+                user = null
+            } = params;
+
+            const strId = String(id || '');
+            const parsedBase = Math.max(0, Number(basePrice) || 0);
+
+            // 1. Check for Active Gift Campaign targeting this user
+            if (giftCampaigns && giftCampaigns.length > 0) {
+                const now = new Date();
+                const userRole = (user?.role || 'starter').toLowerCase();
+                const userId = user?.id || '';
+
+                const matchingGift = giftCampaigns.find(g => {
+                    if (g.status && g.status !== 'active') return false;
+                    if (g.expires_at && new Date(g.expires_at) < now) return false;
+
+                    // Check audience targeting
+                    if (g.target_type === 'plan') {
+                        if (g.target_plan && g.target_plan.toLowerCase() !== userRole) return false;
+                    } else if (g.target_type === 'specific_users') {
+                        const targetUsers = Array.isArray(g.target_users) ? g.target_users.map(String) : [];
+                        if (!targetUsers.includes(String(userId))) return false;
+                    }
+
+                    // Check if this item is inside the gift's items array
+                    const items = Array.isArray(g.items) ? g.items : [];
+                    return items.some(it => String(it.id) === strId);
+                });
+
+                if (matchingGift) {
+                    return {
+                        effectivePrice: 0,
+                        originalPrice: parsedBase,
+                        hasPromo: false,
+                        isGift: true,
+                        giftCampaign: matchingGift,
+                        discountPercent: 100,
+                        priceDisplay: '¡Gratis / Regalo!'
+                    };
+                }
+            }
+
+            // 2. Check for Active Promotion
+            if (promotions && promotions.length > 0) {
+                const now = new Date();
+                const matchingPromo = promotions.find(p => {
+                    if (String(p.product_id) !== strId) return false;
+                    if (p.status && p.status !== 'active') return false;
+
+                    if (!p.is_permanent) {
+                        if (p.start_date && new Date(p.start_date) > now) return false;
+                        if (p.end_date && new Date(p.end_date) < now) return false;
+                    }
+                    return true;
+                });
+
+                if (matchingPromo) {
+                    const promoPrice = Math.max(0, Number(matchingPromo.promo_price));
+                    if (promoPrice < parsedBase) {
+                        const percent = matchingPromo.discount_percent || Math.round(((parsedBase - promoPrice) / parsedBase) * 100);
+                        return {
+                            effectivePrice: promoPrice,
+                            originalPrice: parsedBase,
+                            hasPromo: true,
+                            isGift: false,
+                            promo: matchingPromo,
+                            discountPercent: percent,
+                            priceDisplay: `$${promoPrice} MXN`
+                        };
+                    }
+                }
+            }
+
+            // 3. Fallback to Base Price
+            return {
+                effectivePrice: parsedBase,
+                originalPrice: parsedBase,
+                hasPromo: false,
+                isGift: false,
+                discountPercent: 0,
+                priceDisplay: `$${parsedBase} MXN`
+            };
+        },
+
+        /**
          * Checks if the user already owns the given item
          * @param {string} type 'accessory' | 'sticker' | 'spirit'
          * @param {string|number} itemId
@@ -445,20 +542,20 @@
             const price = Math.max(5, Number(item.price_mxn) || 25);
             const returnUrl = window.location.origin + window.location.pathname;
 
-            // Confirm intent with a sleek TCG modal
+            // Confirm intent with a clean, pastel purple TCG modal
+            const displayImg = item.image_url || item.url || item.poster_url || '';
             const { isConfirmed } = await Swal.fire({
-                title: `¿Adquirir ${itemName}?`,
+                title: `Desbloquear ${itemName}`,
                 html: `
-                    <div style="text-align: center; margin: 15px 0;">
-                        <img src="${item.image_url || item.url || ''}" style="max-height: 140px; border-radius: 10px; border: 2px solid #00d2ff; box-shadow: 0 0 20px rgba(0, 210, 255, 0.4); margin-bottom: 12px; object-fit: contain;">
-                        <div style="font-size: 1.25rem; font-weight: 800; color: #ffd700;">$${price} MXN</div>
-                        <p style="color: #94a3b8; font-size: 0.85rem; margin-top: 6px;">Desbloqueo permanente e ilimitado para tu cuenta.</p>
+                    <div style="text-align: center; margin: 12px 0;">
+                        ${displayImg ? `<img src="${displayImg}" style="max-height: 130px; border-radius: 12px; margin-bottom: 12px; object-fit: contain;">` : ''}
+                        <div style="font-size: 1.5rem; font-weight: 900; color: #c084fc;">$${price} MXN</div>
                     </div>
                 `,
                 showCancelButton: true,
-                confirmButtonColor: '#00d2ff',
-                cancelButtonColor: '#334155',
-                confirmButtonText: `<i class="fas fa-shopping-cart"></i> Comprar Ahora`,
+                confirmButtonColor: '#a855f7',
+                cancelButtonColor: '#475569',
+                confirmButtonText: 'Comprar',
                 cancelButtonText: 'Cancelar',
                 background: '#0d1527',
                 color: '#fff',

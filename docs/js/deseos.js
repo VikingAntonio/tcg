@@ -338,26 +338,43 @@ async function saveWishlistBatch() {
 }
 
 async function checkSession() {
-    const { data: { session } } = await _supabase.auth.getSession();
-    if (session) {
-        const { data: user } = await _supabase
-            .from('usuarios')
-            .select('id, username, max_wishlist')
-            .eq('id', session.user.id)
-            .single();
+    try {
+        const { data: { session } } = await _supabase.auth.getSession();
+        if (session) {
+            const { data: user } = await _supabase
+                .from('usuarios')
+                .select('id, username, max_wishlist')
+                .eq('id', session.user.id)
+                .single();
 
-        if (user) {
-            currentUser = user;
-            $('#authenticated-content').show();
-            $('#top-panel').show();
-            $('#dropdown-user-name').text(user.username);
-            loadWishlist();
-        } else {
-            showLoginView();
+            if (user) {
+                currentUser = user;
+                $('#authenticated-content').show();
+                $('#top-panel').show();
+                $('#dropdown-user-name').text(user.username);
+                loadWishlist();
+                return;
+            }
         }
-    } else {
-        showLoginView();
+    } catch (_) {}
+
+    // Fallback to cached session
+    const raw = localStorage.getItem('tcg_session');
+    if (raw) {
+        try {
+            const cachedUser = JSON.parse(raw);
+            if (cachedUser && cachedUser.id) {
+                currentUser = cachedUser;
+                $('#authenticated-content').show();
+                $('#top-panel').show();
+                $('#dropdown-user-name').text(cachedUser.store_name || cachedUser.username || 'Usuario');
+                loadWishlist();
+                return;
+            }
+        } catch (_) {}
     }
+
+    showLoginView();
 }
 
 function showLoginView() {
