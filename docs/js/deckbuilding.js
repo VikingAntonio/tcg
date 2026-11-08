@@ -135,19 +135,22 @@ $(document).ready(async function() {
 // Check Session & Auth Fallback
 async function checkSession() {
     try {
-        const { data: { session } } = await _supabase.auth.getSession();
-        if (session) {
-            const { data: user, error } = await _supabase
-                .from('usuarios')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
+        const sbClient = window._supabase || (typeof _supabase !== 'undefined' ? _supabase : null);
+        if (sbClient && sbClient.auth) {
+            const { data: { session } } = await sbClient.auth.getSession();
+            if (session?.user) {
+                const { data: user, error } = await sbClient
+                    .from('usuarios')
+                    .select('*')
+                    .eq('id', session.user.id)
+                    .maybeSingle();
 
-            if (user) {
-                currentUser = user;
-                localStorage.setItem('tcg_session', JSON.stringify(user));
-                showAuthenticatedContent();
-                return;
+                if (user) {
+                    currentUser = user;
+                    localStorage.setItem('tcg_session', JSON.stringify(user));
+                    showAuthenticatedContent();
+                    return;
+                }
             }
         }
     } catch (e) {
@@ -157,12 +160,21 @@ async function checkSession() {
     // Fallback to cache for offline/local
     const cachedUser = localStorage.getItem('tcg_session');
     if (cachedUser) {
-        currentUser = JSON.parse(cachedUser);
-        showAuthenticatedContent();
-    } else {
-        // Show login modal if unauthenticated
-        $('#login-modal').addClass('active');
+        try {
+            currentUser = JSON.parse(cachedUser);
+            // Verify if user object is valid
+            if (currentUser && (currentUser.id || currentUser.user_id)) {
+                if (!currentUser.id && currentUser.user_id) currentUser.id = currentUser.user_id;
+                showAuthenticatedContent();
+                return;
+            }
+        } catch (err) {
+            console.error("Error parsing cached session:", err);
+        }
     }
+
+    // Show login modal if unauthenticated
+    $('#login-modal').addClass('active');
 }
 
 function showAuthenticatedContent() {
@@ -189,7 +201,16 @@ async function loadUserDecksList() {
     $list.html('<div class="loading-decks">Cargando tus decks...</div>');
 
     try {
-        const { data: decks, error } = await _supabase
+        const sbClient = window._supabase || (typeof _supabase !== 'undefined' ? _supabase : null);
+        if (!currentUser || !currentUser.id) {
+            console.warn("No currentUser found, redirecting or showing login");
+            $('#deck-workspace').hide();
+            $('#deck-selection-panel').hide();
+            $('#login-modal').addClass('active');
+            return;
+        }
+
+        const { data: decks, error } = await sbClient
             .from('decks')
             .select('*')
             .eq('user_id', currentUser.id)

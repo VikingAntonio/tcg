@@ -590,11 +590,19 @@
         /* COMMERCIAL EXTENSIONS: PROMOTIONS, PACKS, GIFTS */
         .commercial-tabs-header {
             display: flex;
+            width: 100%;
             gap: 12px;
             margin-bottom: 25px;
             flex-wrap: wrap;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             padding-bottom: 14px;
+            align-items: center;
+        }
+        .com-tab-content {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
         }
         .com-tab-btn {
             padding: 10px 22px;
@@ -738,7 +746,7 @@
         <div class="commercial-tabs-header">
             <button type="button" class="com-tab-btn active" data-target="tab-paquetes-original">⚙️ Configuración y Paquetes</button>
             <button type="button" class="com-tab-btn" data-target="tab-promociones">🏷️ Promociones</button>
-            <button type="button" class="com-tab-btn" data-target="tab-packs">📦 Packs y Paquetes</button>
+            <button type="button" class="com-tab-btn" data-target="tab-packs">📦 Paquetes</button>
             <button type="button" class="com-tab-btn" data-target="tab-regalos">🎁 Campañas de Regalos</button>
         </div>
 
@@ -1322,8 +1330,7 @@
             const { data: profile } = await _supabase.from('usuarios').select('*').eq('id', currentUserId).maybeSingle();
 
             if (!profile || profile.role !== 'admin') {
-                Swal.fire('Acceso denegado', 'Esta vista es exclusiva para el Administrador.', 'error')
-                    .then(() => { window.location.href = 'admin.html'; });
+                window.location.replace('index.html');
                 return;
             }
 

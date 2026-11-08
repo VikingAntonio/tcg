@@ -615,7 +615,8 @@
 
             $('#menu-btn-logout').on('click', async function(e) {
                 e.preventDefault();
-                if (window._supabase?.auth) await _supabase.auth.signOut();
+                const sbClient = window._supabase || (typeof _supabase !== 'undefined' ? _supabase : null);
+                if (sbClient?.auth) await sbClient.auth.signOut();
                 localStorage.removeItem('tcg_session');
                 window.location.href = 'index.html';
             });
@@ -623,10 +624,11 @@
 
         async function checkUserSession() {
             try {
-                if (window._supabase?.auth) {
-                    const { data: { session } } = await _supabase.auth.getSession();
+                const sbClient = window._supabase || (typeof _supabase !== 'undefined' ? _supabase : null);
+                if (sbClient?.auth) {
+                    const { data: { session } } = await sbClient.auth.getSession();
                     if (session?.user) {
-                        const { data: user } = await _supabase
+                        const { data: user } = await sbClient
                             .from('usuarios')
                             .select('*')
                             .eq('id', session.user.id)
@@ -761,7 +763,7 @@
                 if (isOwned) {
                     statusBadgeHtml = `<span class="acc-status-badge badge-owned"><i class="fas fa-check-circle"></i> Adquirido</span>`;
                 } else if (!isPaid && isIncludedInPlan) {
-                    statusBadgeHtml = `<span class="acc-status-badge badge-included"><i class="fas fa-gift"></i> En tu paquete</span>`;
+                    statusBadgeHtml = `<span class="acc-status-badge badge-included"><i class="fas fa-check-circle"></i> Desbloqueado</span>`;
                 } else {
                     statusBadgeHtml = `<span class="acc-status-badge badge-paid"><i class="fas fa-lock"></i> De Paga</span>`;
                 }
@@ -783,7 +785,7 @@
                 } else {
                     actionBtnHtml = `
                         <div class="btn-card-action btn-action-use">
-                            <i class="fas fa-unlock"></i> Disponible Gratis
+                            <i class="fas fa-check"></i> Adquirido
                         </div>
                     `;
                 }

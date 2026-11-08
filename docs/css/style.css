@@ -728,6 +728,26 @@ body.theme-purple .tile span, body.theme-purple .tile i { color: #fff !important
 .tile-tall { grid-row: span 2; }
 .tile-large { grid-column: span 2; grid-row: span 2; }
 
+/* Subtle Neon Glow to indicate interface customization for Personalizar and Accesorios slots */
+#btn-custom-tile,
+#btn-accesorios {
+    position: relative;
+    border-color: #00d2ff !important;
+    box-shadow: 0 0 15px rgba(0, 210, 255, 0.4), inset 0 0 8px rgba(0, 210, 255, 0.25) !important;
+    animation: tileInterfaceGlow 3s ease-in-out infinite alternate;
+}
+
+@keyframes tileInterfaceGlow {
+    0% {
+        border-color: #00d2ff;
+        box-shadow: 0 0 10px rgba(0, 210, 255, 0.35), inset 0 0 5px rgba(0, 210, 255, 0.2);
+    }
+    100% {
+        border-color: #70a1ff;
+        box-shadow: 0 0 20px rgba(112, 161, 255, 0.65), 0 0 8px rgba(0, 210, 255, 0.5), inset 0 0 12px rgba(112, 161, 255, 0.3);
+    }
+}
+
 @media (max-width: 1024px) {
     .tile-grid {
         grid-template-columns: repeat(3, 1fr);

@@ -2220,10 +2220,12 @@ async function showAuthenticatedContent() {
         if (currentUser.role === 'admin') {
             $('#btn-users-panel').show();
             $('#btn-bdd-panel').show();
+            $('#btn-packages').show();
             $('#admin-upload-container').show();
         } else {
             $('#btn-users-panel').hide();
             $('#btn-bdd-panel').hide();
+            $('#btn-packages').hide();
             $('#admin-upload-container').hide();
         }
     }
