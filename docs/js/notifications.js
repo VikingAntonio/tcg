@@ -587,3 +587,97 @@
         purgeAll: purgeAll
     };
 })();
+
+
+// ==========================================
+// GIFT CLAIMING LOGIC FOR NOTIFICATIONS
+// ==========================================
+async function claimGiftItem(giftCampaign) {
+    if (!giftCampaign || !giftCampaign.id) return;
+
+    // Check if expired
+    if (giftCampaign.expires_at && new Date() > new Date(giftCampaign.expires_at)) {
+        Swal.fire('Regalo Expirado', 'Lo sentimos, el periodo para reclamar este regalo ha finalizado.', 'warning');
+        return;
+    }
+
+    try {
+        const { data: { session } } = await _supabase.auth.getSession();
+        let userId = session ? session.user.id : null;
+        if (!userId) {
+            const raw = localStorage.getItem('tcg_session');
+            if (raw) {
+                try { userId = JSON.parse(raw).id; } catch(e){}
+            }
+        }
+        if (!userId) {
+            Swal.fire('Inicia Sesión', 'Debes iniciar sesión para reclamar este regalo.', 'info');
+            return;
+        }
+
+        // Verify if already claimed
+        const { data: existingClaim } = await _supabase
+            .from('gift_claims')
+            .select('id')
+            .eq('campaign_id', giftCampaign.id)
+            .eq('user_id', userId)
+            .maybeSingle();
+
+        if (existingClaim) {
+            Swal.fire('Ya Reclamado', 'Ya has reclamado los artículos de este regalo anteriormente.', 'info');
+            return;
+        }
+
+        // Record claim
+        const { error: claimErr } = await _supabase.from('gift_claims').insert([{
+            campaign_id: giftCampaign.id,
+            user_id: userId,
+            delivered_items: giftCampaign.items
+        }]);
+        if (claimErr) throw claimErr;
+
+        // Deliver items into user's inventory
+        const { data: userData } = await _supabase.from('usuarios').select('*').eq('id', userId).single();
+        if (userData) {
+            let stickers = (userData.purchased_sticker_ids || '').split(',').map(s=>s.trim()).filter(Boolean);
+            let accessories = (userData.purchased_accessory_ids || '').split(',').map(s=>s.trim()).filter(Boolean);
+            let spirits = (userData.purchased_spirit_ids || '').split(',').map(s=>s.trim()).filter(Boolean);
+
+            (giftCampaign.items || []).forEach(it => {
+                const idStr = String(it.id);
+                if (it.category === 'stickers' && !stickers.includes(idStr)) stickers.push(idStr);
+                else if (it.category === 'spirits' && !spirits.includes(idStr)) spirits.push(idStr);
+                else if (!accessories.includes(idStr)) accessories.push(idStr);
+            });
+
+            await _supabase.from('usuarios').update({
+                purchased_sticker_ids: stickers.join(','),
+                purchased_accessory_ids: accessories.join(','),
+                purchased_spirit_ids: spirits.join(',')
+            }).eq('id', userId);
+
+            // Update local cache
+            const raw = localStorage.getItem('tcg_session');
+            if (raw) {
+                try {
+                    const u = JSON.parse(raw);
+                    u.purchased_sticker_ids = stickers.join(',');
+                    u.purchased_accessory_ids = accessories.join(',');
+                    u.purchased_spirit_ids = spirits.join(',');
+                    localStorage.setItem('tcg_session', JSON.stringify(u));
+                } catch(e){}
+            }
+        }
+
+        if (window.TCGPurchase && window.TCGPurchase.playAcquisitionAnimation) {
+            window.TCGPurchase.playAcquisitionAnimation({ name: giftCampaign.title, image_url: giftCampaign.image_url });
+        }
+
+        Swal.fire('¡Felicidades!', 'Has reclamado tu regalo exitosamente. Los productos han sido añadidos a tu inventario.', 'success');
+        if (typeof loadNotifications === 'function') loadNotifications();
+    } catch (err) {
+        console.error('Error claiming gift:', err);
+        Swal.fire('Error', 'No se pudo reclamar el regalo. Inténtalo más tarde.', 'error');
+    }
+}
+window.claimGiftItem = claimGiftItem;
