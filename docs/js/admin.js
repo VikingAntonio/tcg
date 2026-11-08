@@ -103,6 +103,20 @@ $(document).ready(async function() {
     initTheme();
     checkPostPaymentRedirect();
 
+    // Realtime listener for accessory / spirit / sticker unlocks without page reload
+    window.addEventListener('tcg_item_unlocked', (e) => {
+        const cached = localStorage.getItem('tcg_session');
+        if (cached) {
+            try { currentUser = Object.assign(currentUser || {}, JSON.parse(cached)); } catch(_) {}
+        }
+        if (typeof loadAndRenderAccessories === 'function') {
+            loadAndRenderAccessories();
+        }
+        if (typeof loadSpirits === 'function') {
+            loadSpirits();
+        }
+    });
+
     if (typeof window.setupMultiMaskField === 'function') {
         window.setupMultiMaskField('#slot-custom-mask', '#slot-multi-mask-rows-container', '#btn-slot-add-mask-row');
     }
@@ -118,12 +132,20 @@ $(document).ready(async function() {
                 if (window.TCGPurchase) {
                     await window.TCGPurchase.checkPostPaymentCallback({
                         spirit: (spiritData) => {
+                            const cached = localStorage.getItem('tcg_session');
+                            if (cached) {
+                                try { currentUser = Object.assign(currentUser || {}, JSON.parse(cached)); } catch(_) {}
+                            }
                             if (spiritData?.id) {
                                 currentUser.selected_spirit_id = spiritData.id;
                             }
                             loadSpirits();
                         },
                         accessory: (accData) => {
+                            const cached = localStorage.getItem('tcg_session');
+                            if (cached) {
+                                try { currentUser = Object.assign(currentUser || {}, JSON.parse(cached)); } catch(_) {}
+                            }
                             loadAndRenderAccessories();
                         }
                     });
@@ -2081,7 +2103,7 @@ async function checkSession() {
         if (session) {
             const { data: user, error } = await _supabase
                 .from('usuarios')
-                .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, selected_spirit_id, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids, has_tracking, has_clients, has_auctions, has_events, max_events, auction_reset_date, monthly_created_count, monthly_bid_count')
+                .select('*')
                 .eq('id', session.user.id)
                 .single();
 

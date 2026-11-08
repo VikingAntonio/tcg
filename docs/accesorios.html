@@ -582,10 +582,23 @@
             if (window.TCGPurchase) {
                 await window.TCGPurchase.checkPostPaymentCallback({
                     accessory: (acc) => {
+                        const cached = localStorage.getItem('tcg_session');
+                        if (cached) {
+                            try { currentUser = JSON.parse(cached); } catch(_) {}
+                        }
                         renderCatalogGrid();
                     }
                 });
             }
+
+            // Realtime listener when an accessory/item is unlocked without reload
+            window.addEventListener('tcg_item_unlocked', (e) => {
+                const cached = localStorage.getItem('tcg_session');
+                if (cached) {
+                    try { currentUser = JSON.parse(cached); } catch(_) {}
+                }
+                renderCatalogGrid();
+            });
         });
 
         function initThemes() {

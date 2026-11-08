@@ -15,6 +15,28 @@ let selectedMats = null;
 $(document).ready(async function() {
     await checkSession();
 
+    // Check if user just returned from a Stripe accessory purchase
+    if (window.TCGPurchase) {
+        await window.TCGPurchase.checkPostPaymentCallback({
+            accessory: (accData) => {
+                const cached = localStorage.getItem('tcg_session');
+                if (cached) {
+                    try { currentUser = Object.assign(currentUser || {}, JSON.parse(cached)); } catch(_) {}
+                }
+                loadAndRenderAccessories();
+            }
+        });
+    }
+
+    // Realtime listener for item unlock without reloading
+    window.addEventListener('tcg_item_unlocked', (e) => {
+        const cached = localStorage.getItem('tcg_session');
+        if (cached) {
+            try { currentUser = Object.assign(currentUser || {}, JSON.parse(cached)); } catch(_) {}
+        }
+        loadAndRenderAccessories();
+    });
+
     // Auth Login triggers
     $('#btn-login').click(function(e) {
         e.preventDefault();

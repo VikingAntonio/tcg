@@ -264,36 +264,69 @@
             else if (type === 'spirit') colName = 'purchased_spirit_ids';
             if (!colName) return;
 
-            const currentList = (user[colName] || '').split(',').map(s => s.trim()).filter(Boolean);
-            if (!currentList.includes(strId)) {
-                currentList.push(strId);
-                user[colName] = currentList.join(',');
-
-                // Sincronizar en memoria global
-                if (window.currentUser) window.currentUser[colName] = user[colName];
-                if (window.CustomStoreState?.currentUser) window.CustomStoreState.currentUser[colName] = user[colName];
-
+            // Consultar datos actualizados de Supabase si es posible para no perder compras previas
+            let remoteList = [];
+            const sbClient = window._supabase || (typeof _supabase !== 'undefined' ? _supabase : null);
+            if (sbClient) {
                 try {
-                    localStorage.setItem('tcg_session', JSON.stringify(user));
-                } catch (_) {}
-
-                // Guardar en Supabase
-                try {
-                    if (window._supabase) {
-                        const updateObj = {};
-                        updateObj[colName] = user[colName];
-                        if (type === 'spirit') {
-                            updateObj.selected_spirit_id = itemId;
-                        }
-                        await window._supabase
-                            .from('usuarios')
-                            .update(updateObj)
-                            .eq('id', user.id);
+                    const { data: dbUser } = await sbClient
+                        .from('usuarios')
+                        .select(colName)
+                        .eq('id', user.id)
+                        .maybeSingle();
+                    if (dbUser && dbUser[colName]) {
+                        remoteList = (dbUser[colName] || '').split(',').map(s => s.trim()).filter(Boolean);
                     }
-                } catch (e) {
-                    console.warn(`Notice updating ${colName}:`, e);
-                }
+                } catch (_) {}
             }
+
+            const localList = (user[colName] || '').split(',').map(s => s.trim()).filter(Boolean);
+            const mergedList = Array.from(new Set([...remoteList, ...localList]));
+
+            if (!mergedList.includes(strId)) {
+                mergedList.push(strId);
+            }
+
+            user[colName] = mergedList.join(',');
+
+            // Sincronizar en memoria global de la app
+            if (window.currentUser) window.currentUser[colName] = user[colName];
+            if (window.CustomStoreState?.currentUser) window.CustomStoreState.currentUser[colName] = user[colName];
+
+            try {
+                // Actualizar cache local asegurando que tcg_session conserve el campo
+                let cachedObj = {};
+                try {
+                    cachedObj = JSON.parse(localStorage.getItem('tcg_session') || '{}');
+                } catch (_) {}
+                const updatedSession = Object.assign({}, cachedObj, user);
+                updatedSession[colName] = user[colName];
+                localStorage.setItem('tcg_session', JSON.stringify(updatedSession));
+            } catch (_) {}
+
+            // Guardar en Supabase
+            try {
+                if (sbClient) {
+                    const updateObj = {};
+                    updateObj[colName] = user[colName];
+                    if (type === 'spirit') {
+                        updateObj.selected_spirit_id = itemId;
+                    }
+                    await sbClient
+                        .from('usuarios')
+                        .update(updateObj)
+                        .eq('id', user.id);
+                }
+            } catch (e) {
+                console.warn(`Notice updating ${colName}:`, e);
+            }
+
+            // Notificar a todos los escuchadores y pestañas en tiempo real
+            try {
+                window.dispatchEvent(new CustomEvent('tcg_item_unlocked', {
+                    detail: { type, itemId: strId, list: user[colName] }
+                }));
+            } catch (_) {}
         },
 
         /**
