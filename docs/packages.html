@@ -919,6 +919,7 @@
             <button type="button" class="com-tab-btn" data-target="tab-promociones">🏷️ Promociones</button>
             <button type="button" class="com-tab-btn" data-target="tab-packs">📦 Paquetes</button>
             <button type="button" class="com-tab-btn" data-target="tab-regalos">🎁 Campañas de Regalos</button>
+            <button type="button" class="com-tab-btn" data-target="tab-bdd-global">🗄️ BDD Global</button>
         </div>
 
         <div id="tab-paquetes-original" class="com-tab-content">
@@ -1232,6 +1233,94 @@
         </div>
 
         <!-- TAB 4: SECCIÓN: REGALOS Y NOTIFICACIONES -->
+
+        <!-- PESTAÑA BDD GLOBAL -->
+        <div id="tab-bdd-global" class="com-tab-content" style="display: none;">
+            <div class="section-box">
+                <div class="section-header-row">
+                    <div>
+                        <h2 class="section-title">Base de Datos Global (Singles y Accesorios)</h2>
+                        <p class="section-subtitle">Carga de cartas individuales, sleeves, deckboxes, playmats y monedas en formatos de imagen (.png, .jpg, .webp) y modelos 3D (.gltf, .glb).</p>
+                    </div>
+                </div>
+
+                <div class="pack-builder-layout" style="margin-top: 20px;">
+                    <div class="pack-builder-form">
+                        <div class="form-group">
+                            <label class="control-label">Tipo de Registro</label>
+                            <select id="bdd-record-type" class="select-glass">
+                                <option value="single">Carta Suelta (Single)</option>
+                                <option value="sleeves">Sleeves / Micas</option>
+                                <option value="deckbox">Deckbox</option>
+                                <option value="coin">Moneda / Coin</option>
+                                <option value="mats">Playmat / Tablero</option>
+                                <option value="sealed">Producto Sellado</option>
+                                <option value="preorder">Preventa</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="control-label">Nombre del Elemento</label>
+                            <input type="text" id="bdd-item-name" class="input-glass" placeholder="Ej: Blue-Eyes White Dragon / Dragon Shield Sleeves">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="control-label">TCG / Juego</label>
+                            <select id="bdd-item-tcg" class="select-glass">
+                                <option value="yugioh">Yu-Gi-Oh!</option>
+                                <option value="pokemon">Pokémon TCG</option>
+                                <option value="magic">Magic: The Gathering</option>
+                                <option value="onepiece">One Piece TCG</option>
+                                <option value="general">General / Universal</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="control-label">Precio Base (MXN) [Opcional]</label>
+                            <input type="number" id="bdd-item-price" class="input-glass" placeholder="0" min="0" step="0.5">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="control-label">Descripción / Efecto [Opcional]</label>
+                            <textarea id="bdd-item-desc" class="input-glass" rows="2" placeholder="Detalles de la carta o accesorio..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="control-label">Archivo Multimedia (Imagen o Modelo 3D .GLTF / .GLB)</label>
+                            <div class="pack-image-dropzone" id="bdd-file-dropzone" style="min-height: 140px;">
+                                <i class="fas fa-cloud-upload-alt" style="font-size: 2.2rem; color: #00d2ff; margin-bottom: 8px;"></i>
+                                <p style="margin: 0; font-size: 0.9rem; color: #94a3b8;">Arrastra y suelta tu archivo (.png, .jpg, .webp, .gltf, .glb) o haz clic para subir</p>
+                                <input type="file" id="bdd-file-input" accept="image/*,.gltf,.glb" style="display: none;">
+                            </div>
+                            <input type="hidden" id="bdd-uploaded-url">
+                        </div>
+
+                        <div class="form-group" id="bdd-preview-wrapper" style="display: none;">
+                            <label class="control-label">Vista Previa Interactiva</label>
+                            <div id="bdd-media-preview-container" style="width: 100%; height: 260px; background: rgba(0,0,0,0.4); border: 2px dashed rgba(0,210,255,0.4); border-radius: 12px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative;">
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 12px; margin-top: 15px;">
+                            <button type="button" class="btn-com-action" id="btn-add-to-bdd-queue" style="flex: 1; justify-content: center;">
+                                <i class="fas fa-plus"></i> Agregar a la Lista
+                            </button>
+                            <button type="button" class="btn-com-action btn-com-primary" id="btn-save-bdd-global" style="flex: 1; justify-content: center;">
+                                <i class="fas fa-save"></i> Guardar Todo en BDD
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="pack-builder-preview-box">
+                        <h3 class="builder-preview-title">Lista de Elementos por Cargar (<span id="bdd-queue-count">0</span>)</h3>
+                        <div id="bdd-queue-items-list" style="display: flex; flex-direction: column; gap: 10px; max-height: 550px; overflow-y: auto; padding-right: 5px;">
+                            <p style="color: #64748b; font-size: 0.9rem; text-align: center; padding: 30px 0;">No hay elementos en la lista todavía.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div id="tab-regalos" class="com-tab-content" style="display: none;">
             <div class="section-box">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; flex-wrap: wrap; gap: 15px;">
@@ -2804,6 +2893,7 @@
             if (target === 'tab-promociones') loadPromotionsTable();
             if (target === 'tab-packs') loadPacksCards();
             if (target === 'tab-regalos') loadGiftsTable();
+            if (target === 'tab-bdd-global') initBddGlobalTab();
         });
 
         // Collect all catalog products for dropdowns
@@ -3766,6 +3856,289 @@
                     });
                 }
             });
+        });
+
+        // ==========================================
+        // BDD GLOBAL LOGIC (SINGLES & ACCESORIOS)
+        // ==========================================
+        window.bddGlobalQueue = [];
+        let bddCurrentUploadedUrl = '';
+        let bddCurrentFileType = ''; // 'image' | 'gltf'
+
+        function initBddGlobalTab() {
+            renderBddQueue();
+        }
+
+        // File drop & select handling
+        const bddDropzone = document.getElementById('bdd-file-dropzone');
+        const bddFileInput = document.getElementById('bdd-file-input');
+
+        if (bddDropzone && bddFileInput) {
+            bddDropzone.addEventListener('click', () => bddFileInput.click());
+
+            bddDropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                bddDropzone.style.borderColor = '#00d2ff';
+                bddDropzone.style.background = 'rgba(0,210,255,0.08)';
+            });
+
+            bddDropzone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                bddDropzone.style.borderColor = 'rgba(255,255,255,0.15)';
+                bddDropzone.style.background = 'rgba(0,0,0,0.2)';
+            });
+
+            bddDropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                bddDropzone.style.borderColor = 'rgba(255,255,255,0.15)';
+                bddDropzone.style.background = 'rgba(0,0,0,0.2)';
+                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    handleBddFileSelected(e.dataTransfer.files[0]);
+                }
+            });
+
+            bddFileInput.addEventListener('change', (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    handleBddFileSelected(e.target.files[0]);
+                }
+            });
+        }
+
+        async function handleBddFileSelected(file) {
+            const fileName = file.name.toLowerCase();
+            const isGltf = fileName.endsWith('.gltf') || fileName.endsWith('.glb');
+            bddCurrentFileType = isGltf ? 'gltf' : 'image';
+
+            Swal.fire({
+                title: 'Cargando archivo...',
+                text: file.name,
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            try {
+                let fileUrl = '';
+                if (window.CloudinaryUpload && typeof window.CloudinaryUpload.uploadImage === 'function' && !isGltf) {
+                    fileUrl = await window.CloudinaryUpload.uploadImage(file);
+                } else if (window._supabase && window._supabase.storage) {
+                    const ext = file.name.split('.').pop();
+                    const path = `bdd_uploads/${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
+                    const { data: uploadData, error: uploadErr } = await _supabase.storage.from('accessories').upload(path, file);
+                    if (!uploadErr && uploadData) {
+                        const { data: pubUrlData } = _supabase.storage.from('accessories').getPublicUrl(path);
+                        fileUrl = pubUrlData ? pubUrlData.publicUrl : '';
+                    }
+                }
+
+                if (!fileUrl) {
+                    fileUrl = URL.createObjectURL(file);
+                }
+
+                bddCurrentUploadedUrl = fileUrl;
+                $('#bdd-uploaded-url').val(fileUrl);
+                displayBddPreview(fileUrl, isGltf);
+                Swal.close();
+
+            } catch (err) {
+                console.warn("Upload fallback to local URL:", err);
+                bddCurrentUploadedUrl = URL.createObjectURL(file);
+                $('#bdd-uploaded-url').val(bddCurrentUploadedUrl);
+                displayBddPreview(bddCurrentUploadedUrl, isGltf);
+                Swal.close();
+            }
+        }
+
+        function displayBddPreview(url, isGltf) {
+            const $wrapper = $('#bdd-preview-wrapper');
+            const $previewContainer = $('#bdd-media-preview-container');
+            $previewContainer.empty();
+            $wrapper.fadeIn(150);
+
+            if (isGltf) {
+                $previewContainer.html(`
+                    <div style="width: 100%; height: 100%; position: relative;">
+                        <model-viewer src="${url}" auto-rotate camera-controls style="width: 100%; height: 100%;" shadow-intensity="1"></model-viewer>
+                        <div style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.6); padding: 2px 8px; border-radius: 4px; font-size: 11px; color: #00d2ff;"><i class="fas fa-cube"></i> 3D GLTF</div>
+                    </div>
+                `);
+            } else {
+                $previewContainer.html(`
+                    <img src="${url}" alt="Preview" style="max-height: 240px; max-width: 100%; object-fit: contain; border-radius: 8px;">
+                `);
+            }
+        }
+
+        // Add to batch queue
+        $(document).on('click', '#btn-add-to-bdd-queue', function() {
+            const name = ($('#bdd-item-name').val() || '').trim();
+            const type = $('#bdd-record-type').val();
+            const tcg = $('#bdd-item-tcg').val();
+            const price = parseFloat($('#bdd-item-price').val()) || 0;
+            const desc = ($('#bdd-item-desc').val() || '').trim();
+            const fileUrl = bddCurrentUploadedUrl || $('#bdd-uploaded-url').val();
+
+            if (!name) {
+                Swal.fire('Campo requerido', 'Ingresa un nombre para el registro.', 'warning');
+                return;
+            }
+
+            const item = {
+                id: 'bdd_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                name,
+                type,
+                tcg,
+                price,
+                description: desc,
+                fileUrl: fileUrl || 'https://via.placeholder.com/300x420?text=' + encodeURIComponent(name),
+                fileType: bddCurrentFileType || (fileUrl && (fileUrl.endsWith('.gltf') || fileUrl.endsWith('.glb')) ? 'gltf' : 'image')
+            };
+
+            window.bddGlobalQueue.push(item);
+
+            // Clear inputs
+            $('#bdd-item-name').val('');
+            $('#bdd-item-price').val('');
+            $('#bdd-item-desc').val('');
+            $('#bdd-uploaded-url').val('');
+            $('#bdd-preview-wrapper').hide();
+            $('#bdd-media-preview-container').empty();
+            bddCurrentUploadedUrl = '';
+            bddCurrentFileType = '';
+
+            renderBddQueue();
+
+            Swal.fire({
+                title: 'Elemento en lista',
+                text: `${name} agregado a la lista para guardar.`,
+                icon: 'success',
+                timer: 1000,
+                showConfirmButton: false
+            });
+        });
+
+        function renderBddQueue() {
+            const $list = $('#bdd-queue-items-list');
+            const $count = $('#bdd-queue-count');
+            const queue = window.bddGlobalQueue || [];
+
+            $count.text(queue.length);
+
+            if (queue.length === 0) {
+                $list.html('<p style="color: #64748b; font-size: 0.9rem; text-align: center; padding: 30px 0;">No hay elementos en la lista todavía.</p>');
+                return;
+            }
+
+            let html = '';
+            queue.forEach((item, idx) => {
+                const isGltf = item.fileType === 'gltf' || item.fileUrl.endsWith('.gltf') || item.fileUrl.endsWith('.glb');
+                const previewMedia = isGltf
+                    ? `<model-viewer src="${item.fileUrl}" auto-rotate camera-controls style="width: 70px; height: 70px; background: #000; border-radius: 6px;"></model-viewer>`
+                    : `<img src="${item.fileUrl}" style="width: 70px; height: 70px; object-fit: contain; background: rgba(0,0,0,0.3); border-radius: 6px;">`;
+
+                html += `
+                    <div style="background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 10px; display: flex; gap: 12px; align-items: center;">
+                        ${previewMedia}
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-weight: 700; font-size: 0.9rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(item.name)}</div>
+                            <div style="font-size: 0.75rem; color: #00d2ff; text-transform: uppercase;">${escapeHtml(item.type)} • ${escapeHtml(item.tcg)}</div>
+                            <div style="font-size: 0.8rem; color: #94a3b8;">${item.price > 0 ? '$' + item.price.toFixed(2) + ' MXN' : 'Sin precio'}</div>
+                        </div>
+                        <button type="button" class="btn-remove-bdd-queue" data-idx="${idx}" style="background: none; border: none; color: #ff4757; cursor: pointer; font-size: 1.1rem; padding: 6px;"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                `;
+            });
+
+            $list.html(html);
+        }
+
+        $(document).on('click', '.btn-remove-bdd-queue', function() {
+            const idx = parseInt($(this).data('idx'));
+            window.bddGlobalQueue.splice(idx, 1);
+            renderBddQueue();
+        });
+
+        // Batch Save to Supabase
+        $(document).on('click', '#btn-save-bdd-global', async function() {
+            const queue = window.bddGlobalQueue || [];
+            if (queue.length === 0) {
+                Swal.fire('Lista vacía', 'Agrega al menos un elemento a la lista antes de guardar.', 'info');
+                return;
+            }
+
+            Swal.fire({
+                title: 'Guardando en Base de Datos...',
+                text: `Procesando ${queue.length} elementos...`,
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            let savedCount = 0;
+            const errors = [];
+
+            for (const item of queue) {
+                try {
+                    if (['sleeves', 'deckbox', 'coin', 'mats'].includes(item.type)) {
+                        const accData = {
+                            name: item.name,
+                            category: item.type,
+                            image_url: item.fileUrl,
+                            model_url: item.fileType === 'gltf' ? item.fileUrl : null,
+                            price_mxn: item.price || 0,
+                            description: item.description || ''
+                        };
+                        const { error } = await _supabase.from('accessories').insert([accData]);
+                        if (error) throw error;
+                    } else if (item.type === 'sealed') {
+                        const spData = {
+                            name: item.name,
+                            image_url: item.fileUrl,
+                            price: item.price || 0,
+                            description: item.description || '',
+                            tcg: item.tcg
+                        };
+                        const { error } = await _supabase.from('sealed_products').insert([spData]);
+                        if (error) throw error;
+                    } else if (item.type === 'preorder') {
+                        const poData = {
+                            name: item.name,
+                            image_url: item.fileUrl,
+                            price: item.price || 0,
+                            description: item.description || '',
+                            tcg: item.tcg
+                        };
+                        const { error } = await _supabase.from('preorders').insert([poData]);
+                        if (error) throw error;
+                    } else {
+                        const singleData = {
+                            type: 'card_single',
+                            name: item.name,
+                            image_url: item.fileUrl,
+                            price: item.price || 0,
+                            description: item.description || '',
+                            tcg: item.tcg
+                        };
+                        const { error } = await _supabase.from('viking_data').insert([singleData]);
+                        if (error && error.code !== '42P01') throw error;
+                    }
+                    savedCount++;
+                } catch (err) {
+                    console.warn(`Error guardando ${item.name}:`, err);
+                    errors.push(`${item.name}: ${err.message || 'Error'}`);
+                }
+            }
+
+            window.bddGlobalQueue = [];
+            renderBddQueue();
+
+            if (errors.length === 0) {
+                Swal.fire('¡Éxito!', `Se guardaron ${savedCount} registros correctamente en la Base de Datos Global.`, 'success');
+            } else {
+                Swal.fire({
+                    title: 'Proceso completado con advertencias',
+                    html: `Se guardaron ${savedCount} registros.<br>Errores en algunos elementos:<br><small>${errors.join('<br>')}</small>`,
+                    icon: 'warning'
+                });
+            }
         });
 
 </script>

@@ -1,3 +1,34 @@
+
+function generateDeckAccessoriesBundleHtml(deck) {
+    const defaultMat = 'img/tablero_poke.jpg';
+    const defaultBox = 'https://res.cloudinary.com/dfm5vgdbe/image/upload/v1724040000/default_box.png';
+    const defaultSleeves = 'https://res.cloudinary.com/dfm5vgdbe/image/upload/v1724040000/default_sleeves.png';
+    const defaultCoin = 'https://res.cloudinary.com/dfm5vgdbe/image/upload/v1724040000/default_coin.png';
+
+    const mat = deck.mats || defaultMat;
+    const box = deck.deckbox || deck.box || defaultBox;
+    const sleeves = deck.sleeves || defaultSleeves;
+    const coin = deck.coin || defaultCoin;
+
+    const renderItemMedia = (url, cls) => {
+        if (!url) return '';
+        const is3D = url.toLowerCase().includes('.gltf') || url.toLowerCase().includes('.glb');
+        if (is3D) {
+            return `<model-viewer src="${url}" auto-rotate camera-controls class="${cls}" style="background: transparent; pointer-events: none;"></model-viewer>`;
+        }
+        return `<img src="${url}" alt="Accesorio" class="${cls}" onerror="this.style.display='none'">`;
+    };
+
+    return `
+        <div class="deck-accessories-bundle-preview" title="Accesorios del Deck: ${escapeHtml(deck.name || '')}">
+            ${renderItemMedia(mat, 'deck-bundle-mat')}
+            ${renderItemMedia(sleeves, 'deck-bundle-sleeves')}
+            ${renderItemMedia(box, 'deck-bundle-box')}
+            ${renderItemMedia(coin, 'deck-bundle-coin')}
+        </div>
+    `;
+}
+
 let currentAlbumId = null;
 let currentDeckId = null;
 let deckSortOrder = 'position';
@@ -2698,9 +2729,10 @@ function renderFilteredDecks(scrollPos) {
             </div>
         `;
 
+        const bundlePreviewHtml = generateDeckAccessoriesBundleHtml(deck);
         const $card = $(`
             <div class="album-card deck-item" data-id="${deck.id}">
-                <div class="deck-preview-icon"><i class="fas fa-layer-group fa-3x"></i></div>
+                ${bundlePreviewHtml}
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
                     <h3 style="margin:0;">${escapeHtml(deck.name)}</h3>
                 </div>

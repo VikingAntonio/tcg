@@ -1,3 +1,34 @@
+
+function generateDeckAccessoriesBundleHtml(deck) {
+    const defaultMat = 'img/tablero_poke.jpg';
+    const defaultBox = 'https://res.cloudinary.com/dfm5vgdbe/image/upload/v1724040000/default_box.png';
+    const defaultSleeves = 'https://res.cloudinary.com/dfm5vgdbe/image/upload/v1724040000/default_sleeves.png';
+    const defaultCoin = 'https://res.cloudinary.com/dfm5vgdbe/image/upload/v1724040000/default_coin.png';
+
+    const mat = deck.mats || defaultMat;
+    const box = deck.deckbox || deck.box || defaultBox;
+    const sleeves = deck.sleeves || defaultSleeves;
+    const coin = deck.coin || defaultCoin;
+
+    const renderItemMedia = (url, cls) => {
+        if (!url) return '';
+        const is3D = url.toLowerCase().includes('.gltf') || url.toLowerCase().includes('.glb');
+        if (is3D) {
+            return `<model-viewer src="${url}" auto-rotate camera-controls class="${cls}" style="background: transparent; pointer-events: none;"></model-viewer>`;
+        }
+        return `<img src="${url}" alt="Accesorio" class="${cls}" onerror="this.style.display='none'">`;
+    };
+
+    return `
+        <div class="deck-accessories-bundle-preview" title="Accesorios del Deck: ${escapeHtml(deck.name || '')}">
+            ${renderItemMedia(mat, 'deck-bundle-mat')}
+            ${renderItemMedia(sleeves, 'deck-bundle-sleeves')}
+            ${renderItemMedia(box, 'deck-bundle-box')}
+            ${renderItemMedia(coin, 'deck-bundle-coin')}
+        </div>
+    `;
+}
+
 // Dedicated JavaScript for standalone landscape mobile deckbuilder
 
 let currentUser = null;
@@ -224,7 +255,18 @@ async function loadUserDecksList() {
 
     try {
         const sbClient = window._supabase || (typeof _supabase !== 'undefined' ? _supabase : null);
-        if (!currentUser || !currentUser.id) {
+        if (!currentUser || (!currentUser.id && !currentUser.user_id)) {
+            const cachedUser = localStorage.getItem('tcg_session');
+            if (cachedUser) {
+                try {
+                    currentUser = JSON.parse(cachedUser);
+                    if (!currentUser.id && currentUser.user_id) currentUser.id = currentUser.user_id;
+                } catch (_) {}
+            }
+        }
+
+        const uid = currentUser ? (currentUser.id || currentUser.user_id) : null;
+        if (!uid) {
             console.warn("No currentUser found, redirecting or showing login");
             $('#deck-workspace').hide();
             $('#deck-selection-panel').hide();
@@ -232,14 +274,34 @@ async function loadUserDecksList() {
             return;
         }
 
-        const { data: decks, error } = await sbClient
-            .from('decks')
-            .select('*')
-            .eq('user_id', currentUser.id)
-            .order('position', { ascending: true })
-            .order('id', { ascending: true });
+        let decks = null;
+        let queryErr = null;
 
-        if (error) throw error;
+        try {
+            const res = await sbClient
+                .from('decks')
+                .select('*')
+                .eq('user_id', uid)
+                .order('position', { ascending: true })
+                .order('id', { ascending: true });
+            decks = res.data;
+            queryErr = res.error;
+        } catch (firstErr) {
+            queryErr = firstErr;
+        }
+
+        if (queryErr) {
+            console.warn("Retrying deck fetch with simpler query...", queryErr);
+            const retryRes = await sbClient
+                .from('decks')
+                .select('*')
+                .eq('user_id', uid);
+            if (retryRes.error) throw retryRes.error;
+            decks = retryRes.data;
+            if (Array.isArray(decks)) {
+                decks.sort((a, b) => (a.position ?? a.id ?? 0) - (b.position ?? b.id ?? 0));
+            }
+        }
 
         $list.empty();
 
@@ -261,13 +323,15 @@ async function loadUserDecksList() {
         populateDeckFormatTagOptions();
 
         decks.forEach(deck => {
-            const matImg = deck.mats || 'https://via.placeholder.com/300x150?text=Viking+TCG';
             const tagBadge = (deck.format_tag && deck.format_tag.trim()) ? `<span style="margin-left: 8px; background: rgba(0,210,255,0.15); color: #00d2ff; padding: 2px 6px; border-radius: 4px; font-size: 11px;"><i class="fas fa-tag"></i> ${deck.format_tag.trim()}</span>` : '';
+            const bundlePreviewHtml = generateDeckAccessoriesBundleHtml(deck);
             const $card = $(`
                 <div class="deck-selection-card">
-                    <div class="deck-card-bg" style="background-image: linear-gradient(rgba(15,23,42,0.6), rgba(15,23,42,0.95)), url('${matImg}');"></div>
+                    <div style="width: 100%; height: 160px; overflow: hidden; position: relative;">
+                        ${bundlePreviewHtml}
+                    </div>
                     <div class="deck-card-info">
-                        <h3>${deck.name}</h3>
+                        <h3>${escapeHtml(deck.name)}</h3>
                         <p class="deck-card-meta">
                             <span><i class="fas fa-eye"></i> ${deck.is_public !== false ? 'Público' : 'Privado'}</span>
                             ${tagBadge}

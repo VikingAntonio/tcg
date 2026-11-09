@@ -838,7 +838,7 @@
                         </div>
 
                         <div class="acc-card-image-box ${category === 'coin' ? 'type-coin' : ''}" data-url="${item.image_url}" title="Ver en grande">
-                            <img src="${item.image_url}" alt="${escapeHtml(item.name || 'Accesorio')}" onerror="this.src='https://via.placeholder.com/200?text=Accesorio'">
+                            ${(item.image_url && (item.image_url.toLowerCase().includes(".gltf") || item.image_url.toLowerCase().includes(".glb"))) ? `<model-viewer src="${item.image_url}" auto-rotate camera-controls style="width: 100%; height: 100%; pointer-events: none;"></model-viewer>` : `<img src="${item.image_url}" alt="${escapeHtml(item.name || 'Accesorio')}" onerror="this.src='https://via.placeholder.com/200?text=Accesorio'">`}
                             <div class="acc-card-zoom-hint"><i class="fas fa-search-plus"></i></div>
                         </div>
 
@@ -867,15 +867,27 @@
                 // Zoom click
                 $card.find('.acc-card-image-box').on('click', function(e) {
                     e.stopPropagation();
-                    Swal.fire({
-                        title: item.name,
-                        imageUrl: item.image_url,
-                        imageAlt: item.name,
-                        showConfirmButton: false,
-                        showCloseButton: true,
-                        background: '#0a101f',
-                        color: '#fff'
-                    });
+                    const is3D = item.image_url && (item.image_url.toLowerCase().includes('.gltf') || item.image_url.toLowerCase().includes('.glb'));
+                    if (is3D) {
+                        Swal.fire({
+                            title: item.name,
+                            html: `<div style="width: 100%; height: 350px; display: flex; align-items: center; justify-content: center;"><model-viewer src="${item.image_url}" auto-rotate camera-controls style="width: 100%; height: 100%; background: transparent;"></model-viewer></div>`,
+                            showConfirmButton: false,
+                            showCloseButton: true,
+                            background: '#0a101f',
+                            color: '#fff'
+                        });
+                    } else {
+                        Swal.fire({
+                            title: item.name,
+                            imageUrl: item.image_url,
+                            imageAlt: item.name,
+                            showConfirmButton: false,
+                            showCloseButton: true,
+                            background: '#0a101f',
+                            color: '#fff'
+                        });
+                    }
                 });
 
                 // Buy click
