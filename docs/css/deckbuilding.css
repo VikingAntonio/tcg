@@ -916,3 +916,72 @@ body {
     font-weight: 600;
     font-size: 0.9rem;
 }
+
+
+/* Bundle de Accesorios estilo Pokemon TCG Live */
+.deck-accessories-bundle-preview {
+    position: relative;
+    width: 100%;
+    height: 160px;
+    background: radial-gradient(circle at center, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.95) 100%);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(0, 210, 255, 0.2);
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.6);
+}
+.deck-accessories-bundle-preview .deck-bundle-mat {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.45;
+    filter: brightness(0.7) contrast(1.1);
+    z-index: 1;
+    transform: scale(1.05);
+    transition: transform 0.3s ease;
+}
+.deck-accessories-bundle-preview:hover .deck-bundle-mat {
+    transform: scale(1.12);
+}
+.deck-accessories-bundle-preview .deck-bundle-sleeves {
+    position: absolute;
+    bottom: 12px;
+    left: 18%;
+    width: 62px;
+    height: 90px;
+    object-fit: cover;
+    border-radius: 5px;
+    z-index: 2;
+    transform: rotate(-10deg);
+    box-shadow: -4px 6px 12px rgba(0, 0, 0, 0.7), 0 0 1px rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.deck-accessories-bundle-preview .deck-bundle-box {
+    position: absolute;
+    bottom: 18px;
+    right: 22%;
+    width: 78px;
+    height: 88px;
+    object-fit: contain;
+    z-index: 3;
+    transform: rotate(6deg);
+    filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.8));
+}
+.deck-accessories-bundle-preview .deck-bundle-coin {
+    position: absolute;
+    bottom: 10px;
+    right: 14%;
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    z-index: 4;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.9));
+    animation: coinGleam 4s infinite linear;
+}
+@keyframes coinGleam {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    50% { transform: scale(1.06) rotate(6deg); }
+}
