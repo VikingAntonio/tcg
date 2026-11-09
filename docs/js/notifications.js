@@ -20,84 +20,122 @@
             .notifications-dropdown-menu {
                 display: none;
                 position: absolute;
-                top: 45px;
+                top: 48px;
                 right: 0;
-                width: 360px;
-                max-width: 92vw;
-                max-height: 520px;
-                background: rgba(15, 23, 42, 0.96);
-                backdrop-filter: blur(20px);
-                border: 1px solid rgba(0, 210, 255, 0.35);
+                width: 390px;
+                max-width: 95vw;
+                max-height: 560px;
+                background: linear-gradient(165deg, rgba(13, 20, 36, 0.98) 0%, rgba(8, 12, 22, 0.99) 100%);
+                backdrop-filter: blur(24px);
+                -webkit-backdrop-filter: blur(24px);
+                border: 1.5px solid rgba(0, 210, 255, 0.45);
                 border-radius: 20px;
-                box-shadow: 0 20px 45px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 210, 255, 0.25);
+                box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 35px rgba(0, 210, 255, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15);
                 z-index: 99999;
                 overflow: hidden;
                 flex-direction: column;
+                font-family: 'Montserrat', system-ui, -apple-system, sans-serif;
             }
             .notifications-dropdown-menu.active {
                 display: flex;
+                animation: gameHudSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            }
+            @keyframes gameHudSlideDown {
+                from { opacity: 0; transform: translateY(-12px) scale(0.97); }
+                to { opacity: 1; transform: translateY(0) scale(1); }
             }
             .notifications-header {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                padding: 12px 16px;
-                background: rgba(0, 210, 255, 0.12);
-                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                padding: 14px 18px;
+                background: linear-gradient(90deg, rgba(0, 210, 255, 0.2) 0%, rgba(147, 51, 234, 0.15) 100%);
+                border-bottom: 1.5px solid rgba(0, 210, 255, 0.3);
                 font-weight: 800;
-                font-size: 0.88rem;
-                color: #00d2ff;
+                font-size: 0.92rem;
+                letter-spacing: 0.5px;
+                text-transform: uppercase;
+                color: #e0f2fe;
+                text-shadow: 0 0 10px rgba(0, 210, 255, 0.6);
             }
             .notifications-actions-bar {
                 display: flex;
                 gap: 8px;
             }
             .btn-clear-notifications, .btn-purge-notifications {
-                background: rgba(255,255,255,0.08);
-                border: 1px solid rgba(255,255,255,0.15);
-                color: #e2e8f0;
+                background: rgba(255,255,255,0.06);
+                border: 1px solid rgba(255,255,255,0.18);
+                color: #cbd5e1;
                 cursor: pointer;
-                font-size: 0.75rem;
-                padding: 4px 10px;
+                font-size: 0.72rem;
+                padding: 5px 10px;
                 border-radius: 8px;
                 font-weight: 700;
-                transition: all 0.2s;
+                letter-spacing: 0.3px;
+                transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             }
             .btn-clear-notifications:hover {
                 background: rgba(0, 255, 136, 0.2);
                 color: #00ff88;
                 border-color: #00ff88;
+                box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+                transform: translateY(-1px);
             }
             .btn-purge-notifications:hover {
                 background: rgba(255, 71, 87, 0.2);
                 color: #ff4757;
                 border-color: #ff4757;
+                box-shadow: 0 0 10px rgba(255, 71, 87, 0.3);
+                transform: translateY(-1px);
             }
             .notifications-list {
                 overflow-y: auto;
-                max-height: 440px;
-                padding: 12px;
+                max-height: 450px;
+                padding: 14px;
                 display: flex;
                 flex-direction: column;
-                gap: 10px;
+                gap: 12px;
+            }
+            .notifications-list::-webkit-scrollbar {
+                width: 6px;
+            }
+            .notifications-list::-webkit-scrollbar-thumb {
+                background: rgba(0, 210, 255, 0.3);
+                border-radius: 4px;
             }
             .notification-card {
-                background: rgba(30, 41, 59, 0.75);
-                border: 1px solid rgba(255, 255, 255, 0.08);
+                background: linear-gradient(135deg, rgba(22, 32, 54, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%);
+                border: 1px solid rgba(255, 255, 255, 0.1);
                 border-radius: 14px;
-                padding: 12px 14px;
+                padding: 14px 15px;
                 font-size: 0.82rem;
                 color: #e2e8f0;
-                transition: all 0.25s ease;
+                transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
                 position: relative;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            }
+            .notification-card:hover {
+                border-color: rgba(0, 210, 255, 0.4);
+                transform: translateY(-1px);
+                box-shadow: 0 6px 18px rgba(0,0,0,0.45);
             }
             .notification-card.unread {
-                border-color: rgba(0, 255, 136, 0.4);
-                background: rgba(0, 255, 136, 0.06);
+                border-color: rgba(0, 210, 255, 0.5);
+                background: linear-gradient(135deg, rgba(0, 210, 255, 0.1) 0%, rgba(15, 23, 42, 0.95) 100%);
+                box-shadow: 0 4px 16px rgba(0, 210, 255, 0.15), inset 0 0 15px rgba(0, 210, 255, 0.05);
+            }
+            .notification-card.type-gift {
+                border-color: rgba(168, 85, 247, 0.45);
+                background: linear-gradient(135deg, rgba(168, 85, 247, 0.12) 0%, rgba(15, 23, 42, 0.95) 100%);
+                box-shadow: 0 4px 16px rgba(168, 85, 247, 0.15);
+            }
+            .notification-card.type-gift.unread {
+                border-color: rgba(192, 132, 252, 0.7);
+                box-shadow: 0 4px 20px rgba(168, 85, 247, 0.25), inset 0 0 20px rgba(168, 85, 247, 0.08);
             }
             .notification-card.completed {
-                opacity: 0.55;
-                filter: grayscale(40%);
+                opacity: 0.5;
+                filter: grayscale(45%);
             }
             .notification-card.completed .notif-title-text,
             .notification-card.completed .notif-body-text {
@@ -108,17 +146,22 @@
                 display: flex;
                 justify-content: space-between;
                 align-items: flex-start;
-                gap: 8px;
-                margin-bottom: 6px;
+                gap: 10px;
+                margin-bottom: 8px;
             }
             .notif-title-text {
                 font-weight: 800;
                 color: #00ff88;
-                font-size: 0.9rem;
-                line-height: 1.25;
+                font-size: 0.92rem;
+                line-height: 1.3;
+                letter-spacing: 0.2px;
             }
             .notif-title-text.broadcast {
                 color: #38bdf8;
+            }
+            .notif-title-text.gift {
+                color: #e879f9;
+                text-shadow: 0 0 8px rgba(232, 121, 249, 0.4);
             }
             .notif-card-actions {
                 display: flex;
@@ -127,49 +170,59 @@
                 flex-shrink: 0;
             }
             .btn-notif-action {
-                background: rgba(255, 255, 255, 0.08);
+                background: rgba(255, 255, 255, 0.06);
                 border: 1px solid rgba(255, 255, 255, 0.15);
-                color: #cbd5e1;
-                border-radius: 6px;
-                width: 24px;
-                height: 24px;
+                color: #94a3b8;
+                border-radius: 8px;
+                width: 26px;
+                height: 26px;
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
                 cursor: pointer;
-                font-size: 0.7rem;
+                font-size: 0.72rem;
                 transition: all 0.2s;
             }
             .btn-notif-action.strike:hover {
-                background: rgba(56, 189, 248, 0.3);
+                background: rgba(56, 189, 248, 0.25);
                 color: #38bdf8;
                 border-color: #38bdf8;
+                box-shadow: 0 0 8px rgba(56, 189, 248, 0.3);
             }
             .btn-notif-action.delete:hover {
-                background: rgba(239, 68, 68, 0.3);
+                background: rgba(239, 68, 68, 0.25);
                 color: #ef4444;
                 border-color: #ef4444;
+                box-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
             }
             .notif-body-text {
-                font-size: 0.8rem;
+                font-size: 0.82rem;
                 color: #cbd5e1;
-                line-height: 1.35;
-                margin-bottom: 8px;
+                line-height: 1.45;
+                margin-bottom: 10px;
+                word-break: break-word;
             }
             .notif-gallery {
                 display: flex;
-                gap: 6px;
+                gap: 8px;
                 overflow-x: auto;
-                margin-bottom: 8px;
+                margin-bottom: 10px;
                 padding-bottom: 4px;
             }
             .notif-gallery-img {
-                width: 60px;
-                height: 60px;
+                width: 64px;
+                height: 64px;
                 object-fit: cover;
-                border-radius: 8px;
-                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 10px;
+                border: 1.5px solid rgba(0, 210, 255, 0.3);
                 cursor: pointer;
+                transition: transform 0.2s;
+                background: #000;
+            }
+            .notif-gallery-img:hover {
+                transform: scale(1.08);
+                border-color: #00f3ff;
+                box-shadow: 0 0 10px rgba(0, 243, 255, 0.4);
             }
             .notif-meta {
                 display: flex;
@@ -177,21 +230,76 @@
                 align-items: center;
                 font-size: 0.72rem;
                 color: #94a3b8;
+                margin-top: 8px;
             }
             .notif-badge-type {
-                background: rgba(0, 210, 255, 0.15);
+                background: rgba(0, 210, 255, 0.12);
                 color: #00d2ff;
                 border: 1px solid rgba(0, 210, 255, 0.3);
-                padding: 2px 8px;
-                border-radius: 10px;
+                padding: 3px 9px;
+                border-radius: 12px;
                 font-weight: 800;
                 font-size: 0.68rem;
+                letter-spacing: 0.5px;
+            }
+            .btn-claim-gift-action {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                width: 100%;
+                margin: 10px 0 4px 0;
+                padding: 10px 16px;
+                background: linear-gradient(135deg, #a855f7 0%, #7e22ce 50%, #6b21a8 100%);
+                color: #ffffff !important;
+                border: 1px solid #d8b4fe;
+                border-radius: 12px;
+                font-weight: 800;
+                font-size: 0.86rem;
+                letter-spacing: 0.5px;
+                text-transform: uppercase;
+                cursor: pointer;
+                position: relative;
+                overflow: hidden;
+                box-shadow: 0 6px 18px rgba(168, 85, 247, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.35), inset 0 -2px 0 rgba(0, 0, 0, 0.3);
+                transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+            }
+            .btn-claim-gift-action:before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 60%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+                transform: skewX(-20deg);
+                animation: gameBtnShimmer 2.8s infinite;
+            }
+            @keyframes gameBtnShimmer {
+                0% { left: -100%; }
+                40%, 100% { left: 180%; }
+            }
+            .btn-claim-gift-action:hover {
+                background: linear-gradient(135deg, #c084fc 0%, #9333ea 50%, #7e22ce 100%);
+                box-shadow: 0 8px 24px rgba(168, 85, 247, 0.65), 0 0 15px rgba(216, 180, 254, 0.5);
+                transform: translateY(-2px) scale(1.01);
+            }
+            .btn-claim-gift-action:active {
+                transform: translateY(1px) scale(0.99);
+                box-shadow: 0 2px 8px rgba(168, 85, 247, 0.4);
+            }
+            .btn-claim-gift-action:disabled {
+                opacity: 0.65;
+                cursor: not-allowed;
+                transform: none;
+                box-shadow: none;
             }
             .notifications-empty {
                 text-align: center;
-                padding: 35px 15px;
+                padding: 40px 15px;
                 color: #64748b;
-                font-size: 0.85rem;
+                font-size: 0.88rem;
+                font-weight: 600;
             }
         `;
         $('<style id="viking-notification-styles">').text(css).appendTo('head');
@@ -508,8 +616,9 @@
                 `;
             }
 
+            const typeClass = item.type === 'gift' ? 'type-gift' : '';
             const $card = $(`
-                <div class="notification-card ${!isRead ? 'unread' : 'completed'}" data-id="${item.id}">
+                <div class="notification-card ${!isRead ? 'unread' : 'completed'} ${typeClass}" data-id="${item.id}">
                     <div class="notif-title-row">
                         <div class="notif-title-text ${item.type}">${item.title}</div>
                         <div class="notif-card-actions">
@@ -686,6 +795,241 @@
 
 
 // ==========================================
+// ==========================================
+// VIDEO GAME GIFT OPENING ANIMATION SEQUENCE
+// ==========================================
+function playGiftOpeningSequence(giftCampaign) {
+    return new Promise((resolve) => {
+        // Inject styles if not already present
+        if (!$('#gift-opening-anim-styles').length) {
+            $('<style id="gift-opening-anim-styles">').text(`
+                .gift-opening-overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100vw;
+                    height: 100vh;
+                    background: radial-gradient(circle at center, rgba(30, 20, 60, 0.96) 0%, rgba(5, 8, 18, 0.99) 100%);
+                    z-index: 100000;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    animation: giftOverlayFadeIn 0.3s ease-out forwards;
+                    font-family: 'Montserrat', system-ui, sans-serif;
+                    overflow: hidden;
+                    user-select: none;
+                }
+                @keyframes giftOverlayFadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                .gift-opening-rays {
+                    position: absolute;
+                    width: 700px;
+                    height: 700px;
+                    border-radius: 50%;
+                    background: conic-gradient(from 0deg, rgba(168, 85, 247, 0.25), transparent 45deg, rgba(236, 72, 153, 0.3) 90deg, transparent 135deg, rgba(0, 210, 255, 0.25) 180deg, transparent 225deg, rgba(168, 85, 247, 0.25) 270deg, transparent 315deg, rgba(236, 72, 153, 0.3) 360deg);
+                    animation: giftRaysSpin 12s linear infinite;
+                    pointer-events: none;
+                }
+                @keyframes giftRaysSpin {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                }
+                .gift-box-container {
+                    position: relative;
+                    width: 180px;
+                    height: 180px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    z-index: 2;
+                }
+                .gift-box-wrapper {
+                    position: relative;
+                    width: 140px;
+                    height: 140px;
+                    animation: giftBoxFloat 2s ease-in-out infinite;
+                }
+                @keyframes giftBoxFloat {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(-12px); }
+                }
+                .gift-box-wrapper.shaking {
+                    animation: giftBoxShake 0.6s ease-in-out infinite !important;
+                }
+                @keyframes giftBoxShake {
+                    0%, 100% { transform: rotate(0deg) scale(1); }
+                    20% { transform: rotate(-8deg) scale(1.05); }
+                    40% { transform: rotate(8deg) scale(1.08); }
+                    60% { transform: rotate(-6deg) scale(1.1); }
+                    80% { transform: rotate(6deg) scale(1.12); }
+                }
+                .gift-box-base {
+                    position: absolute;
+                    bottom: 0;
+                    left: 10px;
+                    width: 120px;
+                    height: 90px;
+                    background: linear-gradient(145deg, #a855f7, #6b21a8);
+                    border-radius: 12px;
+                    border: 2px solid #d8b4fe;
+                    box-shadow: 0 15px 35px rgba(147, 51, 234, 0.5), inset 0 2px 0 rgba(255, 255, 255, 0.3);
+                }
+                .gift-box-base::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 48px;
+                    width: 24px;
+                    height: 100%;
+                    background: linear-gradient(180deg, #fef08a, #eab308);
+                    box-shadow: 0 0 10px rgba(250, 204, 21, 0.6);
+                }
+                .gift-box-lid {
+                    position: absolute;
+                    top: 25px;
+                    left: 2px;
+                    width: 136px;
+                    height: 35px;
+                    background: linear-gradient(145deg, #c084fc, #7e22ce);
+                    border-radius: 10px;
+                    border: 2px solid #f3e8ff;
+                    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4), inset 0 2px 0 rgba(255, 255, 255, 0.4);
+                    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                }
+                .gift-box-lid::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 56px;
+                    width: 24px;
+                    height: 100%;
+                    background: linear-gradient(180deg, #fef08a, #eab308);
+                }
+                .gift-box-bow {
+                    position: absolute;
+                    top: 5px;
+                    left: 50px;
+                    width: 40px;
+                    height: 25px;
+                    display: flex;
+                    justify-content: center;
+                }
+                .gift-box-bow::before, .gift-box-bow::after {
+                    content: '';
+                    width: 20px;
+                    height: 20px;
+                    border: 3px solid #fde047;
+                    border-radius: 50% 50% 0 50%;
+                    background: #eab308;
+                    box-shadow: 0 0 10px rgba(250, 204, 21, 0.6);
+                }
+                .gift-box-bow::after {
+                    border-radius: 50% 50% 50% 0;
+                }
+                .gift-box-wrapper.opened .gift-box-lid {
+                    transform: translateY(-90px) rotate(-35deg) scale(1.1);
+                    opacity: 0;
+                }
+                .gift-box-wrapper.opened .gift-box-base {
+                    transform: scale(0.9);
+                    filter: brightness(1.2);
+                    box-shadow: 0 0 50px rgba(250, 204, 21, 0.8), 0 0 100px rgba(168, 85, 247, 0.8);
+                }
+                .gift-burst-sparks {
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    width: 10px;
+                    height: 10px;
+                    transform: translate(-50%, -50%);
+                    pointer-events: none;
+                }
+                .gift-spark {
+                    position: absolute;
+                    width: 8px;
+                    height: 8px;
+                    border-radius: 50%;
+                    background: #fde047;
+                    box-shadow: 0 0 12px #fde047;
+                    animation: giftSparkShoot 0.8s ease-out forwards;
+                }
+                @keyframes giftSparkShoot {
+                    0% { transform: translate(0, 0) scale(1); opacity: 1; }
+                    100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
+                }
+                .gift-opening-title {
+                    margin-top: 35px;
+                    font-size: 1.35rem;
+                    font-weight: 800;
+                    color: #f8fafc;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                    text-align: center;
+                    text-shadow: 0 0 15px rgba(168, 85, 247, 0.7);
+                    z-index: 2;
+                }
+                .gift-opening-sub {
+                    margin-top: 8px;
+                    font-size: 0.95rem;
+                    color: #cbd5e1;
+                    letter-spacing: 0.5px;
+                    text-align: center;
+                    z-index: 2;
+                }
+            `).appendTo('head');
+        }
+
+        const title = (giftCampaign && giftCampaign.title) || 'Recompensa Especial';
+        const $overlay = $(`
+            <div class="gift-opening-overlay">
+                <div class="gift-opening-rays"></div>
+                <div class="gift-box-container">
+                    <div class="gift-box-wrapper shaking">
+                        <div class="gift-box-bow"></div>
+                        <div class="gift-box-lid"></div>
+                        <div class="gift-box-base"></div>
+                    </div>
+                    <div class="gift-burst-sparks"></div>
+                </div>
+                <div class="gift-opening-title">🎁 ¡Abriendo Regalo!</div>
+                <div class="gift-opening-sub">${title}</div>
+            </div>
+        `).appendTo('body');
+
+        // Play shaking, then pop open after 900ms
+        setTimeout(() => {
+            const $wrapper = $overlay.find('.gift-box-wrapper');
+            $wrapper.removeClass('shaking').addClass('opened');
+            $overlay.find('.gift-opening-title').text('✨ ¡RECOMPENSA DESBLOQUEADA! ✨');
+
+            // Generate particles / sparks
+            const $sparks = $overlay.find('.gift-burst-sparks');
+            const colors = ['#fde047', '#38bdf8', '#c084fc', '#f43f5e', '#4ade80'];
+            for (let i = 0; i < 32; i++) {
+                const angle = (i / 32) * 2 * Math.PI;
+                const distance = 80 + Math.random() * 140;
+                const dx = `${Math.cos(angle) * distance}px`;
+                const dy = `${Math.sin(angle) * distance}px`;
+                const bg = colors[i % colors.length];
+                const $spark = $(`<div class="gift-spark" style="--dx: ${dx}; --dy: ${dy}; background: ${bg}; box-shadow: 0 0 12px ${bg};"></div>`);
+                $sparks.append($spark);
+            }
+
+            // After celebration frame, clean up overlay and proceed to reward celebration
+            setTimeout(() => {
+                $overlay.fadeOut(300, function() {
+                    $(this).remove();
+                    resolve();
+                });
+            }, 1000);
+        }, 900);
+    });
+}
+
 // GIFT CLAIMING LOGIC FOR NOTIFICATIONS
 // ==========================================
 async function claimGiftItem(giftCampaign) {
@@ -765,11 +1109,30 @@ async function claimGiftItem(giftCampaign) {
             }
         }
 
-        if (window.TCGPurchase && window.TCGPurchase.playAcquisitionAnimation) {
-            window.TCGPurchase.playAcquisitionAnimation({ name: giftCampaign.title, image_url: giftCampaign.image_url });
+        // 1. Play video game gift opening animation
+        try {
+            await playGiftOpeningSequence(giftCampaign);
+        } catch(animErr) {
+            console.warn('Gift anim sequence error:', animErr);
         }
 
-        Swal.fire('¡Felicidades!', 'Has reclamado tu regalo exitosamente. Los productos han sido añadidos a tu inventario.', 'success');
+        // 2. Play item acquisition celebration animation
+        if (window.TCGPurchase && typeof window.TCGPurchase.playAcquisitionAnimation === 'function') {
+            await window.TCGPurchase.playAcquisitionAnimation({
+                name: giftCampaign.title,
+                imageUrl: giftCampaign.image_url,
+                category: 'Regalo Reclamado'
+            });
+        }
+
+        Swal.fire({
+            title: '¡Felicidades!',
+            text: 'Has reclamado tu regalo exitosamente. Los artículos ya se encuentran en tu inventario.',
+            icon: 'success',
+            background: '#0f172a',
+            color: '#f8fafc',
+            confirmButtonColor: '#a855f7'
+        });
         if (typeof loadNotifications === 'function') loadNotifications();
     } catch (err) {
         console.error('Error claiming gift:', err);
