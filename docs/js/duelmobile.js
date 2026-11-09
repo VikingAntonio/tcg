@@ -579,6 +579,8 @@ const state = {
     decks: { player1: [], player2: [] }, // Raw decks selected
     deckSleeves: { player1: null, player2: null }, // Store selected sleeve URL for each player
     deckMats: { player1: null, player2: null }, // Store selected playmat URL for each player
+    deckCoins: { player1: null, player2: null },   // Store selected coin URL for each player
+    deckDice: { player1: null, player2: null },    // Store selected dice URL for each player
     currentUser: null
 };
 
@@ -760,12 +762,14 @@ async function fetchDeckCards(deckId, playerKey) {
         try {
             const { data: deckMeta, error: deckErr } = await _supabase
                 .from('decks')
-                .select('sleeves, mats')
+                .select('sleeves, mats, coin, dice')
                 .eq('id', deckId)
                 .single();
             if (!deckErr && deckMeta) {
                 state.deckSleeves[playerKey] = deckMeta.sleeves || null;
                 state.deckMats[playerKey] = deckMeta.mats || null;
+                state.deckCoins[playerKey] = deckMeta.coin || null;
+                state.deckDice[playerKey] = deckMeta.dice || null;
 
                 // Apply player1's custom mat to the playmat background
                 if (playerKey === 'player1' && deckMeta.mats) {
@@ -778,11 +782,15 @@ async function fetchDeckCards(deckId, playerKey) {
             } else {
                 state.deckSleeves[playerKey] = null;
                 state.deckMats[playerKey] = null;
+                state.deckCoins[playerKey] = null;
+                state.deckDice[playerKey] = null;
             }
         } catch (metaE) {
             console.warn("Error fetching deck accessories, fallback:", metaE);
             state.deckSleeves[playerKey] = null;
             state.deckMats[playerKey] = null;
+            state.deckCoins[playerKey] = null;
+            state.deckDice[playerKey] = null;
         }
     } catch (err) {
         console.error("Error loading deck cards:", err);
@@ -5295,6 +5303,21 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                     state.lp = payload.lp;
                     state.turnActionTaken = payload.turnActionTaken || false;
                     updateTurnUI();
+                    if (typeof window.renderAccessoryResultsInPanel === "function") {
+                        window.renderAccessoryResultsInPanel();
+                    }
+                })
+                .on('broadcast', { event: 'dice_coin_sync' }, ({ payload }) => {
+                    if (!payload || !payload.type) return;
+                    if (payload.type === 'dice') {
+                        if (typeof window.executeCinematicDiceRoll === 'function') {
+                            window.executeCinematicDiceRoll(payload.turnPlayer || 'player1', payload.result, false);
+                        }
+                    } else if (payload.type === 'coin') {
+                        if (typeof window.executeCinematicCoinFlip === 'function') {
+                            window.executeCinematicCoinFlip(payload.turnPlayer || 'player1', payload.result, false);
+                        }
+                    }
                 })
                 .on('broadcast', { event: 'hand_reveal_sync' }, ({ payload }) => {
                     if (!payload || !payload.player) return;
@@ -5457,48 +5480,201 @@ window.setupPokemonPrizes = setupPokemonPrizes;
             };
             updateLayoutFeatureVisibility();
 
-            // 1. Dice Roll Logic
-            $(".dice-action-btn").click(function() {
-                const $dice = $(this);
-                if ($dice.hasClass("rolling")) return;
+            // Estado persistente de resultados de moneda y dado
+            window.duelLastCoinResult = window.duelLastCoinResult || null;
+            window.duelLastDiceResult = window.duelLastDiceResult || null;
 
-                const playerSuffix = (currentRole === "player1" ? "p1" : "p2").toUpperCase();
-                $dice.addClass("rolling");
-                sendGameAction(`[${playerSuffix}] Está lanzando un dado...`);
+            window.renderAccessoryResultsInPanel = function() {
+                if (window.duelLastDiceResult !== null) {
+                    $(".dice-action-btn").text(window.duelLastDiceResult);
+                }
+                if (window.duelLastCoinResult !== null) {
+                    if (window.duelLastCoinResult === "Cara") {
+                        $(".coin-action-btn").find(".coin-inner").css("transform", "rotateY(0deg)");
+                    } else if (window.duelLastCoinResult === "Cruz") {
+                        $(".coin-action-btn").find(".coin-inner").css("transform", "rotateY(180deg)");
+                    }
+                }
+            };
 
-                let rollInterval = setInterval(() => {
-                    $dice.text(Math.floor(Math.random() * 6) + 1);
-                }, 80);
+            // Ejecutor cinemático de animación de dado móvil
+            window.executeCinematicDiceRoll = function(turnPlayer, rollResult, shouldBroadcast = true) {
+                const playerSuffix = (turnPlayer === "player1" ? "P1" : "P2");
+                const customDice = (state.deckDice && state.deckDice[turnPlayer]) ? state.deckDice[turnPlayer] : null;
+                const is3D = customDice && (customDice.toLowerCase().includes('.gltf') || customDice.toLowerCase().includes('.glb'));
+
+                if (shouldBroadcast) {
+                    sendGameAction(`[${playerSuffix}] Está lanzando un dado...`);
+                    try {
+                        if (typeof commChannel !== "undefined" && commChannel && typeof commChannel.send === "function") {
+                            commChannel.send({
+                                type: 'broadcast',
+                                event: 'dice_coin_sync',
+                                payload: { type: 'dice', turnPlayer: turnPlayer, result: rollResult }
+                            });
+                        }
+                    } catch (e) {
+                        console.warn("Could not broadcast dice sync:", e);
+                    }
+                }
+
+                const $overlay = $("#duel-toss-overlay");
+                const $title = $("#duel-toss-title");
+                const $stage = $("#duel-toss-stage");
+                const $resultText = $("#duel-toss-result-text");
+
+                $title.text(`[${playerSuffix}] Lanzamiento de Dado`);
+                $resultText.css({ opacity: 0, transform: "scale(0.6)" }).text("");
+                $stage.empty();
+
+                if (is3D) {
+                    $stage.html(`
+                        <model-viewer id="toss-dice-3d" src="${customDice}" auto-rotate camera-controls style="width: 100%; height: 100%;" shadow-intensity="1"></model-viewer>
+                    `);
+                    let rot = 0;
+                    const rotInterval = setInterval(() => {
+                        rot += 35;
+                        const viewer = document.getElementById("toss-dice-3d");
+                        if (viewer) viewer.setAttribute("camera-orbit", `${rot}deg 75deg 105%`);
+                    }, 50);
+
+                    setTimeout(() => {
+                        clearInterval(rotInterval);
+                    }, 1400);
+                } else if (customDice) {
+                    $stage.html(`
+                        <div id="toss-dice-2d" style="width: 120px; height: 120px; border-radius: 16px; overflow: hidden; box-shadow: 0 0 25px rgba(0,210,255,0.6); display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); border: 2px solid #00d2ff; animation: diceRollAnimation 1.2s infinite ease-in-out;">
+                            <img src="${customDice}" style="width: 100%; height: 100%; object-fit: contain;">
+                        </div>
+                    `);
+                } else {
+                    $stage.html(`
+                        <div id="toss-dice-default" style="width: 100px; height: 100px; border-radius: 16px; background: radial-gradient(circle at center, rgba(0, 210, 255, 0.4) 0%, rgba(10, 15, 22, 0.95) 100%); border: 3px solid #00d2ff; display: flex; align-items: center; justify-content: center; font-family: 'Orbitron', sans-serif; font-size: 3rem; font-weight: 900; color: #00d2ff; box-shadow: 0 0 30px rgba(0,210,255,0.7); animation: diceRollAnimation 1.2s infinite ease-in-out;">
+                            1
+                        </div>
+                    `);
+                    let tempVal = 1;
+                    const numInterval = setInterval(() => {
+                        tempVal = (tempVal % 6) + 1;
+                        $("#toss-dice-default").text(tempVal);
+                    }, 80);
+                    setTimeout(() => {
+                        clearInterval(numInterval);
+                        $("#toss-dice-default").text(rollResult);
+                    }, 1300);
+                }
+
+                $overlay.fadeIn(200).css("display", "flex");
 
                 setTimeout(() => {
-                    clearInterval(rollInterval);
-                    const finalRoll = Math.floor(Math.random() * 6) + 1;
-                    $dice.text(finalRoll).removeClass("rolling");
-                    sendGameAction(`[${playerSuffix}] Lanzó un dado y obtuvo: 🎲 ${finalRoll}`);
-                }, 600);
+                    $resultText.text(`Resultado: ${rollResult}`).css({ opacity: 1, transform: "scale(1.1)" });
+                    window.duelLastDiceResult = rollResult;
+                    window.renderAccessoryResultsInPanel();
+                    if (shouldBroadcast) {
+                        sendGameAction(`[${playerSuffix}] Lanzó un dado y obtuvo: 🎲 ${rollResult}`);
+                    }
+                }, 1350);
+
+                setTimeout(() => {
+                    $overlay.fadeOut(250);
+                }, 2400);
+            };
+
+            // Ejecutor cinemático de animación de moneda móvil
+            window.executeCinematicCoinFlip = function(turnPlayer, coinResult, shouldBroadcast = true) {
+                const playerSuffix = (turnPlayer === "player1" ? "P1" : "P2");
+                const customCoin = (state.deckCoins && state.deckCoins[turnPlayer]) ? state.deckCoins[turnPlayer] : null;
+                const is3D = customCoin && (customCoin.toLowerCase().includes('.gltf') || customCoin.toLowerCase().includes('.glb'));
+
+                if (shouldBroadcast) {
+                    sendGameAction(`[${playerSuffix}] Está lanzando una moneda...`);
+                    try {
+                        if (typeof commChannel !== "undefined" && commChannel && typeof commChannel.send === "function") {
+                            commChannel.send({
+                                type: 'broadcast',
+                                event: 'dice_coin_sync',
+                                payload: { type: 'coin', turnPlayer: turnPlayer, result: coinResult }
+                            });
+                        }
+                    } catch (e) {
+                        console.warn("Could not broadcast coin sync:", e);
+                    }
+                }
+
+                const $overlay = $("#duel-toss-overlay");
+                const $title = $("#duel-toss-title");
+                const $stage = $("#duel-toss-stage");
+                const $resultText = $("#duel-toss-result-text");
+
+                $title.text(`[${playerSuffix}] Lanzamiento de Moneda`);
+                $resultText.css({ opacity: 0, transform: "scale(0.6)" }).text("");
+                $stage.empty();
+
+                if (is3D) {
+                    $stage.html(`
+                        <model-viewer id="toss-coin-3d" src="${customCoin}" auto-rotate camera-controls style="width: 100%; height: 100%;" shadow-intensity="1"></model-viewer>
+                    `);
+                    let rotY = 0;
+                    const rotInterval = setInterval(() => {
+                        rotY += 45;
+                        const viewer = document.getElementById("toss-coin-3d");
+                        if (viewer) viewer.setAttribute("camera-orbit", `${rotY}deg 80deg 105%`);
+                    }, 50);
+
+                    setTimeout(() => {
+                        clearInterval(rotInterval);
+                        const finalOrbit = (coinResult === "Cara") ? "0deg 90deg 105%" : "180deg 90deg 105%";
+                        const viewer = document.getElementById("toss-coin-3d");
+                        if (viewer) viewer.setAttribute("camera-orbit", finalOrbit);
+                    }, 1400);
+                } else if (customCoin) {
+                    $stage.html(`
+                        <div id="toss-coin-2d" style="width: 130px; height: 130px; border-radius: 50%; overflow: hidden; box-shadow: 0 0 25px rgba(255,215,0,0.6); display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); border: 3px solid #ffd700; animation: coinFlipAnimation 1.2s infinite ease-in-out;">
+                            <img src="${customCoin}" style="width: 100%; height: 100%; object-fit: contain;">
+                        </div>
+                    `);
+                } else {
+                    $stage.html(`
+                        <div class="tcg-coin flipping" style="width: 120px; height: 120px;">
+                            <div class="coin-inner" style="animation: coinFlipAnimation 1.2s infinite ease-in-out;">
+                                <div class="coin-front" style="font-size: 1.3rem;">Cara</div>
+                                <div class="coin-back" style="font-size: 1.3rem;">Cruz</div>
+                            </div>
+                        </div>
+                    `);
+                }
+
+                $overlay.fadeIn(200).css("display", "flex");
+
+                setTimeout(() => {
+                    $resultText.text(`Resultado: ${coinResult}`).css({ opacity: 1, transform: "scale(1.1)" });
+                    window.duelLastCoinResult = coinResult;
+                    window.renderAccessoryResultsInPanel();
+                    if (shouldBroadcast) {
+                        sendGameAction(`[${playerSuffix}] Lanzó una moneda y obtuvo: 🪙 ${coinResult}`);
+                    }
+                }, 1350);
+
+                setTimeout(() => {
+                    $overlay.fadeOut(250);
+                }, 2400);
+            };
+
+            // 1. Dice Roll Logic (50% / uniforme 1 a 6)
+            $(".dice-action-btn").click(function() {
+                if ($("#duel-toss-overlay").is(":visible")) return;
+                const turnPlayer = state.activeTurn || "player1";
+                const calculatedRoll = Math.floor(Math.random() * 6) + 1;
+                window.executeCinematicDiceRoll(turnPlayer, calculatedRoll, true);
             });
 
-            // 2. Coin Flip Logic
+            // 2. Coin Flip Logic (50% Cara / 50% Cruz)
             $(".coin-action-btn").click(function() {
-                const $coin = $(this);
-                if ($coin.hasClass("flipping")) return;
-
-                const playerSuffix = (currentRole === "player1" ? "p1" : "p2").toUpperCase();
-                $coin.addClass("flipping");
-                sendGameAction(`[${playerSuffix}] Está lanzando una moneda...`);
-
-                setTimeout(() => {
-                    $coin.removeClass("flipping");
-                    const isHeads = Math.random() < 0.5;
-                    const finalResult = isHeads ? "Cara" : "Cruz";
-
-                    if (isHeads) {
-                        $coin.find(".coin-inner").css("transform", "rotateY(0deg)");
-                    } else {
-                        $coin.find(".coin-inner").css("transform", "rotateY(180deg)");
-                    }
-                    sendGameAction(`[${playerSuffix}] Lanzó una moneda y obtuvo: 🪙 ${finalResult}`);
-                }, 800);
+                if ($("#duel-toss-overlay").is(":visible")) return;
+                const turnPlayer = state.activeTurn || "player1";
+                const isHeads = Math.random() < 0.5;
+                const calculatedCoin = isHeads ? "Cara" : "Cruz";
+                window.executeCinematicCoinFlip(turnPlayer, calculatedCoin, true);
             });
 
             // 3. Spawning Token Cards with Selective Zone Placing (Yu-Gi-Oh!)

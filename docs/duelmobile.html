@@ -593,6 +593,18 @@
                 </div>
             </div>
 
+            <!-- Cinematic 3D/2D Toss Animation Overlay (Coin & Dice) Mobile -->
+            <div id="duel-toss-overlay" style="display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(5, 10, 20, 0.88); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); flex-direction: column; align-items: center; justify-content: center; pointer-events: auto;">
+                <div id="duel-toss-title" style="font-family: 'Orbitron', sans-serif; font-size: 1.2rem; font-weight: 900; color: #00d2ff; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 15px rgba(0,210,255,0.6); margin-bottom: 20px;">
+                    Lanzando...
+                </div>
+                <div id="duel-toss-stage" style="width: 200px; height: 200px; position: relative; display: flex; align-items: center; justify-content: center;">
+                    <!-- Dynamic coin or dice animation container -->
+                </div>
+                <div id="duel-toss-result-text" style="margin-top: 20px; font-family: 'Orbitron', sans-serif; font-size: 1.6rem; font-weight: 900; color: #ffd700; text-shadow: 0 0 20px rgba(255,215,0,0.8); opacity: 0; transform: scale(0.6); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                </div>
+            </div>
+
             <!-- Interactive Playmat Board -->
             <div class="playmat-board" id="playmat">
                 <div class="player-mat-bg p2-mat-bg" id="player-mat-p2"></div>

@@ -370,12 +370,6 @@ $(document).ready(async function() {
 
     // Removido listener de #btn-show-investments para permitir redirección nativa a inversiones.html
 
-    $(document).on('click', '#btn-bdd-panel', function(e) {
-        e.preventDefault();
-        showView('bdd');
-        resetBddForm();
-        if (typeof renderPendingBdd === 'function') renderPendingBdd();
-    });
 
     $(document).on('click', '#btn-wishlist, #menu-btn-wishlist', function(e) {
         // Redirigir a Wanted
@@ -2272,12 +2266,10 @@ async function showAuthenticatedContent() {
     if (currentUser) {
         if (currentUser.role === 'admin') {
             $('#btn-users-panel').show();
-            $('#btn-bdd-panel').show();
             $('#btn-packages').show();
             $('#admin-upload-container').show();
         } else {
             $('#btn-users-panel').hide();
-            $('#btn-bdd-panel').hide();
             $('#btn-packages').hide();
             $('#admin-upload-container').hide();
         }
