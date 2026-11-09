@@ -41,6 +41,7 @@ let activeSection = 'Main';
 let selectedSleeves = null;
 let selectedDeckbox = null;
 let selectedCoin = null;
+let selectedDice = null;
 let selectedMats = null;
 
 $(document).ready(async function() {
@@ -156,6 +157,7 @@ $(document).ready(async function() {
         if (key === 'sleeves') selectedSleeves = val;
         else if (key === 'deckbox') selectedDeckbox = val;
         else if (key === 'coin') selectedCoin = val;
+        else if (key === 'dice') selectedDice = val;
         else if (key === 'mats') selectedMats = val;
 
         $item.siblings().removeClass('selected');
@@ -592,6 +594,7 @@ async function loadDeckData() {
         selectedSleeves = deck.sleeves || null;
         selectedDeckbox = deck.deckbox || null;
         selectedCoin = deck.coin || null;
+        selectedDice = deck.dice || null;
         selectedMats = deck.mats || null;
 
         // Fetch Deck Cards
@@ -822,6 +825,7 @@ async function loadAndRenderAccessories() {
                 if (r.includes('mat') || e.includes('mat')) cat = 'mats';
                 else if (r === 'deckbox' || e === 'deckbox') cat = 'deckbox';
                 else if (r === 'coin' || e === 'coin') cat = 'coin';
+                else if (r === 'dice' || e === 'dice') cat = 'dice';
 
                 return {
                     id: v.id,
@@ -837,7 +841,7 @@ async function loadAndRenderAccessories() {
 
         const userRole = (currentUser?.role || 'starter').toLowerCase();
         const isAdmin = userRole === 'admin';
-        const types = ['sleeves', 'deckbox', 'coin', 'mats'];
+        const types = ['sleeves', 'deckbox', 'coin', 'dice', 'mats'];
 
         types.forEach(key => {
             const $grid = $('#grid-' + key);
@@ -858,11 +862,17 @@ async function loadAndRenderAccessories() {
             if (key === 'sleeves') activeVal = selectedSleeves;
             else if (key === 'deckbox') activeVal = selectedDeckbox;
             else if (key === 'coin') activeVal = selectedCoin;
+            else if (key === 'dice') activeVal = selectedDice;
             else if (key === 'mats') activeVal = selectedMats;
 
             const $previewBox = $(`#preview-box-${key}`);
             if (activeVal) {
-                $previewBox.html(`<img src="${activeVal}" style="width:100%;height:100%;object-fit:cover;">`);
+                const is3D = activeVal.toLowerCase().includes('.gltf') || activeVal.toLowerCase().includes('.glb');
+                if (is3D) {
+                    $previewBox.html(`<model-viewer src="${activeVal}" auto-rotate camera-controls style="width:100%;height:100%;"></model-viewer>`);
+                } else {
+                    $previewBox.html(`<img src="${activeVal}" style="width:100%;height:100%;object-fit:cover;">`);
+                }
             } else {
                 $previewBox.html(`<span class="acc-preview-none">Ninguno</span>`);
             }
@@ -923,13 +933,19 @@ async function loadAndRenderAccessories() {
                     if (key === 'sleeves') selectedSleeves = val;
                     else if (key === 'deckbox') selectedDeckbox = val;
                     else if (key === 'coin') selectedCoin = val;
+                    else if (key === 'dice') selectedDice = val;
                     else if (key === 'mats') selectedMats = val;
 
                     $item.siblings().removeClass('selected');
                     $item.addClass('selected');
 
                     if (val) {
-                        $previewBox.html(`<img src="${val}" style="width:100%;height:100%;object-fit:cover;">`);
+                        const is3D = val.toLowerCase().includes('.gltf') || val.toLowerCase().includes('.glb');
+                        if (is3D) {
+                            $previewBox.html(`<model-viewer src="${val}" auto-rotate camera-controls style="width:100%;height:100%;"></model-viewer>`);
+                        } else {
+                            $previewBox.html(`<img src="${val}" style="width:100%;height:100%;object-fit:cover;">`);
+                        }
                     } else {
                         $previewBox.html(`<span class="acc-preview-none">Ninguno</span>`);
                     }
@@ -972,6 +988,7 @@ async function saveDeck() {
             sleeves: selectedSleeves,
             deckbox: selectedDeckbox,
             coin: selectedCoin,
+            dice: selectedDice,
             mats: selectedMats
         };
 

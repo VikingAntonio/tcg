@@ -150,6 +150,8 @@ const state = {
     decks: { player1: [], player2: [] }, // Raw decks selected
     deckSleeves: { player1: null, player2: null }, // Store selected sleeve URL for each player
     deckMats: { player1: null, player2: null }, // Store selected playmat URL for each player
+    deckCoins: { player1: null, player2: null },   // Store selected coin URL for each player
+    deckDice: { player1: null, player2: null },    // Store selected dice URL for each player
     currentUser: null
 };
 
@@ -330,12 +332,14 @@ async function fetchDeckCards(deckId, playerKey) {
         try {
             const { data: deckMeta, error: deckErr } = await _supabase
                 .from('decks')
-                .select('sleeves, mats')
+                .select('sleeves, mats, coin, dice')
                 .eq('id', deckId)
                 .single();
             if (!deckErr && deckMeta) {
                 state.deckSleeves[playerKey] = deckMeta.sleeves || null;
                 state.deckMats[playerKey] = deckMeta.mats || null;
+                state.deckCoins[playerKey] = deckMeta.coin || null;
+                state.deckDice[playerKey] = deckMeta.dice || null;
 
                 // Apply player1's custom mat to the playmat background
                 if (playerKey === 'player1' && deckMeta.mats) {
@@ -348,11 +352,15 @@ async function fetchDeckCards(deckId, playerKey) {
             } else {
                 state.deckSleeves[playerKey] = null;
                 state.deckMats[playerKey] = null;
+                state.deckCoins[playerKey] = null;
+                state.deckDice[playerKey] = null;
             }
         } catch (metaE) {
             console.warn("Error fetching deck accessories, fallback:", metaE);
             state.deckSleeves[playerKey] = null;
             state.deckMats[playerKey] = null;
+            state.deckCoins[playerKey] = null;
+            state.deckDice[playerKey] = null;
         }
     } catch (err) {
         console.error("Error loading deck cards:", err);

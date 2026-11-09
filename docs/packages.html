@@ -1047,19 +1047,45 @@
                 <button type="button" class="assistant-tab-btn" data-cat="sleeves">Sleeves</button>
                 <button type="button" class="assistant-tab-btn" data-cat="deckbox">Decks</button>
                 <button type="button" class="assistant-tab-btn" data-cat="coin">Coins</button>
+                <button type="button" class="assistant-tab-btn" data-cat="dice">Dados</button>
                 <button type="button" class="assistant-tab-btn" data-cat="mats">Playmat</button>
             </div>
 
-            <!-- Direct Drag & Drop Zone for Accessories -->
-            <div class="sticker-dropzone-modern" id="accessory-drag-drop-zone">
-                <i class="fas fa-cloud-upload-alt" style="font-size: 2.2rem; color: #00d2ff;"></i>
-                <div style="font-weight: 800; color: #fff; font-size: 1.05rem;" id="accessory-drag-label">
-                    Arrastra diseños de accesorios aquí o haz clic para cargar
+            <!-- Dual Drag & Drop Zones for Accessories (2D Images vs 3D GLTF Models) -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px;">
+                <!-- Dropzone 1: Puras Imágenes (Cloudinary) -->
+                <div class="sticker-dropzone-modern" id="accessory-drag-drop-zone" style="margin: 0; min-height: 140px;">
+                    <i class="fas fa-image" style="font-size: 2.2rem; color: #00d2ff; margin-bottom: 6px;"></i>
+                    <div style="font-weight: 800; color: #fff; font-size: 1rem;" id="accessory-drag-label">
+                        Imágenes 2D (.PNG, .JPG, .WEBP)
+                    </div>
+                    <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 4px;">
+                        Subida automática a Cloudinary optimizada para la categoría activa.
+                    </div>
+                    <input type="file" id="input-accessory-file" accept="image/*" multiple style="display: none;">
                 </div>
-                <div style="font-size: 0.8rem; color: #94a3b8;">
-                    Formatos recomendados: PNG, WebP o JPG. Los diseños se subirán a Cloudinary y se asignarán a la categoría activa.
+
+                <!-- Dropzone 2: Modelos 3D (.GLTF, .GLB, .BIN) (Supabase Storage 'spirits' bucket) -->
+                <div class="sticker-dropzone-modern" id="accessory-3d-dropzone" style="margin: 0; min-height: 140px; border-color: rgba(192, 132, 252, 0.4);">
+                    <i class="fas fa-cube" style="font-size: 2.2rem; color: #c084fc; margin-bottom: 6px;"></i>
+                    <div style="font-weight: 800; color: #fff; font-size: 1rem;" id="accessory-3d-label">
+                        Modelos 3D (.GLTF, .GLB, .BIN)
+                    </div>
+                    <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 4px;">
+                        Almacenamiento en Supabase Storage (bucket spirits) con visor 3D interactivo.
+                    </div>
+                    <input type="file" id="input-accessory-3d-file" accept=".gltf,.glb,.bin,model/gltf-binary,model/gltf+json" multiple style="display: none;">
                 </div>
-                <input type="file" id="input-accessory-file" accept="image/*" multiple style="display: none;">
+            </div>
+
+            <!-- 3D Model Viewer Live Test / Inspector for Accessories -->
+            <div id="acc-3d-preview-box" style="display: none; margin-top: 15px; background: rgba(0,0,0,0.4); border: 1.5px solid #c084fc; border-radius: 12px; padding: 12px; position: relative;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-size: 0.85rem; font-weight: 700; color: #c084fc;"><i class="fas fa-cube"></i> Visor 3D Interactivo (Model Viewer)</span>
+                    <button type="button" onclick="$('#acc-3d-preview-box').slideUp();" style="background: transparent; border: none; color: #ff4757; cursor: pointer;"><i class="fas fa-times"></i></button>
+                </div>
+                <div id="acc-3d-modelviewer-container" style="width: 100%; height: 260px; border-radius: 8px; overflow: hidden; background: #0b111e;">
+                </div>
             </div>
 
             <div class="assistant-controls-bar" style="margin-top: 24px;">
@@ -1245,67 +1271,101 @@
                 </div>
 
                 <div class="pack-builder-layout" style="margin-top: 20px;">
-                    <div class="pack-builder-form">
-                        <div class="form-group">
-                            <label class="control-label">Tipo de Registro</label>
-                            <select id="bdd-record-type" class="select-glass">
-                                <option value="single">Carta Suelta (Single)</option>
-                                <option value="sleeves">Sleeves / Micas</option>
-                                <option value="deckbox">Deckbox</option>
-                                <option value="coin">Moneda / Coin</option>
-                                <option value="mats">Playmat / Tablero</option>
-                                <option value="sealed">Producto Sellado</option>
-                                <option value="preorder">Preventa</option>
-                            </select>
+                    <div class="pack-builder-form" style="background: rgba(13, 21, 39, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(0, 210, 255, 0.25); border-radius: 16px; padding: 24px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);">
+                        <!-- Tabs Identidad / Detalles -->
+                        <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+                            <button type="button" class="bdd-form-tab-btn active" data-tab="bdd-tab-identidad" style="background: rgba(0, 210, 255, 0.2); border: 1px solid #00d2ff; color: #00d2ff; font-weight: 700; border-radius: 8px; padding: 8px 18px; cursor: pointer; transition: all 0.2s;">
+                                <i class="fas fa-id-card"></i> Identidad
+                            </button>
+                            <button type="button" class="bdd-form-tab-btn" data-tab="bdd-tab-detalles" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.15); color: #94a3b8; font-weight: 700; border-radius: 8px; padding: 8px 18px; cursor: pointer; transition: all 0.2s;">
+                                <i class="fas fa-sliders-h"></i> Detalles y Efectos
+                            </button>
                         </div>
 
-                        <div class="form-group">
-                            <label class="control-label">Nombre del Elemento</label>
-                            <input type="text" id="bdd-item-name" class="input-glass" placeholder="Ej: Blue-Eyes White Dragon / Dragon Shield Sleeves">
-                        </div>
-
-                        <div class="form-group">
-                            <label class="control-label">TCG / Juego</label>
-                            <select id="bdd-item-tcg" class="select-glass">
-                                <option value="yugioh">Yu-Gi-Oh!</option>
-                                <option value="pokemon">Pokémon TCG</option>
-                                <option value="magic">Magic: The Gathering</option>
-                                <option value="onepiece">One Piece TCG</option>
-                                <option value="general">General / Universal</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="control-label">Precio Base (MXN) [Opcional]</label>
-                            <input type="number" id="bdd-item-price" class="input-glass" placeholder="0" min="0" step="0.5">
-                        </div>
-
-                        <div class="form-group">
-                            <label class="control-label">Descripción / Efecto [Opcional]</label>
-                            <textarea id="bdd-item-desc" class="input-glass" rows="2" placeholder="Detalles de la carta o accesorio..."></textarea>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="control-label">Archivo Multimedia (Imagen o Modelo 3D .GLTF / .GLB)</label>
-                            <div class="pack-image-dropzone" id="bdd-file-dropzone" style="min-height: 140px;">
-                                <i class="fas fa-cloud-upload-alt" style="font-size: 2.2rem; color: #00d2ff; margin-bottom: 8px;"></i>
-                                <p style="margin: 0; font-size: 0.9rem; color: #94a3b8;">Arrastra y suelta tu archivo (.png, .jpg, .webp, .gltf, .glb) o haz clic para subir</p>
-                                <input type="file" id="bdd-file-input" accept="image/*,.gltf,.glb" style="display: none;">
+                        <!-- Tab 1: Identidad -->
+                        <div id="bdd-tab-identidad" class="bdd-tab-pane">
+                            <div class="form-group">
+                                <label class="control-label" style="color: #00d2ff; font-weight: 700;">Tipo de Entrada</label>
+                                <select id="bdd-record-type" class="select-glass" style="width: 100%; background: #162035; color: #fff; border: 1px solid #334155; border-radius: 8px; padding: 10px;">
+                                    <option value="single">Carta Suelta (Single)</option>
+                                    <option value="sleeves">Sleeves / Micas</option>
+                                    <option value="deckbox">Deckbox / Portadecks</option>
+                                    <option value="coin">Moneda / Coin</option>
+                                    <option value="dice">Dado / Dice</option>
+                                    <option value="mats">Playmat / Tablero</option>
+                                    <option value="sealed">Producto Sellado</option>
+                                    <option value="preorder">Preventa</option>
+                                </select>
                             </div>
-                            <input type="hidden" id="bdd-uploaded-url">
-                        </div>
 
-                        <div class="form-group" id="bdd-preview-wrapper" style="display: none;">
-                            <label class="control-label">Vista Previa Interactiva</label>
-                            <div id="bdd-media-preview-container" style="width: 100%; height: 260px; background: rgba(0,0,0,0.4); border: 2px dashed rgba(0,210,255,0.4); border-radius: 12px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative;">
+                            <div class="form-group" style="margin-top: 14px;">
+                                <label class="control-label" style="color: #cbd5e1; font-weight: 600;">Nombre del Elemento</label>
+                                <input type="text" id="bdd-item-name" class="input-glass" placeholder="Ej: Blue-Eyes White Dragon / Dragon Shield Sleeves" style="width: 100%; background: #162035; color: #fff; border: 1px solid #334155; border-radius: 8px; padding: 10px;">
+                            </div>
+
+                            <div class="form-group" style="margin-top: 14px;">
+                                <label class="control-label" style="color: #cbd5e1; font-weight: 600;">Archivo Multimedia (.PNG, .JPG, .WEBP, .GLTF, .GLB)</label>
+                                <div class="pack-image-dropzone" id="bdd-file-dropzone" style="min-height: 140px; border: 2px dashed rgba(0, 210, 255, 0.4); border-radius: 12px; background: rgba(0, 0, 0, 0.25); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; padding: 20px; text-align: center;">
+                                    <i class="fas fa-cloud-upload-alt" style="font-size: 2.2rem; color: #00d2ff; margin-bottom: 8px;"></i>
+                                    <p style="margin: 0; font-size: 0.9rem; color: #cbd5e1; font-weight: 600;">Arrastra y suelta tu archivo o haz clic para subir</p>
+                                    <p style="margin: 4px 0 0 0; font-size: 0.78rem; color: #64748b;">Imágenes se optimizan en Cloudinary • Modelos 3D se almacenan con model-viewer</p>
+                                    <input type="file" id="bdd-file-input" accept="image/*,.gltf,.glb" style="display: none;">
+                                </div>
+                                <input type="hidden" id="bdd-uploaded-url">
+                            </div>
+
+                            <!-- Preview interactivo con boton para tachar/eliminar la imagen cargada -->
+                            <div class="form-group" id="bdd-preview-wrapper" style="display: none; margin-top: 14px; position: relative;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                    <label class="control-label" style="color: #00d2ff; font-weight: 700; margin: 0;">Vista Previa</label>
+                                    <button type="button" id="btn-bdd-clear-preview" title="Quitar archivo cargado" style="background: rgba(255, 71, 87, 0.2); border: 1px solid #ff4757; color: #ff4757; border-radius: 6px; padding: 3px 10px; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: 700;">
+                                        <i class="fas fa-times"></i> Quitar imagen
+                                    </button>
+                                </div>
+                                <div id="bdd-media-preview-container" style="width: 100%; height: 260px; background: rgba(0,0,0,0.5); border: 1.5px solid rgba(0,210,255,0.4); border-radius: 12px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative;">
+                                </div>
                             </div>
                         </div>
 
-                        <div style="display: flex; gap: 12px; margin-top: 15px;">
-                            <button type="button" class="btn-com-action" id="btn-add-to-bdd-queue" style="flex: 1; justify-content: center;">
+                        <!-- Tab 2: Detalles y Efectos -->
+                        <div id="bdd-tab-detalles" class="bdd-tab-pane" style="display: none;">
+                            <div class="form-group">
+                                <label class="control-label" style="color: #cbd5e1; font-weight: 600;">TCG / Juego</label>
+                                <select id="bdd-item-tcg" class="select-glass" style="width: 100%; background: #162035; color: #fff; border: 1px solid #334155; border-radius: 8px; padding: 10px;">
+                                    <option value="yugioh">Yu-Gi-Oh!</option>
+                                    <option value="pokemon">Pokémon TCG</option>
+                                    <option value="magic">Magic: The Gathering</option>
+                                    <option value="onepiece">One Piece TCG</option>
+                                    <option value="general">General / Universal</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group" style="margin-top: 14px;">
+                                <label class="control-label" style="color: #cbd5e1; font-weight: 600;">Expansión / Colección [Opcional]</label>
+                                <input type="text" id="bdd-item-expansion" class="input-glass" placeholder="Ej: LOB-001 / Cosmic Eclipse" style="width: 100%; background: #162035; color: #fff; border: 1px solid #334155; border-radius: 8px; padding: 10px;">
+                            </div>
+
+                            <div class="form-group" style="margin-top: 14px;">
+                                <label class="control-label" style="color: #cbd5e1; font-weight: 600;">Rareza [Opcional]</label>
+                                <input type="text" id="bdd-item-rarity" class="input-glass" placeholder="Ej: Ultra Rare / Secret Rare" style="width: 100%; background: #162035; color: #fff; border: 1px solid #334155; border-radius: 8px; padding: 10px;">
+                            </div>
+
+                            <div class="form-group" style="margin-top: 14px;">
+                                <label class="control-label" style="color: #ffd700; font-weight: 600;">Precio Base (MXN) [Opcional]</label>
+                                <input type="number" id="bdd-item-price" class="input-glass" placeholder="0" min="0" step="0.5" style="width: 100%; background: #162035; color: #ffd700; border: 1px solid rgba(255, 215, 0, 0.4); border-radius: 8px; padding: 10px;">
+                            </div>
+
+                            <div class="form-group" style="margin-top: 14px;">
+                                <label class="control-label" style="color: #cbd5e1; font-weight: 600;">Descripción / Efecto [Opcional]</label>
+                                <textarea id="bdd-item-desc" class="input-glass" rows="2" placeholder="Detalles de la carta o accesorio..." style="width: 100%; background: #162035; color: #fff; border: 1px solid #334155; border-radius: 8px; padding: 10px;"></textarea>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 12px; margin-top: 20px;">
+                            <button type="button" class="btn-com-action" id="btn-add-to-bdd-queue" style="flex: 1; justify-content: center; background: rgba(0, 210, 255, 0.15); border: 1px solid #00d2ff; color: #00d2ff; padding: 11px; border-radius: 8px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
                                 <i class="fas fa-plus"></i> Agregar a la Lista
                             </button>
-                            <button type="button" class="btn-com-action btn-com-primary" id="btn-save-bdd-global" style="flex: 1; justify-content: center;">
+                            <button type="button" class="btn-com-action btn-com-primary" id="btn-save-bdd-global" style="flex: 1; justify-content: center; background: linear-gradient(135deg, #00d2ff, #0072ff); border: none; color: #fff; padding: 11px; border-radius: 8px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 0 15px rgba(0,210,255,0.4);">
                                 <i class="fas fa-save"></i> Guardar Todo en BDD
                             </button>
                         </div>
@@ -1442,6 +1502,38 @@
             $stickerFileInput.on('change', async function() {
                 if (this.files && this.files.length > 0) {
                     await handleStickerFilesBatch(this.files);
+                    $(this).val('');
+                }
+            });
+
+            // 3D Models Drag & Drop (Supabase 'spirits' bucket)
+            const $acc3dDropZone = $('#accessory-3d-dropzone');
+            const $acc3dFileInput = $('#input-accessory-3d-file');
+
+            $acc3dDropZone.on('click', function() { $acc3dFileInput.click(); });
+
+            $acc3dDropZone.on('dragover dragenter', function(e) {
+                e.preventDefault(); e.stopPropagation();
+                $(this).addClass('dragover');
+            });
+
+            $acc3dDropZone.on('dragleave drop', function(e) {
+                e.preventDefault(); e.stopPropagation();
+                $(this).removeClass('dragover');
+            });
+
+            $acc3dDropZone.on('drop', async function(e) {
+                e.preventDefault(); e.stopPropagation();
+                $(this).removeClass('dragover');
+                const files = e.originalEvent.dataTransfer.files;
+                if (files && files.length > 0) {
+                    await handleAccessory3DFilesBatch(files);
+                }
+            });
+
+            $acc3dFileInput.on('change', async function() {
+                if (this.files && this.files.length > 0) {
+                    await handleAccessory3DFilesBatch(this.files);
                     $(this).val('');
                 }
             });
@@ -1992,11 +2084,17 @@
                 let catBadgeText = 'Sleeve';
                 if (category === 'deckbox') catBadgeText = 'Deck';
                 else if (category === 'coin') catBadgeText = 'Coin';
+                else if (category === 'dice') catBadgeText = 'Dado';
                 else if (category === 'mats') catBadgeText = 'Playmat';
 
                 let imgAspectStyle = 'aspect-ratio: 2/3;';
-                if (category === 'coin') imgAspectStyle = 'aspect-ratio: 1; border-radius: 50%;';
+                if (category === 'coin' || category === 'dice') imgAspectStyle = 'aspect-ratio: 1; border-radius: 12px;';
                 else if (category === 'mats') imgAspectStyle = 'aspect-ratio: 16/9;';
+
+                const is3DModel = acc.image_url && (acc.image_url.toLowerCase().includes('.gltf') || acc.image_url.toLowerCase().includes('.glb'));
+                const visualHtml = is3DModel
+                    ? `<model-viewer src="${acc.image_url}" auto-rotate camera-controls style="width: 100%; height: 160px; background: rgba(0,0,0,0.4); border-radius: 8px;" shadow-intensity="1"></model-viewer>`
+                    : `<img src="${acc.image_url}" alt="${escapeHtml(acc.name || 'Accesorio')}" class="sticker-visual-img" style="${imgAspectStyle} max-height: 160px; object-fit: contain;">`;
 
                 const $card = $(`
                     <div class="sticker-stage-card accessory-stage-card" data-name="${escapeHtml(acc.name || '')}" data-category="${category}" data-id="${acc.id}">
@@ -2004,6 +2102,7 @@
                             <span style="background: rgba(0, 210, 255, 0.2); border: 1px solid #00d2ff; color: #00d2ff; font-size: 0.68rem; font-weight: 800; padding: 2px 8px; border-radius: 4px; text-transform: uppercase;">
                                 ${catBadgeText}
                             </span>
+                            ${is3DModel ? '<span style="background: rgba(192, 132, 252, 0.2); border: 1px solid #c084fc; color: #c084fc; font-size: 0.68rem; font-weight: 800; padding: 2px 8px; border-radius: 4px;"><i class="fas fa-cube"></i> 3D</span>' : ''}
                             ${isHidden ? '<span style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #ef4444; font-size: 0.68rem; font-weight: 800; padding: 2px 8px; border-radius: 4px;">OCULTO</span>' : ''}
                         </div>
 
@@ -2017,7 +2116,7 @@
                         </div>
 
                         <div class="sticker-visual-stage" style="margin-top: 25px;">
-                            <img src="${acc.image_url}" alt="${escapeHtml(acc.name || 'Accesorio')}" class="sticker-visual-img" style="${imgAspectStyle} max-height: 160px; object-fit: contain;">
+                            ${visualHtml}
                         </div>
 
                         <div style="text-align: center; margin: 4px 0 8px 0;">
@@ -2122,7 +2221,7 @@
             $('#accessory-drag-label').html('<i class="fas fa-spinner fa-spin"></i> Subiendo accesorios...');
             Swal.fire({
                 title: 'Cargando accesorios...',
-                html: `Procesando <b>${validFiles.length}</b> diseño(s) a Cloudinary...`,
+                html: `Procesando <b>${validFiles.length}</b> imagen(es) a Cloudinary...`,
                 allowOutsideClick: false,
                 didOpen: () => Swal.showLoading()
             });
@@ -2150,13 +2249,12 @@
                     if (!error && data) {
                         allAvailableAccessories.unshift(data);
                     } else {
-                        // Fallback: local memory object if accessories table insert pending
                         allAvailableAccessories.unshift({ ...payload, id: 'temp_' + Date.now() + '_' + i });
                     }
                     uploadedCount++;
                 }
 
-                $('#accessory-drag-label').text('Arrastra diseños de accesorios aquí o haz clic para cargar');
+                $('#accessory-drag-label').text('Imágenes 2D (.PNG, .JPG, .WEBP)');
                 renderAccessoriesGrid();
 
                 Swal.fire({
@@ -2170,8 +2268,102 @@
                 });
             } catch (e) {
                 console.error('Error uploading accessories batch:', e);
-                $('#accessory-drag-label').text('Arrastra diseños de accesorios aquí o haz clic para cargar');
+                $('#accessory-drag-label').text('Imágenes 2D (.PNG, .JPG, .WEBP)');
                 Swal.fire('Error al cargar', 'Ocurrió un detalle al procesar los accesorios: ' + e.message, 'error');
+            }
+        }
+
+        async function handleAccessory3DFilesBatch(files) {
+            if (!files || files.length === 0) return;
+
+            const validFiles = Array.from(files).filter(f => {
+                const n = f.name.toLowerCase();
+                return n.endsWith('.gltf') || n.endsWith('.glb') || n.endsWith('.bin');
+            });
+
+            if (validFiles.length === 0) {
+                Swal.fire('Formato no válido', 'Por favor arrastra o selecciona archivos 3D (.gltf, .glb o .bin).', 'warning');
+                return;
+            }
+
+            $('#accessory-3d-label').html('<i class="fas fa-spinner fa-spin"></i> Subiendo modelos 3D...');
+            Swal.fire({
+                title: 'Cargando modelos 3D...',
+                html: `Procesando <b>${validFiles.length}</b> archivo(s) al storage de Supabase (spirits)...`,
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            let uploadedCount = 0;
+            let last3DUrl = '';
+            const targetCat = (activeAccessoryCategory === 'all') ? 'coin' : activeAccessoryCategory;
+
+            try {
+                for (let i = 0; i < validFiles.length; i++) {
+                    const file = validFiles[i];
+                    const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+                    const ext = file.name.split('.').pop();
+                    const path = `accessories_3d/${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
+
+                    let modelUrl = '';
+                    if (window._supabase && window._supabase.storage) {
+                        const { data: uploadData, error: uploadErr } = await _supabase.storage.from('spirits').upload(path, file);
+                        if (!uploadErr && uploadData) {
+                            const { data: pubUrlData } = _supabase.storage.from('spirits').getPublicUrl(path);
+                            modelUrl = pubUrlData ? pubUrlData.publicUrl : '';
+                        }
+                    }
+
+                    if (!modelUrl) {
+                        modelUrl = URL.createObjectURL(file);
+                    }
+
+                    last3DUrl = modelUrl;
+
+                    const payload = {
+                        name: cleanName.charAt(0).toUpperCase() + cleanName.slice(1) + ' (3D)',
+                        image_url: modelUrl,
+                        category: targetCat,
+                        sale_status: 'disponible',
+                        price_mxn: 50.00,
+                        stripe_price_id: null,
+                        target_roles: ['starter', 'premium', 'tienda']
+                    };
+
+                    const { data, error } = await _supabase.from('accessories').insert([payload]).select().single();
+                    if (!error && data) {
+                        allAvailableAccessories.unshift(data);
+                    } else {
+                        allAvailableAccessories.unshift({ ...payload, id: 'temp_3d_' + Date.now() + '_' + i });
+                    }
+                    uploadedCount++;
+                }
+
+                $('#accessory-3d-label').text('Modelos 3D (.GLTF, .GLB, .BIN)');
+
+                // Show interactive model viewer preview with the loaded model
+                if (last3DUrl && (last3DUrl.includes('.gltf') || last3DUrl.includes('.glb'))) {
+                    $('#acc-3d-preview-box').slideDown();
+                    $('#acc-3d-modelviewer-container').html(`
+                        <model-viewer src="${last3DUrl}" auto-rotate camera-controls style="width:100%; height:100%;" shadow-intensity="1"></model-viewer>
+                    `);
+                }
+
+                renderAccessoriesGrid();
+
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Modelos 3D Guardados!',
+                    text: `Se subieron ${uploadedCount} modelo(s) 3D a la categoría ${targetCat.toUpperCase()}. Puedes girar e inspeccionar el modelo en el visor 3D interactivo.`,
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+            } catch (e) {
+                console.error('Error uploading 3D accessories batch:', e);
+                $('#accessory-3d-label').text('Modelos 3D (.GLTF, .GLB, .BIN)');
+                Swal.fire('Error al cargar', 'Ocurrió un detalle al procesar el modelo 3D: ' + e.message, 'error');
             }
         }
 
@@ -2192,6 +2384,7 @@
                                 <option value="sleeves">Sleeves (Micas)</option>
                                 <option value="deckbox">Decks (Portadecks)</option>
                                 <option value="coin">Coins (Monedas)</option>
+                                <option value="dice">Dice (Dados)</option>
                                 <option value="mats">Playmat (Tapete)</option>
                             </select>
                         </div>
@@ -2303,6 +2496,7 @@
                                 <option value="sleeves" ${acc.category === 'sleeves' ? 'selected' : ''}>Sleeves (Micas)</option>
                                 <option value="deckbox" ${acc.category === 'deckbox' ? 'selected' : ''}>Decks (Portadecks)</option>
                                 <option value="coin" ${acc.category === 'coin' ? 'selected' : ''}>Coins (Monedas)</option>
+                                <option value="dice" ${acc.category === 'dice' ? 'selected' : ''}>Dice (Dados)</option>
                                 <option value="mats" ${acc.category === 'mats' ? 'selected' : ''}>Playmat (Tapete)</option>
                             </select>
                         </div>
@@ -3868,6 +4062,33 @@
         function initBddGlobalTab() {
             renderBddQueue();
         }
+
+        // Subtabs: Identidad vs Detalles
+        $(document).on('click', '.bdd-form-tab-btn', function() {
+            const target = $(this).data('tab');
+            $('.bdd-form-tab-btn').removeClass('active').css({
+                'background': 'rgba(255, 255, 255, 0.05)',
+                'border': '1px solid rgba(255,255,255,0.15)',
+                'color': '#94a3b8'
+            });
+            $(this).addClass('active').css({
+                'background': 'rgba(0, 210, 255, 0.2)',
+                'border': '1px solid #00d2ff',
+                'color': '#00d2ff'
+            });
+            $('.bdd-tab-pane').hide();
+            $('#' + target).fadeIn(150);
+        });
+
+        // Clear preview / quitar imagen
+        $(document).on('click', '#btn-bdd-clear-preview', function() {
+            bddCurrentUploadedUrl = '';
+            bddCurrentFileType = '';
+            $('#bdd-uploaded-url').val('');
+            $('#bdd-preview-wrapper').hide();
+            $('#bdd-media-preview-container').empty();
+            $('#bdd-file-input').val('');
+        });
 
         // File drop & select handling
         const bddDropzone = document.getElementById('bdd-file-dropzone');
