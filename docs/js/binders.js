@@ -353,8 +353,155 @@ $(document).ready(async function() {
         }
     });
 
-    $(document).on('click', '.card-slot', function() {
-        if ($(event.target).closest('.btn-delete-card-top, .switch-searching').length) return;
+    // --- Drag and Drop Rearrangement of Cards between Slots ---
+    let draggedSlotInfo = null;
+
+    $(document).on('dragstart', '.binder-dnd-slot', function(e) {
+        const pageId = $(this).data('page-id') || $(this).closest('.admin-page-item').data('id');
+        const slotIdx = parseInt($(this).data('index'), 10);
+        const slotData = localAlbumSlots.find(s => s.page_id === pageId && s.slot_index === slotIdx);
+
+        if (!slotData || !slotData.image_url) {
+            e.preventDefault();
+            return false;
+        }
+
+        draggedSlotInfo = {
+            pageId: pageId,
+            slotIndex: slotIdx,
+            slotData: slotData
+        };
+
+        $(this).addClass('slot-dragging');
+        if (e.originalEvent && e.originalEvent.dataTransfer) {
+            e.originalEvent.dataTransfer.effectAllowed = 'move';
+            e.originalEvent.dataTransfer.setData('text/plain', JSON.stringify({ pageId, slotIdx }));
+        }
+    });
+
+    $(document).on('dragend', '.binder-dnd-slot', function() {
+        $('.binder-dnd-slot').removeClass('slot-dragging slot-drag-over');
+        draggedSlotInfo = null;
+    });
+
+    $(document).on('dragover', '.binder-dnd-slot', function(e) {
+        if (!draggedSlotInfo) return;
+        e.preventDefault();
+        if (e.originalEvent && e.originalEvent.dataTransfer) {
+            e.originalEvent.dataTransfer.dropEffect = 'move';
+        }
+        $(this).addClass('slot-drag-over');
+    });
+
+    $(document).on('dragleave', '.binder-dnd-slot', function() {
+        $(this).removeClass('slot-drag-over');
+    });
+
+    $(document).on('drop', '.binder-dnd-slot', async function(e) {
+        if (!draggedSlotInfo) return;
+        e.preventDefault();
+        e.stopPropagation();
+        $(this).removeClass('slot-drag-over');
+
+        const targetPageId = $(this).data('page-id') || $(this).closest('.admin-page-item').data('id');
+        const targetSlotIdx = parseInt($(this).data('index'), 10);
+
+        const sourcePageId = draggedSlotInfo.pageId;
+        const sourceSlotIdx = draggedSlotInfo.slotIndex;
+        const sourceSlot = draggedSlotInfo.slotData;
+
+        // Si es el mismo slot, no hacer nada
+        if (sourcePageId === targetPageId && sourceSlotIdx === targetSlotIdx) {
+            return;
+        }
+
+        const targetSlot = localAlbumSlots.find(s => s.page_id === targetPageId && s.slot_index === targetSlotIdx);
+
+        try {
+            // Actualizar localmente de inmediato para UX fluida
+            if (targetSlot && targetSlot.image_url) {
+                // Intercambio (Swap) entre dos cartas
+                const tempPage = sourceSlot.page_id;
+                const tempIndex = sourceSlot.slot_index;
+
+                sourceSlot.page_id = targetSlot.page_id;
+                sourceSlot.slot_index = targetSlot.slot_index;
+
+                targetSlot.page_id = tempPage;
+                targetSlot.slot_index = tempIndex;
+
+                // Re-render local inmediatamente
+                const { data: pages } = await _supabase
+                    .from('binder_pages')
+                    .select('*')
+                    .eq('binder_id', currentAlbumId)
+                    .order('page_index', { ascending: true });
+                renderAlbumPagesLocal(pages || []);
+
+                // Persistir intercambio en Supabase
+                const updates = [
+                    _supabase.from('binder_card_slots').update({
+                        page_id: sourceSlot.page_id,
+                        slot_index: sourceSlot.slot_index
+                    }).eq('id', sourceSlot.id),
+                    _supabase.from('binder_card_slots').update({
+                        page_id: targetSlot.page_id,
+                        slot_index: targetSlot.slot_index
+                    }).eq('id', targetSlot.id)
+                ];
+                await Promise.all(updates);
+
+            } else {
+                // Mover a un slot vacío
+                sourceSlot.page_id = targetPageId;
+                sourceSlot.slot_index = targetSlotIdx;
+
+                if (targetSlot) {
+                    // Si existía un registro de slot vacío
+                    targetSlot.slot_index = sourceSlotIdx;
+                    targetSlot.page_id = sourcePageId;
+                }
+
+                // Re-render local inmediatamente
+                const { data: pages } = await _supabase
+                    .from('binder_pages')
+                    .select('*')
+                    .eq('binder_id', currentAlbumId)
+                    .order('page_index', { ascending: true });
+                renderAlbumPagesLocal(pages || []);
+
+                // Persistir en Supabase
+                await _supabase.from('binder_card_slots').update({
+                    page_id: targetPageId,
+                    slot_index: targetSlotIdx
+                }).eq('id', sourceSlot.id);
+            }
+
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 1500,
+                background: '#162035',
+                color: '#fff'
+            });
+            Toast.fire({
+                icon: 'success',
+                title: 'Carta reacomodada'
+            });
+
+        } catch (err) {
+            console.error("Error al reacomodar carta:", err);
+            Swal.fire('Error', 'No se pudo guardar la nueva posición: ' + (err.message || ''), 'error');
+            // Recargar datos originales en caso de error
+            loadAlbumPages(currentAlbumId, true);
+        }
+    });
+
+    $(document).on('click', '.card-slot', function(e) {
+        if ($(e.target).closest('.btn-delete-card-top, .switch-searching').length) return;
+        // Evitar abrir modal si el usuario estaba arrastrando
+        if ($(this).hasClass('slot-dragging')) return;
         currentPageId = $(this).closest('.admin-page-item').data('id');
         currentSlotIndex = $(this).data('index');
         loadSlotData(currentPageId, currentSlotIndex);
@@ -593,11 +740,13 @@ function renderAlbumPagesLocal(pages) {
 
         for (let i = 0; i < numSlots; i++) {
             const slot = localAlbumSlots.find(s => s.page_id === page.id && s.slot_index === i);
-            const $slot = $(`<div class="card-slot" data-index="${i}"></div>`);
-            if (slot && slot.image_url) {
-                let slotHtml = `<img src="${slot.image_url}" class="tcg-card" alt="${slot.name || 'Carta'}">`;
+            const hasCard = !!(slot && slot.image_url);
+            const $slot = $(`<div class="card-slot binder-dnd-slot" data-index="${i}" data-page-id="${page.id}" draggable="${hasCard ? 'true' : 'false'}"></div>`);
+            if (hasCard) {
+                let slotHtml = `<img src="${slot.image_url}" class="tcg-card" alt="${slot.name || 'Carta'}" draggable="false">`;
                 if (slot.price) slotHtml += `<div style="position: absolute; top: 2px; right: 2px; background: rgba(0,255,136,0.9); color: #000; font-weight: 900; font-size: 10px; padding: 1px 4px; border-radius: 4px; z-index: 2;">$${slot.price}</div>`;
                 $slot.html(slotHtml);
+                $slot.attr('title', 'Arrastra para reacomodar en otro slot o intercambiar');
             } else {
                 $slot.html('<div class="slot-empty-label" style="color: rgba(255,255,255,0.25); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; text-align: center; display: flex; align-items: center; justify-content: center; height: 100%; width: 100%;">Vacío</div>');
             }
@@ -728,16 +877,24 @@ async function loadInversionesStockTable() {
         // 2. Obtener páginas de esos binders
         const { data: pages } = await _supabase
             .from('binder_pages')
-            .select('id, binder_id')
-            .in('binder_id', binders.map(b => b.id));
+            .select('id, binder_id, page_index')
+            .in('binder_id', binders.map(b => b.id))
+            .order('page_index', { ascending: true });
 
         if (!pages || pages.length === 0) {
+            $('#inv-binders-breakdown').empty();
             $tbody.html('<tr><td colspan="9" style="text-align: center; padding: 30px; color: #94a3b8;">No hay páginas ni cartas registradas en tus binders.</td></tr>');
             return;
         }
 
-        const pageToBinder = {};
-        pages.forEach(p => { pageToBinder[p.id] = binderMap[p.binder_id] || 'Binder'; });
+        const pageInfoMap = {};
+        pages.forEach(p => {
+            pageInfoMap[p.id] = {
+                binder_id: p.binder_id,
+                binder_title: binderMap[p.binder_id] || 'Binder',
+                page_index: p.page_index
+            };
+        });
 
         // 3. Obtener slots con cartas
         const { data: slots, error } = await _supabase
@@ -748,17 +905,131 @@ async function loadInversionesStockTable() {
 
         if (error) throw error;
 
-        allUserBinderSlots = (slots || []).map(s => ({
-            ...s,
-            binder_title: pageToBinder[s.page_id] || 'Binder'
-        }));
+        allUserBinderSlots = (slots || []).map(s => {
+            const pInfo = pageInfoMap[s.page_id] || {};
+            return {
+                ...s,
+                binder_id: pInfo.binder_id,
+                binder_title: pInfo.binder_title || 'Binder',
+                page_index: pInfo.page_index !== undefined ? pInfo.page_index : 0
+            };
+        });
 
+        renderInversionesSummary(binders, pages, allUserBinderSlots);
         renderInversionesTable(allUserBinderSlots);
 
     } catch (err) {
         console.error("Error al cargar inversiones:", err);
         $tbody.html(`<tr><td colspan="9" style="text-align: center; padding: 30px; color: #ff4757;">Error al cargar inventario: ${err.message || ''}</td></tr>`);
     }
+}
+
+function renderInversionesSummary(binders, pages, slots) {
+    const $container = $('#inv-binders-breakdown').empty();
+    if (!binders || binders.length === 0) return;
+
+    let overallGrandTotalSale = 0;
+    let overallGrandTotalCost = 0;
+    let overallTotalCards = 0;
+
+    binders.forEach(b => {
+        const binderPages = pages.filter(p => p.binder_id === b.id);
+        const binderSlots = slots.filter(s => s.binder_id === b.id);
+
+        let binderTotalSale = 0;
+        let binderTotalCost = 0;
+        let binderTotalCards = 0;
+
+        const pageRowsHtml = binderPages.map(page => {
+            const pageSlots = binderSlots.filter(s => s.page_id === page.id);
+            let pageSale = 0;
+            let pageCost = 0;
+            let pageCards = 0;
+
+            pageSlots.forEach(s => {
+                const qty = (s.quantity !== undefined && s.quantity !== null && s.quantity !== '') ? parseInt(s.quantity, 10) : 1;
+                const price = parseFloat(s.price || 0) || 0;
+                const cost = parseFloat(s.cost_price || 0) || 0;
+                pageSale += (price * (qty > 0 ? qty : 1));
+                pageCost += (cost * (qty > 0 ? qty : 1));
+                pageCards += (qty > 0 ? qty : 1);
+            });
+
+            binderTotalSale += pageSale;
+            binderTotalCost += pageCost;
+            binderTotalCards += pageCards;
+
+            return `
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.82rem;">
+                    <td style="padding: 8px 10px; color: #cbd5e1; font-weight: 600;">Hoja ${page.page_index + 1}</td>
+                    <td style="padding: 8px 10px; text-align: center; color: #94a3b8;">${pageCards} cartas</td>
+                    <td style="padding: 8px 10px; text-align: right; color: #f59e0b; font-weight: 700;">$${pageCost.toFixed(2)}</td>
+                    <td style="padding: 8px 10px; text-align: right; color: #00ff88; font-weight: 800;">$${pageSale.toFixed(2)}</td>
+                </tr>
+            `;
+        }).join('');
+
+        overallGrandTotalSale += binderTotalSale;
+        overallGrandTotalCost += binderTotalCost;
+        overallTotalCards += binderTotalCards;
+
+        const $binderCard = $(`
+            <div style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 14px; padding: 18px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 12px;">
+                        <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: #ffffff;">${b.title}</h3>
+                        <span style="background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid #a855f7; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 800;">
+                            ${binderPages.length} Hoja${binderPages.length !== 1 ? 's' : ''}
+                        </span>
+                    </div>
+
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+                        <thead>
+                            <tr style="color: #94a3b8; font-size: 0.75rem; text-transform: uppercase;">
+                                <th style="text-align: left; padding: 4px 10px;">Hoja</th>
+                                <th style="text-align: center; padding: 4px 10px;">Cartas</th>
+                                <th style="text-align: right; padding: 4px 10px;">Costo</th>
+                                <th style="text-align: right; padding: 4px 10px;">Venta</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${pageRowsHtml || '<tr><td colspan="4" style="text-align: center; color: #64748b; padding: 10px;">Sin hojas</td></tr>'}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="background: rgba(0,0,0,0.4); border-radius: 8px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-weight: 700; color: #e2e8f0; font-size: 0.88rem;">Total Binder:</span>
+                    <div style="text-align: right;">
+                        <div style="font-size: 1rem; font-weight: 900; color: #00ff88;">$${binderTotalSale.toFixed(2)}</div>
+                        <div style="font-size: 0.72rem; color: #f59e0b; font-weight: 700;">Costo: $${binderTotalCost.toFixed(2)}</div>
+                    </div>
+                </div>
+            </div>
+        `);
+        $container.append($binderCard);
+    });
+
+    // Tarjeta destacada de Gran Total de todos los Binders
+    const $grandTotalCard = $(`
+        <div style="grid-column: 1 / -1; background: linear-gradient(135deg, rgba(88, 28, 135, 0.4), rgba(15, 23, 42, 0.9)); border: 1px solid #a855f7; border-radius: 14px; padding: 18px 25px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+            <div>
+                <div style="font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; color: #c084fc; font-weight: 800;">Gran Total de Todos los Binders Creados</div>
+                <div style="font-size: 1.1rem; color: #ffffff; font-weight: 700; margin-top: 2px;">${binders.length} Binders &bull; ${overallTotalCards} Cartas en Stock</div>
+            </div>
+            <div style="display: flex; gap: 25px; align-items: center;">
+                <div style="text-align: right;">
+                    <div style="font-size: 0.75rem; color: #f59e0b; font-weight: 700; text-transform: uppercase;">Inversión Total (Costo)</div>
+                    <div style="font-size: 1.25rem; font-weight: 900; color: #f59e0b;">$${overallGrandTotalCost.toFixed(2)}</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 0.75rem; color: #00ff88; font-weight: 700; text-transform: uppercase;">Valor Total en Venta</div>
+                    <div style="font-size: 1.5rem; font-weight: 900; color: #00ff88;">$${overallGrandTotalSale.toFixed(2)}</div>
+                </div>
+            </div>
+        </div>
+    `);
+    $container.prepend($grandTotalCard);
 }
 
 function renderInversionesTable(slots) {

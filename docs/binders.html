@@ -146,6 +146,26 @@
             box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
         }
 
+        .binder-dnd-slot {
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+        }
+        .binder-dnd-slot[draggable="true"] {
+            cursor: grab;
+        }
+        .binder-dnd-slot.slot-dragging {
+            opacity: 0.45;
+            cursor: grabbing;
+            transform: scale(0.95);
+            border: 2px dashed #a855f7 !important;
+        }
+        .binder-dnd-slot.slot-drag-over {
+            border: 2px solid #00ff88 !important;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.6) !important;
+            transform: scale(1.04);
+            background: rgba(0, 255, 136, 0.1) !important;
+        }
+
         .admin-grid-preview {
             height: auto !important;
             min-height: 280px !important;
@@ -296,6 +316,8 @@
                 <button class="pill-icon" id="avatar-btn"><i class="fas fa-user"></i></button>
                 <div class="user-dropdown-menu" id="user-dropdown">
                     <div class="user-dropdown-info"><div id="dropdown-user-name">Usuario</div></div>
+                    <a href="admin.html" class="menu-item" id="menu-btn-home"><i class="fas fa-home"></i> Mi Panel</a>
+                    <a href="play.html" class="menu-item"><i class="fas fa-gamepad"></i> Play!</a>
                     <a href="#" class="menu-item logout" id="menu-btn-logout" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
                 </div>
             </div>
@@ -327,23 +349,28 @@
         </div>
 
         <!-- VISTA INVERSIONES (STOCK DE TODAS LAS CARTAS DE BINDERS) -->
-        <div id="view-inversiones" class="admin-section" style="display: none; width: 100%;">
-            <div class="admin-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
+        <div id="view-inversiones" class="admin-section" style="display: none; width: 100%; max-width: 1400px; margin: 0 auto;">
+            <div class="admin-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 25px;">
                 <div style="display: flex; align-items: center; gap: 12px;">
-                    <button class="btn btn-secondary btn-back-to-binders-view" style="border-radius: 50px; font-weight: 800;"><i class="fas fa-arrow-left"></i> Volver a Binders</button>
-                    <h1 style="margin: 0; font-size: 1.8rem; font-weight: 900; color: #f59e0b;"><i class="fas fa-chart-line"></i> Inversiones & Stock de Binders</h1>
+                    <button class="btn btn-back-to-binders-view" style="border-radius: 50px; font-weight: 700; background: #9333ea; color: #ffffff; border: none; padding: 10px 22px; cursor: pointer;">Volver a Binders</button>
+                    <h1 style="margin: 0; font-size: 1.8rem; font-weight: 900; color: #ffffff; letter-spacing: 0.5px;">Inversiones</h1>
                 </div>
                 <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                     <input type="text" id="inv-table-search" placeholder="Buscar por carta o binder..." style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.15); border-radius: 30px; padding: 8px 16px; color: #fff; font-size: 0.88rem; outline: none;">
-                    <button id="btn-save-inv-table" class="btn" style="background: #00ff88; color: #000; font-weight: 900; border-radius: 50px; padding: 8px 20px; border: none;"><i class="fas fa-save"></i> Guardar Cambios</button>
+                    <button id="btn-save-inv-table" class="btn" style="background: #9333ea; color: #ffffff; font-weight: 700; border-radius: 50px; padding: 10px 24px; border: none; cursor: pointer;">Guardar Cambios</button>
                 </div>
             </div>
 
-            <!-- Contenedor Hoja de Cálculo Pantalla Completa sin scroll forzado -->
-            <div class="sheet-table-container" style="background: rgba(15, 23, 42, 0.85); border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); width: 100%; box-sizing: border-box; overflow-x: auto;">
+            <!-- Resumen de Totales por Hoja y Totales de Binders Creados -->
+            <div id="inv-summary-container" style="display: flex; flex-direction: column; gap: 20px; width: 100%; margin-bottom: 30px; align-items: center;">
+                <div id="inv-binders-breakdown" style="width: 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px;"></div>
+            </div>
+
+            <!-- Contenedor Hoja de Cálculo Pantalla Completa Centrada -->
+            <div class="sheet-table-container" style="background: rgba(15, 23, 42, 0.85); border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); width: 100%; box-sizing: border-box; overflow-x: auto; margin: 0 auto;">
                 <table class="sheet-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
                     <thead>
-                        <tr style="background: rgba(0,0,0,0.6); color: #f59e0b; border-bottom: 2px solid rgba(245, 158, 11, 0.3);">
+                        <tr style="background: rgba(0,0,0,0.6); color: #c084fc; border-bottom: 2px solid rgba(168, 85, 247, 0.4);">
                             <th style="padding: 14px 10px; text-align: center; width: 60px;">Foto</th>
                             <th style="padding: 14px 12px;">Binder / Álbum</th>
                             <th style="padding: 14px 12px;">Nombre de Carta</th>
@@ -351,12 +378,12 @@
                             <th style="padding: 14px 10px;">Expansión</th>
                             <th style="padding: 14px 10px; text-align: right;">Costo Inversión ($)</th>
                             <th style="padding: 14px 10px; text-align: right;">Precio Venta ($)</th>
-                            <th style="padding: 14px 10px; text-align: center; width: 120px;">Stock (Existencia)</th>
+                            <th style="padding: 14px 10px; text-align: center; width: 120px;">Stock</th>
                             <th style="padding: 14px 10px; text-align: center; width: 110px;">Estado</th>
                         </tr>
                     </thead>
                     <tbody id="inversiones-table-body">
-                        <tr><td colspan="9" style="text-align: center; padding: 30px; color: #94a3b8;"><i class="fas fa-spinner fa-spin"></i> Cargando inventario de binders...</td></tr>
+                        <tr><td colspan="9" style="text-align: center; padding: 30px; color: #94a3b8;">Cargando inventario de binders...</td></tr>
                     </tbody>
                 </table>
             </div>

@@ -235,7 +235,7 @@ body {
     box-sizing: border-box !important;
     width: 600px;
     height: 420px;
-    box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+    box-shadow: none !important;
     user-select: none;
     position: relative;
     margin: 0 !important;
@@ -267,7 +267,7 @@ body {
     border: 1px solid var(--card-border);
     width: 300px;
     height: 420px;
-    box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
+    box-shadow: none !important;
     overflow: hidden;
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
@@ -284,13 +284,22 @@ body {
     -webkit-transform-style: flat !important;
     backface-visibility: hidden !important;
     -webkit-backface-visibility: hidden !important;
+    box-shadow: none !important;
 }
 
 /* Disable translateY/scale hover transforms on card slots inside the album so they stay locked in place */
 .album .card-slot:hover {
     transform: none !important;
     border-color: var(--primary-color);
-    box-shadow: 0 0 10px rgba(0, 210, 255, 0.4);
+    box-shadow: none !important;
+}
+
+.album .shadow,
+.album .ashadow,
+.album .bshadow {
+    display: none !important;
+    opacity: 0 !important;
+    box-shadow: none !important;
 }
 
 
@@ -2910,7 +2919,7 @@ body.theme-light .amazon-orig-strikethrough {
 
     .album {
         margin: 0 auto !important;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        box-shadow: none !important;
     }
 
     .public-album-item {

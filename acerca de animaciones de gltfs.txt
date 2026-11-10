@@ -1,0 +1,63 @@
+# GUÍA Y ARQUITECTURA DE ANIMACIONES: MONEDAS Y DADOS (GLTF 3D Y 2D)
+
+Este documento detalla el estándar técnico de integración para accesorios de tipo "Moneda" (Coin) y "Dado" (Dice) en la plataforma Viking TCG (en `packages.html`, `duel.html` y `duelmobile.js`).
+
+---
+
+## 1. MONEDAS (COINS)
+
+### A. Monedas en Formato 2D (Imágenes)
+Para representar una moneda real con ambas caras (Cara y Cruz / Heads and Tails):
+1. **Convención de URL Dual (JSON en image_url):**
+   - El sistema almacena en `accessories.image_url` un JSON string o URL compuesta:
+     ```json
+     {"heads": "https://.../moneda_cara.png", "tails": "https://.../moneda_cruz.png"}
+     ```
+   - O en caso de subir una sola imagen con ambas caras lado a lado (sprite 2:1), la mitad izquierda representa **Cara** y la mitad derecha **Cruz**.
+   - Si se proporciona una sola imagen estándar (PNG/JPG), el frente es la imagen del accesorio y el reverso muestra el diseño de reverso predeterminado con el texto Cruz.
+2. **Animación Cinemática 2D en Duelo (`duel.html` y `duelmobile.js`):**
+   - El contenedor tiene un elemento de rotación 3D en el eje Y (`rotateY`).
+   - Durante 1.8 segundos gira a alta velocidad alternando cara y cruz.
+   - Si el resultado precalculado en JS es **Cara**, se detiene en `rotateY(0deg)` mostrando la imagen de Cara.
+   - Si el resultado es **Cruz**, se detiene en `rotateY(180deg)` mostrando la imagen de Cruz.
+
+### B. Monedas en Formato 3D (Modelos GLTF / GLB)
+1. **Diseño y Orientación del Modelo GLTF:**
+   - La moneda 3D debe modelarse centrada en el origen `(0, 0, 0)` con el plano de la moneda en `XY`.
+   - **Cara (Heads):** Cara frontal del modelo orientada hacia el eje `+Z` (hacia la cámara por defecto).
+   - **Cruz (Tails):** Cara posterior del modelo orientada hacia el eje `-Z`.
+2. **Cámara y Ángulos en `<model-viewer>`:**
+   - Durante el giro: `rotY += 45deg` continuo en un intervalo para simular el vuelo y giro en el aire.
+   - **Al caer en Cara:**
+     `camera-orbit="0deg 90deg 105%"` (o mirando perpendicular al frente `+Z`).
+   - **Al caer en Cruz:**
+     `camera-orbit="180deg 90deg 105%"` (cámara gira 180° mostrando el reverso exacto `-Z`).
+
+---
+
+## 2. DADOS (DICE)
+
+### A. Dados en Formato 3D (GLTF / GLB - D6 Estándar)
+1. **Mapeo de Caras del Cubo en Espacio 3D:**
+   Para cualquier modelo de dado cúbico D6 centrado en `(0, 0, 0)`:
+   - **Cara 1:** Eje `+Z` frontal -> `camera-orbit="0deg 90deg 105%"`
+   - **Cara 2:** Eje `+X` derecho -> `camera-orbit="90deg 90deg 105%"`
+   - **Cara 3:** Eje `-Z` trasero -> `camera-orbit="180deg 90deg 105%"`
+   - **Cara 4:** Eje `-X` izquierdo -> `camera-orbit="270deg 90deg 105%"`
+   - **Cara 5:** Eje `+Y` superior -> `camera-orbit="0deg 0deg 105%"`
+   - **Cara 6:** Eje `-Y` inferior -> `camera-orbit="0deg 180deg 105%"`
+2. **Animación Cinemática:**
+   - Durante el lanzamiento (1.8s) se aplica una rotación multi-axial rápida en el visor 3D.
+   - Al cumplirse el tiempo, la cámara apunta a la coordenada exacta `diceAngles[rollResult]`.
+
+### B. Dados en Formato 2D:
+- Si el usuario asigna un accesorio 2D personalizado, este se utiliza como textura principal animada con escala y balanceo mientras rota entre valores numéricos del 1 al 6.
+
+---
+
+## 3. GESTIÓN EN `packages.html`
+- En el panel de Accesorios ("BDD Global" y "Configuración y Paquetes"):
+  - Cuando se selecciona la categoría **Coins (Monedas)**, se permite configurar:
+    1. **Cara (Heads):** Imagen principal.
+    2. **Cruz (Tails):** Imagen de reverso opcional (o modelo 3D GLTF/GLB).
+  - Si se sube un `.gltf` o `.glb`, el sistema lo marca automáticamente como 3D y renderiza el `<model-viewer>` con rotación interactiva.
