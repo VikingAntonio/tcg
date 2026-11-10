@@ -69,6 +69,8 @@ let selectedDeckbox = null;
 let selectedCoin = null;
 let selectedDice = null;
 let selectedCounters = null;
+let selectedCalculator = null;
+let selectedToken = null;
 let selectedMats = null;
 
 $(document).ready(async function() {
@@ -186,6 +188,8 @@ $(document).ready(async function() {
         else if (key === 'coin') selectedCoin = val;
         else if (key === 'dice') selectedDice = val;
         else if (key === 'counters') selectedCounters = val;
+        else if (key === 'calculator') selectedCalculator = val;
+        else if (key === 'token') selectedToken = val;
         else if (key === 'mats') selectedMats = val;
 
         $item.siblings().removeClass('selected');
@@ -194,7 +198,13 @@ $(document).ready(async function() {
         // Update preview thumbnail inside modal
         const $previewBox = $(`#preview-box-${key}`);
         if (val) {
-            $previewBox.html(`<img src="${val}" style="width:100%;height:100%;object-fit:cover;">`);
+            const displayVal = getAccessoryDisplayUrl(val);
+            const is3D = displayVal.toLowerCase().includes('.gltf') || displayVal.toLowerCase().includes('.glb');
+            if (is3D) {
+                $previewBox.html(`<model-viewer src="${displayVal}" auto-rotate camera-controls style="width:100%;height:100%;"></model-viewer>`);
+            } else {
+                $previewBox.html(`<img src="${displayVal}" style="width:100%;height:100%;object-fit:cover;">`);
+            }
         } else {
             $previewBox.html(`<span class="acc-preview-none">Ninguno</span>`);
         }
@@ -644,6 +654,8 @@ async function loadDeckData() {
         selectedCoin = deck.coin || null;
         selectedDice = deck.dice || null;
         selectedCounters = deck.counters || null;
+        selectedCalculator = deck.calculator || null;
+        selectedToken = deck.token || null;
         selectedMats = deck.mats || null;
 
         // Fetch Deck Cards
@@ -914,6 +926,8 @@ async function loadAndRenderAccessories() {
             else if (key === 'coin') activeVal = selectedCoin;
             else if (key === 'dice') activeVal = selectedDice;
             else if (key === 'counters') activeVal = selectedCounters;
+            else if (key === 'calculator') activeVal = selectedCalculator;
+            else if (key === 'token') activeVal = selectedToken;
             else if (key === 'mats') activeVal = selectedMats;
 
             const $previewBox = $(`#preview-box-${key}`);
@@ -993,6 +1007,8 @@ async function loadAndRenderAccessories() {
                     else if (key === 'coin') selectedCoin = val;
                     else if (key === 'dice') selectedDice = val;
                     else if (key === 'counters') selectedCounters = val;
+                    else if (key === 'calculator') selectedCalculator = val;
+                    else if (key === 'token') selectedToken = val;
                     else if (key === 'mats') selectedMats = val;
 
                     $item.siblings().removeClass('selected');
@@ -1050,6 +1066,8 @@ async function saveDeck() {
             coin: selectedCoin,
             dice: selectedDice,
             counters: selectedCounters,
+            calculator: selectedCalculator,
+            token: selectedToken,
             mats: selectedMats
         };
 

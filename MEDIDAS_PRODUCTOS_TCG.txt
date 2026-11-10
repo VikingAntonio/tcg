@@ -81,11 +81,29 @@ tienda, tablero de duelo en PC y móvil).
   * 2D: 600 x 600 píxeles (PNG o JPG).
   * 3D (.gltf / .glb): Modelo de caja con proporción aproximada ancho 7cm x fondo 5cm x alto 10cm.
 
+--------------------------------------------------------------------------------
+7. CALCULADORAS LP (CALCULATOR)
+--------------------------------------------------------------------------------
+- Proporción de aspecto (Aspect Ratio): 4:5 o 1:1.
+- Dimensiones recomendadas:
+  * 2D: 800 x 1000 píxeles o 600 x 600 píxeles (PNG o JPG).
+  * Formato: PNG o JPG con marco/textura para fondo o carcasa de calculadora.
+
+--------------------------------------------------------------------------------
+8. TOKENS / FICHAS (TOKEN)
+--------------------------------------------------------------------------------
+- Proporción de aspecto (Aspect Ratio): Estándar TCG 2.5 : 3.5 (~ 1 : 1.4).
+- Dimensiones recomendadas:
+  * Óptima: 600 x 840 píxeles o 750 x 1050 píxeles.
+  * Formato: JPG o PNG.
+
 ================================================================================
 RESUMEN RÁPIDO DE SUBIDA:
-- Playmats:    1920 x 1080 px  (16:9)
-- Monedas:     512 x 512 px    (1:1 PNG transparente)
-- Dados:       512 x 512 px    (1:1 por cada cara)
-- Contadores:  256 x 256 px    (1:1 PNG transparente, centro despejado)
-- Sleeves:     600 x 840 px    (2.5:3.5)
+- Playmats:     1920 x 1080 px  (16:9)
+- Monedas:      512 x 512 px    (1:1 PNG transparente)
+- Dados:        512 x 512 px    (1:1 por cada cara)
+- Contadores:   256 x 256 px    (1:1 PNG transparente, centro despejado)
+- Calculadoras: 800 x 1000 px   (4:5)
+- Tokens:       600 x 840 px    (2.5:3.5)
+- Sleeves:      600 x 840 px    (2.5:3.5)
 ================================================================================
