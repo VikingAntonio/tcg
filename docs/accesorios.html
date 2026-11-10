@@ -309,16 +309,18 @@
             cursor: pointer;
         }
 
-        .acc-card-image-box img {
+        .acc-card-image-box img, .acc-card-image-box model-viewer {
             max-width: 90%;
             max-height: 90%;
+            width: 100%;
+            height: 100%;
             object-fit: contain;
             border-radius: 10px;
             transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.35s ease;
             box-shadow: 0 10px 25px rgba(0,0,0,0.5);
         }
 
-        .acc-card-image-box.type-coin img {
+        .acc-card-image-box.type-coin img, .acc-card-image-box.type-coin model-viewer {
             border-radius: 50%;
         }
 
@@ -838,7 +840,7 @@
                         </div>
 
                         <div class="acc-card-image-box ${category === 'coin' ? 'type-coin' : ''}" data-url="${item.image_url}" title="Ver en grande">
-                            ${(item.image_url && (item.image_url.toLowerCase().includes(".gltf") || item.image_url.toLowerCase().includes(".glb"))) ? `<model-viewer src="${item.image_url}" auto-rotate camera-controls style="width: 100%; height: 100%; pointer-events: none;"></model-viewer>` : `<img src="${item.image_url}" alt="${escapeHtml(item.name || 'Accesorio')}" onerror="this.src='https://via.placeholder.com/200?text=Accesorio'">`}
+                            ${(item.image_url && (item.image_url.toLowerCase().includes(".gltf") || item.image_url.toLowerCase().includes(".glb"))) ? `<model-viewer src="${item.image_url}" auto-rotate camera-controls style="width: 100%; height: 100%;" shadow-intensity="1"></model-viewer>` : `<img src="${item.image_url}" alt="${escapeHtml(item.name || 'Accesorio')}" onerror="this.src='https://via.placeholder.com/200?text=Accesorio'">`}
                             <div class="acc-card-zoom-hint"><i class="fas fa-search-plus"></i></div>
                         </div>
 
