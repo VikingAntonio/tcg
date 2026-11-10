@@ -79,6 +79,14 @@ window.CustomStoreState = {
 };
 
 $(document).ready(async function() {
+    // Auto-detect mobile devices
+    if (window.innerWidth <= 768) {
+        window.CustomStoreState.currentDevice = 'mobile';
+        $('.segmented-group button[data-device]').removeClass('active');
+        $('#btn-device-mobile').addClass('active');
+        $('#custom-viewport-frame').removeClass('mode-pc').addClass('mode-mobile');
+    }
+
     initThemeManager();
     await initSession();
     await checkStickerPaymentCallback();
@@ -1307,6 +1315,18 @@ function bindEvents() {
         window.CustomStoreState.currentDevice = 'mobile';
         $('#custom-viewport-frame').removeClass('mode-pc').addClass('mode-mobile');
         renderGrid();
+    });
+
+    // Mobile Global Styles Drawer Toggle
+    $('#btn-mobile-toggle-styles').on('click', function(e) {
+        e.stopPropagation();
+        $('#compact-global-sidebar').toggleClass('mobile-open');
+    });
+
+    $(document).on('click', function(e) {
+        if ($(window).width() <= 768 && !$(e.target).closest('#compact-global-sidebar, #btn-mobile-toggle-styles').length) {
+            $('#compact-global-sidebar').removeClass('mobile-open');
+        }
     });
 
     // Target View Toggle (Panel Admin vs Tienda Pública)

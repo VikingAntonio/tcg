@@ -205,6 +205,17 @@ async function checkSession() {
                     localStorage.setItem('tcg_session', JSON.stringify(user));
                     showAuthenticatedContent();
                     return;
+                } else {
+                    // Fallback using session user object
+                    currentUser = {
+                        id: session.user.id,
+                        user_id: session.user.id,
+                        username: session.user.email || 'Usuario',
+                        email: session.user.email
+                    };
+                    localStorage.setItem('tcg_session', JSON.stringify(currentUser));
+                    showAuthenticatedContent();
+                    return;
                 }
             }
         }
@@ -383,7 +394,16 @@ async function loadUserDecksList() {
 
     } catch (e) {
         console.error("Error loading user decks:", e);
-        $list.html('<div class="error-decks" style="grid-column: 1/-1; text-align: center; padding: 20px; color: #ef4444;">No se pudieron cargar tus decks.</div>');
+        $list.html(`
+            <div class="error-decks" style="grid-column: 1/-1; text-align: center; padding: 30px; color: #ef4444; background: rgba(239,68,68,0.08); border-radius: 12px; border: 1px solid rgba(239,68,68,0.2);">
+                <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 10px; display: block;"></i>
+                <p style="margin-bottom: 12px; font-weight: 600;">No se pudieron cargar tus decks.</p>
+                <button type="button" class="btn btn-primary btn-sm" id="btn-retry-load-decks" style="padding: 6px 16px;"><i class="fas fa-redo"></i> Reintentar</button>
+            </div>
+        `);
+        $('#btn-retry-load-decks').click(function() {
+            loadUserDecksList();
+        });
     }
 }
 
