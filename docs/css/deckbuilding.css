@@ -786,6 +786,13 @@ body {
     aspect-ratio: 1/1;
     border-radius: 50%;
 }
+.accessory-item.type-counters {
+    aspect-ratio: 1/1;
+    border-radius: 50%;
+}
+.accessory-item.type-counters img {
+    object-fit: contain;
+}
 .accessory-item.type-mats {
     aspect-ratio: 16/9;
 }

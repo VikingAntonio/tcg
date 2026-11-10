@@ -451,6 +451,7 @@
             const categoryLower = (category || '').toLowerCase();
             let wrapperClass = '';
             if (categoryLower.includes('coin')) wrapperClass = 'type-coin';
+            else if (categoryLower.includes('counter')) wrapperClass = 'type-counters';
             else if (categoryLower.includes('mat')) wrapperClass = 'type-mats';
 
             // 1. Create Acquisition Overlay
@@ -493,7 +494,7 @@
                         left: ${cardRect.left}px;
                         width: ${cardRect.width}px;
                         height: ${cardRect.height}px;
-                        ${categoryLower.includes('coin') ? 'border-radius: 50%;' : ''}
+                        ${categoryLower.includes('coin') || categoryLower.includes('counter') ? 'border-radius: 50%;' : ''}
                     ">
                 `);
                 $('body').append($flying);

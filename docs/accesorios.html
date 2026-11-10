@@ -320,8 +320,15 @@
             box-shadow: 0 10px 25px rgba(0,0,0,0.5);
         }
 
-        .acc-card-image-box.type-coin img, .acc-card-image-box.type-coin model-viewer {
+        .acc-card-image-box.type-coin img, .acc-card-image-box.type-coin model-viewer,
+        .acc-card-image-box.type-counters img, .acc-card-image-box.type-counters model-viewer {
+            aspect-ratio: 1 / 1;
+            width: auto;
+            height: auto;
+            max-width: 190px;
+            max-height: 190px;
             border-radius: 50%;
+            object-fit: contain;
         }
 
         .deluxe-acc-card:hover .acc-card-image-box img {
@@ -536,6 +543,7 @@
                 <button type="button" class="tab-filter-btn" data-category="deckbox">Decks</button>
                 <button type="button" class="tab-filter-btn" data-category="coin">Coins</button>
                 <button type="button" class="tab-filter-btn" data-category="dice">Dados</button>
+                <button type="button" class="tab-filter-btn" data-category="counters">Contadores</button>
                 <button type="button" class="tab-filter-btn" data-category="mats">Playmat</button>
                 <button type="button" class="tab-filter-btn" data-category="bundles">Ofertas y Bundles</button>
             </div>
@@ -784,6 +792,7 @@
                 if (category === 'deckbox') catLabel = 'Deck';
                 else if (category === 'coin') catLabel = 'Coin';
                 else if (category === 'dice') catLabel = 'Dado';
+                else if (category === 'counters') catLabel = 'Contador';
                 else if (category === 'mats') catLabel = 'Playmat';
 
                 // Status badge logic
@@ -877,7 +886,7 @@
                                 `;
                             } else {
                                 return `
-                                    <div class="acc-card-image-box ${category === 'coin' ? 'type-coin' : ''}" data-url="${item.image_url}" title="Ver en grande">
+                                    <div class="acc-card-image-box ${category === 'coin' ? 'type-coin' : (category === 'counters' ? 'type-counters' : '')}" data-url="${item.image_url}" title="Ver en grande">
                                         <img src="${item.image_url}" alt="${escapeHtml(item.name || 'Accesorio')}" onerror="this.src='https://via.placeholder.com/200?text=Accesorio'">
                                         <div class="acc-card-zoom-hint"><i class="fas fa-search-plus"></i></div>
                                     </div>

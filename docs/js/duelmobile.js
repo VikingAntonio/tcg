@@ -581,6 +581,7 @@ const state = {
     deckMats: { player1: null, player2: null }, // Store selected playmat URL for each player
     deckCoins: { player1: null, player2: null },   // Store selected coin URL for each player
     deckDice: { player1: null, player2: null },    // Store selected dice URL for each player
+    deckCounters: { player1: null, player2: null }, // Store selected counter URL for each player
     currentUser: null
 };
 
@@ -762,7 +763,7 @@ async function fetchDeckCards(deckId, playerKey) {
         try {
             const { data: deckMeta, error: deckErr } = await _supabase
                 .from('decks')
-                .select('sleeves, mats, coin, dice')
+                .select('sleeves, mats, coin, dice, counters')
                 .eq('id', deckId)
                 .single();
             if (!deckErr && deckMeta) {
@@ -770,6 +771,7 @@ async function fetchDeckCards(deckId, playerKey) {
                 state.deckMats[playerKey] = deckMeta.mats || null;
                 state.deckCoins[playerKey] = deckMeta.coin || null;
                 state.deckDice[playerKey] = deckMeta.dice || null;
+                state.deckCounters[playerKey] = deckMeta.counters || null;
 
                 // Apply player1's custom mat to the playmat background
                 if (playerKey === 'player1' && deckMeta.mats) {
@@ -3759,7 +3761,25 @@ function setupEventListeners() {
 
     $("#menu-add-counter").click(function() {
         if (!activeMenuCard) return;
-        activeMenuCard.counters += 1;
+        const pKey = (typeof currentRole !== 'undefined' && currentRole === 'player2') ? 'player2' : 'player1';
+        if (!activeMenuCard.placedCounters) activeMenuCard.placedCounters = [];
+        activeMenuCard.placedCounters.push({
+            id: `cnt_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+            player: pKey,
+            design: (state.deckCounters && state.deckCounters[pKey]) || null
+        });
+        activeMenuCard.counters = activeMenuCard.placedCounters.length;
+        renderAllCards();
+    });
+
+    $("#menu-sub-counter").click(function() {
+        if (!activeMenuCard) return;
+        if (activeMenuCard.placedCounters && activeMenuCard.placedCounters.length > 0) {
+            activeMenuCard.placedCounters.pop();
+            activeMenuCard.counters = activeMenuCard.placedCounters.length;
+        } else {
+            activeMenuCard.counters = Math.max(0, (activeMenuCard.counters || 0) - 1);
+        }
         renderAllCards();
     });
 
@@ -5265,6 +5285,7 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                                 localCard.tapped = remoteCard.tapped;
                                 localCard.counters = remoteCard.counters;
                                 localCard.pokemonDamageCounters = remoteCard.pokemonDamageCounters;
+                                localCard.placedCounters = remoteCard.placedCounters;
                                 localCard.attachedTo = remoteCard.attachedTo;
                                 localCard.controller = remoteCard.controller;
                                 localCard.isExtra = remoteCard.isExtra;
@@ -5878,9 +5899,12 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                     // Determine counter type
                     if ($(this).hasClass("ygo-placed-counter")) {
                         const instId = $(this).data("instance-id");
-                        activeCounterDragVal = { type: "MOVE_YGO_COUNTER", cardInstanceId: instId };
+                        const cPlayer = $(this).data("player") || 'player1';
+                        activeCounterDragVal = { type: "MOVE_YGO_COUNTER", cardInstanceId: instId, player: cPlayer };
                     } else if ($(this).hasClass("ygo-counter-source")) {
-                        activeCounterDragVal = "YGO";
+                        const pKey = (typeof currentRole !== 'undefined' && currentRole === 'player2') ? 'player2' : 'player1';
+                        const customImg = (state.deckCounters && state.deckCounters[pKey]) ? state.deckCounters[pKey] : null;
+                        activeCounterDragVal = { type: "YGO", player: pKey, design: customImg };
                     } else {
                         activeCounterDragVal = parseInt($(this).data("val"));
                     }
@@ -5922,12 +5946,29 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                             const targetInstId = droppedOnCard.data("instance-id");
                             const targetCard = state.cards.find(c => c.instanceId === targetInstId);
                             if (targetCard) {
-                                sourceCard.counters = Math.max(0, (sourceCard.counters || 0) - 1);
-                                targetCard.counters = (targetCard.counters || 0) + 1;
+                                let movedItem = null;
+                                if (sourceCard.placedCounters && sourceCard.placedCounters.length > 0) {
+                                    movedItem = sourceCard.placedCounters.pop();
+                                    sourceCard.counters = sourceCard.placedCounters.length;
+                                } else {
+                                    sourceCard.counters = Math.max(0, (sourceCard.counters || 0) - 1);
+                                }
+                                if (!targetCard.placedCounters) targetCard.placedCounters = [];
+                                targetCard.placedCounters.push({
+                                    id: movedItem?.id || `cnt_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+                                    player: movedItem?.player || activeCounterDragVal.player || 'player1',
+                                    design: movedItem?.design || (state.deckCounters && state.deckCounters[movedItem?.player || 'player1']) || null
+                                });
+                                targetCard.counters = targetCard.placedCounters.length;
                                 sendGameAction(`Movió 1 contador de ${sourceCard.name} a ${targetCard.name}`);
                             }
                         } else {
-                            sourceCard.counters = Math.max(0, (sourceCard.counters || 0) - 1);
+                            if (sourceCard.placedCounters && sourceCard.placedCounters.length > 0) {
+                                sourceCard.placedCounters.pop();
+                                sourceCard.counters = sourceCard.placedCounters.length;
+                            } else {
+                                sourceCard.counters = Math.max(0, (sourceCard.counters || 0) - 1);
+                            }
                             sendGameAction(`Quitó 1 contador de ${sourceCard.name} (Restante: ${sourceCard.counters})`);
                         }
                         window.renderAllCards();
@@ -5957,9 +5998,17 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                         delete oldCard.customAtkDef;
                         sendGameAction(`Movió ATK/DEF personalizado de ${oldCard.name} a ${cardObj.name}`);
                     }
-                } else if (activeCounterDragVal === "YGO") {
+                } else if (activeCounterDragVal === "YGO" || (activeCounterDragVal && activeCounterDragVal.type === "YGO")) {
                     if (!isYGOLayout(state.layout)) return;
-                    cardObj.counters = (cardObj.counters || 0) + 1;
+                    if (!cardObj.placedCounters) cardObj.placedCounters = [];
+                    const pKey = activeCounterDragVal.player || ((typeof currentRole !== 'undefined' && currentRole === 'player2') ? 'player2' : 'player1');
+                    const customImg = activeCounterDragVal.design !== undefined ? activeCounterDragVal.design : ((state.deckCounters && state.deckCounters[pKey]) ? state.deckCounters[pKey] : null);
+                    cardObj.placedCounters.push({
+                        id: `cnt_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+                        player: pKey,
+                        design: customImg
+                    });
+                    cardObj.counters = cardObj.placedCounters.length;
                     sendGameAction(`Colocó un contador en ${cardObj.name} (Total: ${cardObj.counters})`);
                 } else if (typeof activeCounterDragVal === "number") {
                     if (state.layout !== 'pokemon') return;
@@ -5995,10 +6044,17 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                     activeCounterDragVal = { type: "REMOVE_ATK_DEF", cardInstanceId: instId };
                 } else if (activeTouchDragSource.hasClass("ygo-placed-counter")) {
                     const instId = activeTouchDragSource.data("instance-id");
-                    activeCounterDragVal = { type: "MOVE_YGO_COUNTER", cardInstanceId: instId };
+                    const cPlayer = activeTouchDragSource.data("player") || 'player1';
+                    activeCounterDragVal = { type: "MOVE_YGO_COUNTER", cardInstanceId: instId, player: cPlayer };
                 } else {
                     const isYGO = activeTouchDragSource.hasClass("ygo-counter-source");
-                    activeCounterDragVal = isYGO ? "YGO" : parseInt(activeTouchDragSource.data("val"));
+                    if (isYGO) {
+                        const pKey = (typeof currentRole !== 'undefined' && currentRole === 'player2') ? 'player2' : 'player1';
+                        const customImg = (state.deckCounters && state.deckCounters[pKey]) ? state.deckCounters[pKey] : null;
+                        activeCounterDragVal = { type: "YGO", player: pKey, design: customImg };
+                    } else {
+                        activeCounterDragVal = parseInt(activeTouchDragSource.data("val"));
+                    }
                 }
 
                 const coords = getEventCoords(e);
@@ -6054,13 +6110,33 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                         } else if (activeCounterDragVal && activeCounterDragVal.type === "MOVE_YGO_COUNTER") {
                             const sourceCard = state.cards.find(c => c.instanceId === activeCounterDragVal.cardInstanceId);
                             if (sourceCard && sourceCard.instanceId !== cardObj.instanceId) {
-                                sourceCard.counters = Math.max(0, (sourceCard.counters || 0) - 1);
-                                cardObj.counters = (cardObj.counters || 0) + 1;
+                                let movedItem = null;
+                                if (sourceCard.placedCounters && sourceCard.placedCounters.length > 0) {
+                                    movedItem = sourceCard.placedCounters.pop();
+                                    sourceCard.counters = sourceCard.placedCounters.length;
+                                } else {
+                                    sourceCard.counters = Math.max(0, (sourceCard.counters || 0) - 1);
+                                }
+                                if (!cardObj.placedCounters) cardObj.placedCounters = [];
+                                cardObj.placedCounters.push({
+                                    id: movedItem?.id || `cnt_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+                                    player: movedItem?.player || activeCounterDragVal.player || 'player1',
+                                    design: movedItem?.design || (state.deckCounters && state.deckCounters[movedItem?.player || 'player1']) || null
+                                });
+                                cardObj.counters = cardObj.placedCounters.length;
                                 sendGameAction(`Movió 1 contador de ${sourceCard.name} a ${cardObj.name}`);
                             }
-                        } else if (activeCounterDragVal === "YGO") {
+                        } else if (activeCounterDragVal === "YGO" || (activeCounterDragVal && activeCounterDragVal.type === "YGO")) {
                             if (isYGOLayout(state.layout)) {
-                                cardObj.counters = (cardObj.counters || 0) + 1;
+                                if (!cardObj.placedCounters) cardObj.placedCounters = [];
+                                const pKey = activeCounterDragVal.player || ((typeof currentRole !== 'undefined' && currentRole === 'player2') ? 'player2' : 'player1');
+                                const customImg = activeCounterDragVal.design !== undefined ? activeCounterDragVal.design : ((state.deckCounters && state.deckCounters[pKey]) ? state.deckCounters[pKey] : null);
+                                cardObj.placedCounters.push({
+                                    id: `cnt_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+                                    player: pKey,
+                                    design: customImg
+                                });
+                                cardObj.counters = cardObj.placedCounters.length;
                                 sendGameAction(`Colocó un contador en ${cardObj.name} (Total: ${cardObj.counters})`);
                             }
                         } else if (typeof activeCounterDragVal === "number") {
@@ -6118,12 +6194,60 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                         : "";
 
                     if (isYGOLayout(state.layout)) {
-                        if (card.counters && card.counters > 0) {
+                        if (!card.placedCounters) card.placedCounters = [];
+                        if (typeof card.counters !== 'undefined' && card.placedCounters.length !== card.counters) {
+                            while (card.placedCounters.length < card.counters) {
+                                const pK = (typeof currentRole !== 'undefined' && currentRole === 'player2') ? 'player2' : 'player1';
+                                card.placedCounters.push({
+                                    id: `cnt_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+                                    player: pK,
+                                    design: (state.deckCounters && state.deckCounters[pK]) || null
+                                });
+                            }
+                            while (card.placedCounters.length > card.counters) {
+                                card.placedCounters.pop();
+                            }
+                        }
+                        card.counters = card.placedCounters.length;
+
+                        // Group per player
+                        const mGroups = {};
+                        card.placedCounters.forEach(cnt => {
+                            const pKey = cnt.player || 'player1';
+                            if (!mGroups[pKey]) {
+                                mGroups[pKey] = {
+                                    player: pKey,
+                                    count: 0,
+                                    design: cnt.design || (state.deckCounters && state.deckCounters[pKey]) || null
+                                };
+                            }
+                            mGroups[pKey].count++;
+                        });
+
+                        const mGroupKeys = Object.keys(mGroups);
+                        if (mGroupKeys.length === 1) {
+                            const g = mGroups[mGroupKeys[0]];
+                            const customStyle = g.design
+                                ? `background-image: url('${g.design}'); background-size: contain; background-repeat: no-repeat; background-position: center; border: none; text-shadow: 0 0 4px #000, 0 0 6px #000, 1px 1px 2px #000; color: #fff;`
+                                : `background: radial-gradient(circle, #ffeaa7 0%, #fdcb6e 60%, #e17055 100%); border: 2px solid #fff; color: #2d3436;`;
                             $card.append(`
-                                <div class="card-counter-badge counter-source ygo-placed-counter" data-instance-id="${card.instanceId}" draggable="true" style="position: absolute; top: -6px; right: -6px; width: 26px; height: 26px; border-radius: 50%; background: radial-gradient(circle, #ffeaa7 0%, #fdcb6e 60%, #e17055 100%); border: 2px solid #fff; box-shadow: 0 0 8px rgba(253, 203, 110, 0.9); color: #2d3436; font-weight: bold; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; z-index: 100; cursor: grab; user-select: none;">
-                                    ${card.counters}
+                                <div class="card-counter-badge counter-source ygo-placed-counter" data-instance-id="${card.instanceId}" data-player="${g.player}" draggable="true" style="position: absolute; top: -6px; right: -6px; width: 26px; height: 26px; border-radius: 50%; box-shadow: 0 0 8px rgba(0,0,0,0.85); font-weight: bold; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; z-index: 100; cursor: grab; user-select: none; ${customStyle}" title="Total: ${g.count}">
+                                    ${g.count}
                                 </div>
                             `);
+                        } else if (mGroupKeys.length > 1) {
+                            mGroupKeys.forEach((pKey, gIdx) => {
+                                const g = mGroups[pKey];
+                                const customStyle = g.design
+                                    ? `background-image: url('${g.design}'); background-size: contain; background-repeat: no-repeat; background-position: center; border: none; text-shadow: 0 0 4px #000, 0 0 6px #000, 1px 1px 2px #000; color: #fff;`
+                                    : (pKey === 'player1' ? 'background: linear-gradient(135deg, #00d2ff, #0055ff); border: 2px solid #fff; color: #fff;' : 'background: linear-gradient(135deg, #ff1b6b, #9333ea); border: 2px solid #fff; color: #fff;');
+                                const rightOffset = -6 - (gIdx * 30);
+                                $card.append(`
+                                    <div class="card-counter-badge counter-source ygo-placed-counter" data-instance-id="${card.instanceId}" data-player="${g.player}" draggable="true" style="position: absolute; top: -6px; right: ${rightOffset}px; width: 26px; height: 26px; border-radius: 50%; box-shadow: 0 0 8px rgba(0,0,0,0.85); font-weight: bold; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; z-index: 100; cursor: grab; user-select: none; ${customStyle}" title="Total ${pKey === 'player1' ? 'J1' : 'J2'}: ${g.count}">
+                                        ${g.count}
+                                    </div>
+                                `);
+                            });
                         }
                     } else {
                         // Pokémon Layout damage counters
@@ -6712,6 +6836,7 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                         faceDown: card.faceDown,
                         tapped: card.tapped,
                         counters: card.counters,
+                        placedCounters: card.placedCounters ? JSON.parse(JSON.stringify(card.placedCounters)) : [],
                         pokemonDamageCounters: card.pokemonDamageCounters ? [...card.pokemonDamageCounters] : [],
                         attachedTo: card.attachedTo,
                         controller: card.controller
