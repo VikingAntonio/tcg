@@ -2071,9 +2071,44 @@
                 else if (category === 'mats') imgAspectStyle = 'aspect-ratio: 16/9;';
 
                 const is3DModel = acc.image_url && (acc.image_url.toLowerCase().includes('.gltf') || acc.image_url.toLowerCase().includes('.glb'));
-                const visualHtml = is3DModel
-                    ? `<model-viewer src="${acc.image_url}" auto-rotate camera-controls style="${imgAspectStyle} width: 100%; max-height: 160px; background: rgba(0,0,0,0.4); border-radius: 8px;" shadow-intensity="1"></model-viewer>`
-                    : `<img src="${acc.image_url}" alt="${escapeHtml(acc.name || 'Accesorio')}" class="sticker-visual-img" style="${imgAspectStyle} max-height: 160px; object-fit: contain;">`;
+
+                let visualHtml = '';
+                let isMultiFace = false;
+                let parsedFaces = [];
+
+                if (acc.image_url && acc.image_url.trim().startsWith('{')) {
+                    try {
+                        const parsedObj = JSON.parse(acc.image_url);
+                        if (parsedObj.heads || parsedObj.tails) {
+                            isMultiFace = true;
+                            if (parsedObj.heads) parsedFaces.push({ label: 'Cara', url: parsedObj.heads });
+                            if (parsedObj.tails) parsedFaces.push({ label: 'Cruz', url: parsedObj.tails });
+                        } else {
+                            const keys = Object.keys(parsedObj).sort();
+                            if (keys.length > 0) {
+                                isMultiFace = true;
+                                keys.forEach(k => parsedFaces.push({ label: 'Cara ' + k, url: parsedObj[k] }));
+                            }
+                        }
+                    } catch(e) {}
+                }
+
+                if (is3DModel) {
+                    visualHtml = `<model-viewer src="${acc.image_url}" auto-rotate camera-controls style="${imgAspectStyle} width: 100%; max-height: 160px; background: rgba(0,0,0,0.4); border-radius: 8px;" shadow-intensity="1"></model-viewer>`;
+                } else if (isMultiFace && parsedFaces.length > 0) {
+                    visualHtml = `
+                        <div class="acc-multiface-slider" data-idx="0" style="position: relative; width: 100%; display: flex; flex-direction: column; align-items: center;">
+                            <img src="${parsedFaces[0].url}" alt="${escapeHtml(acc.name || 'Accesorio')}" class="sticker-visual-img acc-slider-img" style="${imgAspectStyle} max-height: 140px; object-fit: contain;">
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 6px; width: 100%;">
+                                <button type="button" class="btn-acc-slide-prev" style="background: rgba(255,255,255,0.1); border: 1px solid #475569; color: #fff; border-radius: 4px; padding: 2px 6px; font-size: 0.7rem; cursor: pointer;">&lt;</button>
+                                <span class="acc-slider-label" style="font-size: 0.72rem; color: #00d2ff; font-weight: 700;">${parsedFaces[0].label} (1/${parsedFaces.length})</span>
+                                <button type="button" class="btn-acc-slide-next" style="background: rgba(255,255,255,0.1); border: 1px solid #475569; color: #fff; border-radius: 4px; padding: 2px 6px; font-size: 0.7rem; cursor: pointer;">&gt;</button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    visualHtml = `<img src="${acc.image_url}" alt="${escapeHtml(acc.name || 'Accesorio')}" class="sticker-visual-img" style="${imgAspectStyle} max-height: 160px; object-fit: contain;">`;
+                }
 
                 const $card = $(`
                     <div class="sticker-stage-card accessory-stage-card" data-name="${escapeHtml(acc.name || '')}" data-category="${category}" data-id="${acc.id}">
@@ -2178,6 +2213,28 @@
                     await deleteAccessory(acc.id, acc.name || 'Accesorio');
                 });
 
+                // Multi-face slider navigation
+                if (isMultiFace && parsedFaces.length > 1) {
+                    let curIdx = 0;
+                    const $slider = $card.find('.acc-multiface-slider');
+                    const $sliderImg = $slider.find('.acc-slider-img');
+                    const $sliderLabel = $slider.find('.acc-slider-label');
+
+                    $slider.find('.btn-acc-slide-prev').click(function(e) {
+                        e.stopPropagation();
+                        curIdx = (curIdx - 1 + parsedFaces.length) % parsedFaces.length;
+                        $sliderImg.attr('src', parsedFaces[curIdx].url);
+                        $sliderLabel.text(`${parsedFaces[curIdx].label} (${curIdx + 1}/${parsedFaces.length})`);
+                    });
+
+                    $slider.find('.btn-acc-slide-next').click(function(e) {
+                        e.stopPropagation();
+                        curIdx = (curIdx + 1) % parsedFaces.length;
+                        $sliderImg.attr('src', parsedFaces[curIdx].url);
+                        $sliderLabel.text(`${parsedFaces[curIdx].label} (${curIdx + 1}/${parsedFaces.length})`);
+                    });
+                }
+
                 $container.append($card);
             });
 
@@ -2207,6 +2264,22 @@
 
             let uploadedCount = 0;
             const targetCat = (activeAccessoryCategory === 'all') ? 'sleeves' : activeAccessoryCategory;
+
+            // SPECIAL FLOW: Multi-face Coin mapping (Drag & drop 2+ images for coin)
+            if (targetCat === 'coin' && validFiles.length >= 2) {
+                Swal.close();
+                $('#accessory-drag-label').text('Imágenes 2D (.PNG, .JPG, .WEBP)');
+                await handleMultiFaceCoinModal(validFiles);
+                return;
+            }
+
+            // SPECIAL FLOW: Multi-face Dice mapping (Drag & drop 2 to 6 images for dice)
+            if (targetCat === 'dice' && validFiles.length >= 2) {
+                Swal.close();
+                $('#accessory-drag-label').text('Imágenes 2D (.PNG, .JPG, .WEBP)');
+                await handleMultiFaceDiceModal(validFiles);
+                return;
+            }
 
             try {
                 for (let i = 0; i < validFiles.length; i++) {
@@ -2249,6 +2322,227 @@
                 console.error('Error uploading accessories batch:', e);
                 $('#accessory-drag-label').text('Imágenes 2D (.PNG, .JPG, .WEBP)');
                 Swal.fire('Error al cargar', 'Ocurrió un detalle al procesar los accesorios: ' + e.message, 'error');
+            }
+        }
+
+        // Multi-face modal for Coins (Cara y Cruz)
+        async function handleMultiFaceCoinModal(files) {
+            const fileList = Array.from(files).slice(0, 2);
+            const defaultName = fileList[0].name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+            const preview0 = URL.createObjectURL(fileList[0]);
+            const preview1 = URL.createObjectURL(fileList[1]);
+
+            const { value: formValues } = await Swal.fire({
+                title: 'Definir Moneda: Cara y Cruz',
+                html: `
+                    <div style="text-align: left; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 12px;">
+                        Asigna visualmente qué imagen corresponde a <b>Cara</b> y cuál a <b>Cruz</b> para crear una sola moneda interactiva.
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-size: 0.8rem; font-weight: 700; color: #fff;">Nombre de la Moneda:</label>
+                        <input id="swal-coin-name" class="swal2-input" value="${escapeHtml(defaultName.charAt(0).toUpperCase() + defaultName.slice(1))}" style="margin: 6px auto; font-size: 0.85rem; color: #fff; background: #0b111e; border: 1px solid #334155; width: 90%;">
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px;">
+                        <div style="background: rgba(0,0,0,0.4); padding: 10px; border-radius: 10px; border: 1.5px solid #00d2ff; text-align: center;">
+                            <img src="${preview0}" style="width: 90px; height: 90px; object-fit: contain; border-radius: 50%; border: 2px solid #00d2ff; margin-bottom: 8px;">
+                            <div style="font-size: 0.75rem; color: #94a3b8; word-break: break-all; margin-bottom: 6px;">${escapeHtml(fileList[0].name)}</div>
+                            <label style="display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; color: #fff; font-weight: 700; font-size: 0.85rem;">
+                                <input type="radio" name="swal-img0-face" value="heads" checked> Cara
+                            </label>
+                            <label style="display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; color: #fff; font-weight: 700; font-size: 0.85rem; margin-top: 4px;">
+                                <input type="radio" name="swal-img0-face" value="tails"> Cruz
+                            </label>
+                        </div>
+                        <div style="background: rgba(0,0,0,0.4); padding: 10px; border-radius: 10px; border: 1.5px solid #c084fc; text-align: center;">
+                            <img src="${preview1}" style="width: 90px; height: 90px; object-fit: contain; border-radius: 50%; border: 2px solid #c084fc; margin-bottom: 8px;">
+                            <div style="font-size: 0.75rem; color: #94a3b8; word-break: break-all; margin-bottom: 6px;">${escapeHtml(fileList[1].name)}</div>
+                            <label style="display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; color: #fff; font-weight: 700; font-size: 0.85rem;">
+                                <input type="radio" name="swal-img1-face" value="heads"> Cara
+                            </label>
+                            <label style="display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; color: #fff; font-weight: 700; font-size: 0.85rem; margin-top: 4px;">
+                                <input type="radio" name="swal-img1-face" value="tails" checked> Cruz
+                            </label>
+                        </div>
+                    </div>
+                `,
+                background: '#131b2e',
+                showCancelButton: true,
+                confirmButtonText: 'Subir y Guardar Moneda',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#9333ea',
+                focusConfirm: false,
+                preConfirm: () => {
+                    const name = $('#swal-coin-name').val().trim();
+                    const face0 = $('input[name="swal-img0-face"]:checked').val();
+                    const face1 = $('input[name="swal-img1-face"]:checked').val();
+                    if (!name) {
+                        Swal.showValidationMessage('Ingresa un nombre para la moneda');
+                        return false;
+                    }
+                    if (face0 === face1) {
+                        Swal.showValidationMessage('Una imagen debe ser Cara y la otra debe ser Cruz');
+                        return false;
+                    }
+                    return { name, face0, face1 };
+                }
+            });
+
+            if (!formValues) return;
+
+            Swal.fire({
+                title: 'Subiendo imágenes de la moneda...',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            try {
+                const url0 = await CloudinaryUpload.uploadImage(fileList[0]);
+                const url1 = await CloudinaryUpload.uploadImage(fileList[1]);
+
+                const coinPayloadData = {
+                    heads: formValues.face0 === 'heads' ? url0 : url1,
+                    tails: formValues.face0 === 'tails' ? url0 : url1
+                };
+
+                const payload = {
+                    name: formValues.name,
+                    image_url: JSON.stringify(coinPayloadData),
+                    category: 'coin',
+                    sale_status: 'disponible',
+                    price_mxn: 25.00,
+                    stripe_price_id: null,
+                    target_roles: ['starter', 'premium', 'tienda']
+                };
+
+                const { data, error } = await _supabase.from('accessories').insert([payload]).select().single();
+                if (!error && data) {
+                    allAvailableAccessories.unshift(data);
+                } else {
+                    allAvailableAccessories.unshift({ ...payload, id: 'temp_' + Date.now() });
+                }
+
+                renderAccessoriesGrid();
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Moneda Guardada!',
+                    text: 'Se configuró exitosamente con Cara y Cruz.',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 2500
+                });
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Error', 'No se pudo subir la moneda: ' + err.message, 'error');
+            }
+        }
+
+        // Multi-face modal for Dice (Caras 1 al 6)
+        async function handleMultiFaceDiceModal(files) {
+            const fileList = Array.from(files).slice(0, 6);
+            const defaultName = fileList[0].name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+
+            let facesHtml = fileList.map((file, idx) => {
+                const pUrl = URL.createObjectURL(file);
+                const assignedNum = idx + 1;
+                return `
+                    <div style="background: rgba(0,0,0,0.4); padding: 8px; border-radius: 8px; border: 1px solid #334155; text-align: center;">
+                        <img src="${pUrl}" style="width: 60px; height: 60px; object-fit: contain; border-radius: 6px; border: 1.5px solid #00d2ff; margin-bottom: 4px;">
+                        <div style="font-size: 0.7rem; color: #94a3b8; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(file.name)}</div>
+                        <select class="swal-dice-select" data-idx="${idx}" style="background: #0b111e; color: #fff; font-size: 0.75rem; border: 1px solid #334155; border-radius: 4px; padding: 2px 4px; width: 100%;">
+                            <option value="1" ${assignedNum === 1 ? 'selected' : ''}>Cara 1</option>
+                            <option value="2" ${assignedNum === 2 ? 'selected' : ''}>Cara 2</option>
+                            <option value="3" ${assignedNum === 3 ? 'selected' : ''}>Cara 3</option>
+                            <option value="4" ${assignedNum === 4 ? 'selected' : ''}>Cara 4</option>
+                            <option value="5" ${assignedNum === 5 ? 'selected' : ''}>Cara 5</option>
+                            <option value="6" ${assignedNum === 6 ? 'selected' : ''}>Cara 6</option>
+                        </select>
+                    </div>
+                `;
+            }).join('');
+
+            const { value: formValues } = await Swal.fire({
+                title: 'Definir Caras del Dado (1 al 6)',
+                html: `
+                    <div style="text-align: left; font-size: 0.82rem; color: #cbd5e1; margin-bottom: 10px;">
+                        Asigna el valor numérico (1 al 6) correspondiente a cada una de las imágenes que arrastraste.
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <label style="font-size: 0.8rem; font-weight: 700; color: #fff;">Nombre del Dado:</label>
+                        <input id="swal-dice-name" class="swal2-input" value="${escapeHtml(defaultName.charAt(0).toUpperCase() + defaultName.slice(1))}" style="margin: 6px auto; font-size: 0.85rem; color: #fff; background: #0b111e; border: 1px solid #334155; width: 90%;">
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                        ${facesHtml}
+                    </div>
+                `,
+                background: '#131b2e',
+                showCancelButton: true,
+                confirmButtonText: 'Subir y Guardar Dado',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#9333ea',
+                focusConfirm: false,
+                preConfirm: () => {
+                    const name = $('#swal-dice-name').val().trim();
+                    if (!name) {
+                        Swal.showValidationMessage('Ingresa un nombre para el dado');
+                        return false;
+                    }
+                    const mapping = {};
+                    $('.swal-dice-select').each(function() {
+                        const idx = $(this).data('idx');
+                        const faceVal = $(this).val();
+                        mapping[idx] = faceVal;
+                    });
+                    return { name, mapping };
+                }
+            });
+
+            if (!formValues) return;
+
+            Swal.fire({
+                title: 'Subiendo imágenes del dado...',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            try {
+                const dicePayloadData = {};
+                for (let i = 0; i < fileList.length; i++) {
+                    const url = await CloudinaryUpload.uploadImage(fileList[i]);
+                    const face = formValues.mapping[i] || (i + 1);
+                    dicePayloadData[face] = url;
+                }
+
+                const payload = {
+                    name: formValues.name,
+                    image_url: JSON.stringify(dicePayloadData),
+                    category: 'dice',
+                    sale_status: 'disponible',
+                    price_mxn: 25.00,
+                    stripe_price_id: null,
+                    target_roles: ['starter', 'premium', 'tienda']
+                };
+
+                const { data, error } = await _supabase.from('accessories').insert([payload]).select().single();
+                if (!error && data) {
+                    allAvailableAccessories.unshift(data);
+                } else {
+                    allAvailableAccessories.unshift({ ...payload, id: 'temp_' + Date.now() });
+                }
+
+                renderAccessoriesGrid();
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Dado Guardado!',
+                    text: 'Se configuraron las caras del dado con éxito.',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 2500
+                });
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Error', 'No se pudo subir el dado: ' + err.message, 'error');
             }
         }
 

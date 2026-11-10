@@ -835,10 +835,53 @@
                             ${statusBadgeHtml}
                         </div>
 
-                        <div class="acc-card-image-box ${category === 'coin' ? 'type-coin' : ''}" data-url="${item.image_url}" title="Ver en grande">
-                            ${(item.image_url && (item.image_url.toLowerCase().includes(".gltf") || item.image_url.toLowerCase().includes(".glb"))) ? `<model-viewer src="${item.image_url}" auto-rotate camera-controls style="width: 100%; height: 100%;" shadow-intensity="1"></model-viewer>` : `<img src="${item.image_url}" alt="${escapeHtml(item.name || 'Accesorio')}" onerror="this.src='https://via.placeholder.com/200?text=Accesorio'">`}
-                            <div class="acc-card-zoom-hint"><i class="fas fa-search-plus"></i></div>
-                        </div>
+                        ${(() => {
+                            let isMulti = false;
+                            let faces = [];
+                            if (item.image_url && item.image_url.trim().startsWith('{')) {
+                                try {
+                                    const parsed = JSON.parse(item.image_url);
+                                    if (parsed.heads || parsed.tails) {
+                                        isMulti = true;
+                                        if (parsed.heads) faces.push({ label: 'Cara', url: parsed.heads });
+                                        if (parsed.tails) faces.push({ label: 'Cruz', url: parsed.tails });
+                                    } else {
+                                        const ks = Object.keys(parsed).sort();
+                                        if (ks.length > 0) {
+                                            isMulti = true;
+                                            ks.forEach(k => faces.push({ label: 'Cara ' + k, url: parsed[k] }));
+                                        }
+                                    }
+                                } catch(e) {}
+                            }
+
+                            if (item.image_url && (item.image_url.toLowerCase().includes(".gltf") || item.image_url.toLowerCase().includes(".glb"))) {
+                                return `
+                                    <div class="acc-card-image-box ${category === 'coin' ? 'type-coin' : ''}" data-url="${item.image_url}" title="Ver en grande">
+                                        <model-viewer src="${item.image_url}" auto-rotate camera-controls style="width: 100%; height: 100%;" shadow-intensity="1"></model-viewer>
+                                        <div class="acc-card-zoom-hint"><i class="fas fa-search-plus"></i></div>
+                                    </div>
+                                `;
+                            } else if (isMulti && faces.length > 0) {
+                                return `
+                                    <div class="acc-card-image-box ${category === 'coin' ? 'type-coin' : ''} acc-slider-container" data-faces='${JSON.stringify(faces).replace(/'/g, "&apos;")}' title="Ver en grande" style="position: relative;">
+                                        <img src="${faces[0].url}" alt="${escapeHtml(item.name || 'Accesorio')}" class="acc-slider-current-img" style="width: 100%; height: 100%; object-fit: contain;">
+                                        <div style="position: absolute; bottom: 6px; left: 0; right: 0; display: flex; align-items: center; justify-content: center; gap: 6px; z-index: 5;">
+                                            <button type="button" class="btn-acc-card-slide-prev" style="background: rgba(0,0,0,0.65); border: 1px solid #475569; color: #fff; border-radius: 4px; padding: 2px 6px; font-size: 0.65rem; cursor: pointer;">&lt;</button>
+                                            <span class="acc-card-slide-label" style="font-size: 0.68rem; color: #00d2ff; font-weight: 700; background: rgba(0,0,0,0.7); padding: 1px 6px; border-radius: 4px;">${faces[0].label} (1/${faces.length})</span>
+                                            <button type="button" class="btn-acc-card-slide-next" style="background: rgba(0,0,0,0.65); border: 1px solid #475569; color: #fff; border-radius: 4px; padding: 2px 6px; font-size: 0.65rem; cursor: pointer;">&gt;</button>
+                                        </div>
+                                    </div>
+                                `;
+                            } else {
+                                return `
+                                    <div class="acc-card-image-box ${category === 'coin' ? 'type-coin' : ''}" data-url="${item.image_url}" title="Ver en grande">
+                                        <img src="${item.image_url}" alt="${escapeHtml(item.name || 'Accesorio')}" onerror="this.src='https://via.placeholder.com/200?text=Accesorio'">
+                                        <div class="acc-card-zoom-hint"><i class="fas fa-search-plus"></i></div>
+                                    </div>
+                                `;
+                            }
+                        })()}
 
                         <div class="acc-card-body">
                             <div>
@@ -862,10 +905,41 @@
                     </div>
                 `);
 
+                // Multi-face slider navigation
+                const $sliderBox = $card.find('.acc-slider-container');
+                if ($sliderBox.length > 0) {
+                    const rawFaces = $sliderBox.attr('data-faces');
+                    let facesData = [];
+                    try { facesData = JSON.parse(rawFaces); } catch(err) {}
+
+                    if (facesData.length > 1) {
+                        let curFaceIdx = 0;
+                        const $curImg = $sliderBox.find('.acc-slider-current-img');
+                        const $curLabel = $sliderBox.find('.acc-card-slide-label');
+
+                        $sliderBox.find('.btn-acc-card-slide-prev').on('click', function(e) {
+                            e.stopPropagation();
+                            curFaceIdx = (curFaceIdx - 1 + facesData.length) % facesData.length;
+                            $curImg.attr('src', facesData[curFaceIdx].url);
+                            $curLabel.text(`${facesData[curFaceIdx].label} (${curFaceIdx + 1}/${facesData.length})`);
+                        });
+
+                        $sliderBox.find('.btn-acc-card-slide-next').on('click', function(e) {
+                            e.stopPropagation();
+                            curFaceIdx = (curFaceIdx + 1) % facesData.length;
+                            $curImg.attr('src', facesData[curFaceIdx].url);
+                            $curLabel.text(`${facesData[curFaceIdx].label} (${curFaceIdx + 1}/${facesData.length})`);
+                        });
+                    }
+                }
+
                 // Zoom click
                 $card.find('.acc-card-image-box').on('click', function(e) {
+                    if ($(e.target).closest('button').length > 0) return;
                     e.stopPropagation();
                     const is3D = item.image_url && (item.image_url.toLowerCase().includes('.gltf') || item.image_url.toLowerCase().includes('.glb'));
+                    const curImgSrc = $(this).find('img').attr('src') || item.image_url;
+
                     if (is3D) {
                         Swal.fire({
                             title: item.name,
@@ -878,7 +952,7 @@
                     } else {
                         Swal.fire({
                             title: item.name,
-                            imageUrl: item.image_url,
+                            imageUrl: curImgSrc,
                             imageAlt: item.name,
                             showConfirmButton: false,
                             showCloseButton: true,
