@@ -5653,14 +5653,30 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                         if (viewer) viewer.setAttribute("camera-orbit", finalOrbit);
                     }, flipDuration);
                 } else if (customCoin) {
+                    let headsImg = customCoin;
+                    let tailsImg = customCoin;
+                    if (customCoin.startsWith('{') && customCoin.includes('}')) {
+                        try {
+                            const parsed = JSON.parse(customCoin);
+                            headsImg = parsed.heads || parsed.cara || headsImg;
+                            tailsImg = parsed.tails || parsed.cruz || tailsImg;
+                        } catch (_) {}
+                    }
                     $stage.html(`
-                        <div id="toss-coin-2d" style="width: 130px; height: 130px; border-radius: 50%; overflow: hidden; box-shadow: 0 0 25px rgba(255,215,0,0.6); display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); border: 3px solid #ffd700; animation: coinFlipAnimation 1.2s infinite ease-in-out;">
-                            <img src="${customCoin}" style="width: 100%; height: 100%; object-fit: contain;">
+                        <div id="toss-coin-2d" class="tcg-coin" style="width: 130px; height: 130px; perspective: 1000px;">
+                            <div class="coin-inner" style="width: 100%; height: 100%; position: relative; transform-style: preserve-3d; animation: coinFlipAnimation 1.2s infinite ease-in-out;">
+                                <div class="coin-front" style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 50%; overflow: hidden; border: 3px solid #ffd700; box-shadow: 0 0 25px rgba(255,215,0,0.6); background: rgba(0,0,0,0.5);">
+                                    <img src="${headsImg}" style="width: 100%; height: 100%; object-fit: contain;">
+                                </div>
+                                <div class="coin-back" style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; transform: rotateY(180deg); border-radius: 50%; overflow: hidden; border: 3px solid #ffd700; box-shadow: 0 0 25px rgba(255,215,0,0.6); background: rgba(0,0,0,0.5);">
+                                    <img src="${tailsImg}" style="width: 100%; height: 100%; object-fit: contain;">
+                                </div>
+                            </div>
                         </div>
                     `);
                     setTimeout(() => {
                         const finalAngle = (coinResult === "Cara") ? "rotateY(0deg)" : "rotateY(180deg)";
-                        $("#toss-coin-2d").css({ "animation": "none", "transform": finalAngle + " scale(1.08)" });
+                        $("#toss-coin-2d .coin-inner").css({ "animation": "none", "transform": finalAngle });
                     }, flipDuration);
                 } else {
                     $stage.html(`

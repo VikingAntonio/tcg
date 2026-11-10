@@ -1,4 +1,14 @@
 
+function escapeHtml(str) {
+    if (!str && str !== 0) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 function generateDeckAccessoriesBundleHtml(deck) {
     const defaultMat = 'img/tablero_poke.jpg';
     const defaultBox = 'https://res.cloudinary.com/dfm5vgdbe/image/upload/v1724040000/default_box.png';

@@ -1154,33 +1154,43 @@ async function openCardModal($slot) {
         let extraImages = [];
         try {
             const rawExtra = $slot.data('extra-images') || $slot.attr('data-extra-images');
-            if (typeof rawExtra === 'string') extraImages = JSON.parse(rawExtra);
-            else if (Array.isArray(rawExtra)) extraImages = rawExtra;
+            if (typeof rawExtra === 'string' && rawExtra.trim()) {
+                extraImages = JSON.parse(rawExtra);
+            } else if (Array.isArray(rawExtra)) {
+                extraImages = rawExtra;
+            }
         } catch (e) { extraImages = []; }
 
         const $gallery = $('#card-extra-images-gallery');
         $gallery.empty();
-        if (extraImages && extraImages.length > 0) {
-            const allThumbs = [imgSrc, ...extraImages];
-            allThumbs.forEach((thumbUrl, idx) => {
-                const $thumb = $(`<img src="${thumbUrl}" class="card-extra-thumb ${idx === 0 ? 'active' : ''}" style="width: 50px; height: 70px; object-fit: cover; border-radius: 6px; cursor: pointer; flex-shrink: 0; border: 2px solid ${idx === 0 ? '#ffcc00' : 'rgba(255,255,255,0.2)'}; transition: all 0.2s; box-shadow: ${idx === 0 ? '0 0 8px rgba(255,204,0,0.6)' : 'none'};">`);
-                $thumb.on('click', function() {
-                    $('#expanded-image').attr('src', thumbUrl);
-                    $gallery.find('img').css({ 'border-color': 'rgba(255,255,255,0.2)', 'box-shadow': 'none' });
-                    $(this).css({ 'border-color': '#ffcc00', 'box-shadow': '0 0 8px rgba(255,204,0,0.6)' });
+        if (extraImages && Array.isArray(extraImages) && extraImages.length > 0) {
+            // Filtrar URLs válidas que no sean vacías
+            const validExtras = extraImages.filter(u => u && typeof u === 'string' && u.trim());
+            if (validExtras.length > 0) {
+                const allThumbs = [imgSrc, ...validExtras];
+                allThumbs.forEach((thumbUrl, idx) => {
+                    const $thumb = $(`<img src="${thumbUrl}" class="card-extra-thumb ${idx === 0 ? 'active' : ''}" style="width: 50px; height: 70px; object-fit: cover; border-radius: 6px; cursor: pointer; flex-shrink: 0; border: 2px solid ${idx === 0 ? '#ffcc00' : 'rgba(255,255,255,0.2)'}; transition: all 0.2s; box-shadow: ${idx === 0 ? '0 0 8px rgba(255,204,0,0.6)' : 'none'};">`);
+                    $thumb.on('click', function(ev) {
+                        ev.stopPropagation();
+                        $('#expanded-image').attr('src', thumbUrl);
+                        $gallery.find('img').css({ 'border-color': 'rgba(255,255,255,0.2)', 'box-shadow': 'none' });
+                        $(this).css({ 'border-color': '#ffcc00', 'box-shadow': '0 0 8px rgba(255,204,0,0.6)' });
+                    });
+                    $gallery.append($thumb);
                 });
-                $gallery.append($thumb);
-            });
-            $gallery.css({
-                'display': 'flex',
-                'flex-wrap': 'nowrap',
-                'justify-content': 'center',
-                'gap': '8px',
-                'overflow-x': 'auto',
-                'padding': '6px 0',
-                'width': '100%',
-                'box-sizing': 'border-box'
-            });
+                $gallery.css({
+                    'display': 'flex',
+                    'flex-wrap': 'nowrap',
+                    'justify-content': 'center',
+                    'gap': '8px',
+                    'overflow-x': 'auto',
+                    'padding': '8px 4px',
+                    'width': '100%',
+                    'box-sizing': 'border-box'
+                }).show();
+            } else {
+                $gallery.hide();
+            }
         } else {
             $gallery.hide();
         }
@@ -2945,9 +2955,6 @@ function renderBinder(binder) {
                         <i class="fas fa-book"></i> ${binder.title}
                     </span>
                     <div style="display: flex; align-items: center; gap: 12px;">
-                        <span class="binder-grand-total-badge" style="background: rgba(0, 255, 136, 0.15); color: #00ff88; border: 1px solid rgba(0, 255, 136, 0.4); padding: 4px 12px; border-radius: 50px; font-weight: 900; font-size: 0.85rem; letter-spacing: 0.5px;">
-                            Total Binder: <span class="binder-total-val">$0.00</span>
-                        </span>
                         <button class="btn-share-item btn-share-top" onclick="openShareModal('${binder.title.replace(/'/g, "\\'")}', 'binders', '${binder.id}')" title="Compartir Binder">
                             <i class="fas fa-share-alt"></i>
                         </button>
@@ -2960,9 +2967,6 @@ function renderBinder(binder) {
             ${extraImagesGalleryHtml}
             <div class="public-album-footer-title" style="text-align: center; margin-top: 15px; font-size: 1.5rem; font-weight: 800; color: var(--primary-color); text-transform: uppercase; letter-spacing: 1px; display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap;">
                 <span>${binder.title}</span>
-                <span class="binder-grand-total-badge-footer" style="background: rgba(0, 255, 136, 0.15); color: #00ff88; border: 1px solid rgba(0, 255, 136, 0.4); padding: 4px 14px; border-radius: 50px; font-weight: 900; font-size: 1rem;">
-                    Total: <span class="binder-total-val">$0.00</span>
-                </span>
                 <button class="btn-share-item btn-share-bottom" onclick="openShareModal('${binder.title.replace(/'/g, "\\'")}', 'binders', '${binder.id}')" title="Compartir Binder">
                     <i class="fas fa-share-alt"></i>
                 </button>
@@ -3078,16 +3082,8 @@ function renderBinder(binder) {
             $grid.append($slot);
         }
 
-        const $pageHeader = $(`
-            <div class="binder-page-header-info" style="position: absolute; top: 4px; left: 8px; right: 8px; display: flex; justify-content: flex-end; align-items: center; font-size: 10px; font-weight: 800; color: #888; z-index: 10; pointer-events: none;">
-                <span style="background: rgba(0,0,0,0.6); color: #00ff88; padding: 1px 6px; border-radius: 10px; border: 1px solid rgba(0,255,136,0.3);">Hoja: $${pageTotal.toFixed(2)}</span>
-            </div>
-        `);
-
-        $pageDiv.append($pageHeader).append($grid).appendTo($binderDiv);
+        $pageDiv.append($grid).appendTo($binderDiv);
     }
-
-    $binderContainer.find('.binder-total-val').text(`$${grandTotalBinder.toFixed(2)}`);
 
     if (pages.length % 2 !== 0) {
         pageCount++;
@@ -3123,9 +3119,10 @@ function renderBinder(binder) {
             autoCenter: false,
             noCenter: true,
             gradients: false,
+            shadows: false,
             acceleration: true,
             display: 'double',
-            elevation: 50,
+            elevation: 0,
             duration: 800,
             cornerSize: isMobile ? 50 : 100,
             when: {
