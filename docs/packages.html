@@ -1014,9 +1014,6 @@
                     <a href="accesorios.html" class="btn-text-nav" style="background: rgba(0, 210, 255, 0.15); border: 1px solid #00d2ff; color: #00d2ff; font-weight: 800; font-size: 0.82rem; padding: 6px 16px; border-radius: 8px; text-decoration: none;" target="_blank">
                         <i class="fas fa-external-link-alt"></i> Ver Catálogo Público
                     </a>
-                    <button type="button" class="btn-action-primary" id="btn-open-create-acc-modal" style="padding: 8px 18px; font-size: 0.82rem; font-weight: 800;">
-                        <i class="fas fa-plus"></i> Nuevo Accesorio
-                    </button>
                 </div>
             </div>
 
@@ -1581,10 +1578,6 @@
                 await saveAllAccessoriesChanges();
             });
 
-            // Create new accessory modal button
-            $('#btn-open-create-acc-modal').click(function() {
-                openCreateAccessoryModal();
-            });
 
             // Assistant Search Filter
             $('#assistant-search-input').on('input', function() {
@@ -2046,7 +2039,7 @@
                 else if (activeAccessoryCategory === 'coin') catLabel = 'coins';
                 else if (activeAccessoryCategory === 'mats') catLabel = 'playmats';
 
-                $container.html(`<div style="text-align: center; color: #94a3b8; grid-column: 1/-1; padding: 30px;">No hay ${catLabel} registrados. Puedes arrastrar imágenes arriba o hacer clic en "Nuevo Accesorio" para comenzar.</div>`);
+                $container.html(`<div style="text-align: center; color: #94a3b8; grid-column: 1/-1; padding: 30px;">No hay ${catLabel} registrados. Arrastra y suelta imágenes en la zona superior para comenzar.</div>`);
                 return;
             }
 
@@ -2250,7 +2243,23 @@
 
             const validFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
             if (validFiles.length === 0) {
-                Swal.fire('Formato no válido', 'Por favor arrastra o selecciona archivos de imagen (PNG, WebP o JPG).', 'warning');
+                Swal.fire('Formato no válido', 'Por favor arrastra archivos de imagen válidos (PNG, WebP o JPG).', 'warning');
+                return;
+            }
+
+            const targetCat = (activeAccessoryCategory === 'all') ? 'sleeves' : activeAccessoryCategory;
+
+            // SPECIAL FLOW: Multi-face Coin mapping (Drag & drop 2+ images for coin)
+            // Modal appears immediately BEFORE any upload or loading indicator
+            if (targetCat === 'coin' && validFiles.length >= 2) {
+                await handleMultiFaceCoinModal(validFiles);
+                return;
+            }
+
+            // SPECIAL FLOW: Multi-face Dice mapping (Drag & drop 2 to 6 images for dice)
+            // Modal appears immediately BEFORE any upload or loading indicator
+            if (targetCat === 'dice' && validFiles.length >= 2) {
+                await handleMultiFaceDiceModal(validFiles);
                 return;
             }
 
@@ -2263,23 +2272,6 @@
             });
 
             let uploadedCount = 0;
-            const targetCat = (activeAccessoryCategory === 'all') ? 'sleeves' : activeAccessoryCategory;
-
-            // SPECIAL FLOW: Multi-face Coin mapping (Drag & drop 2+ images for coin)
-            if (targetCat === 'coin' && validFiles.length >= 2) {
-                Swal.close();
-                $('#accessory-drag-label').text('Imágenes 2D (.PNG, .JPG, .WEBP)');
-                await handleMultiFaceCoinModal(validFiles);
-                return;
-            }
-
-            // SPECIAL FLOW: Multi-face Dice mapping (Drag & drop 2 to 6 images for dice)
-            if (targetCat === 'dice' && validFiles.length >= 2) {
-                Swal.close();
-                $('#accessory-drag-label').text('Imágenes 2D (.PNG, .JPG, .WEBP)');
-                await handleMultiFaceDiceModal(validFiles);
-                return;
-            }
 
             try {
                 for (let i = 0; i < validFiles.length; i++) {
@@ -2658,114 +2650,6 @@
             }
         }
 
-        async function openCreateAccessoryModal() {
-            const { value: formValues } = await Swal.fire({
-                title: 'Nuevo Accesorio',
-                background: '#0d1527',
-                color: '#fff',
-                html: `
-                    <div style="display: flex; flex-direction: column; gap: 12px; text-align: left; margin-top: 10px;">
-                        <div>
-                            <label style="font-size: 0.8rem; font-weight: 700; color: #00d2ff;">Nombre del accesorio:</label>
-                            <input id="swal-acc-name" class="swal2-input" placeholder="Ej: Dragon Shield Cosmic" style="margin: 6px 0; width: 100%; box-sizing: border-box; background: #162035; color: #fff; border: 1px solid #334155;">
-                        </div>
-                        <div>
-                            <label style="font-size: 0.8rem; font-weight: 700; color: #00d2ff;">Categoría:</label>
-                            <select id="swal-acc-cat" class="swal2-input" style="margin: 6px 0; width: 100%; box-sizing: border-box; background: #162035; color: #fff; border: 1px solid #334155;">
-                                <option value="sleeves">Sleeves (Micas)</option>
-                                <option value="deckbox">Decks (Portadecks)</option>
-                                <option value="coin">Coins (Monedas)</option>
-                                <option value="dice">Dice (Dados)</option>
-                                <option value="mats">Playmat (Tapete)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label style="font-size: 0.8rem; font-weight: 700; color: #00d2ff;">Subir Diseño (Imagen):</label>
-                            <input type="file" id="swal-acc-file" accept="image/*" class="swal2-file" style="margin: 6px 0; width: 100%; box-sizing: border-box;">
-                        </div>
-                        <div>
-                            <label style="font-size: 0.8rem; font-weight: 700; color: #00d2ff;">O URL directa:</label>
-                            <input id="swal-acc-url" class="swal2-input" placeholder="https://..." style="margin: 6px 0; width: 100%; box-sizing: border-box; background: #162035; color: #fff; border: 1px solid #334155;">
-                        </div>
-                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px;">
-                            <label style="font-size: 0.8rem; font-weight: 700; color: #ffd700;">¿Es de paga?</label>
-                            <input type="checkbox" id="swal-acc-ispaid" style="width: 18px; height: 18px; accent-color: #ffd700;">
-                        </div>
-                        <div id="swal-acc-price-box" style="display: none;">
-                            <label style="font-size: 0.8rem; font-weight: 700; color: #ffd700;">Precio en Pesos ($ MXN):</label>
-                            <input type="number" id="swal-acc-price" class="swal2-input" value="25" min="5" style="margin: 6px 0; width: 100%; box-sizing: border-box; background: #162035; color: #ffd700; border: 1px solid #ffd700;">
-                        </div>
-                    </div>
-                `,
-                didOpen: () => {
-                    const chk = document.getElementById('swal-acc-ispaid');
-                    const priceBox = document.getElementById('swal-acc-price-box');
-                    chk.addEventListener('change', () => {
-                        priceBox.style.display = chk.checked ? 'block' : 'none';
-                    });
-                },
-                showCancelButton: true,
-                confirmButtonText: 'Guardar Accesorio',
-                cancelButtonText: 'Cancelar',
-                confirmButtonColor: '#00d2ff',
-                cancelButtonColor: '#334155',
-                preConfirm: async () => {
-                    const name = $('#swal-acc-name').val().trim();
-                    const category = $('#swal-acc-cat').val();
-                    const fileInput = document.getElementById('swal-acc-file');
-                    let imageUrl = $('#swal-acc-url').val().trim();
-                    const isPaid = $('#swal-acc-ispaid').is(':checked');
-                    const price = Math.max(5, Number($('#swal-acc-price').val()) || 25);
-
-                    if (!name) {
-                        Swal.showValidationMessage('El nombre es obligatorio');
-                        return false;
-                    }
-
-                    if (fileInput.files && fileInput.files.length > 0) {
-                        try {
-                            imageUrl = await CloudinaryUpload.uploadImage(fileInput.files[0]);
-                        } catch (err) {
-                            Swal.showValidationMessage('Error al subir a Cloudinary: ' + err.message);
-                            return false;
-                        }
-                    }
-
-                    if (!imageUrl) {
-                        Swal.showValidationMessage('Debes subir un archivo o indicar una URL de imagen');
-                        return false;
-                    }
-
-                    return { name, category, imageUrl, isPaid, price };
-                }
-            });
-
-            if (formValues) {
-                try {
-                    const payload = {
-                        name: formValues.name,
-                        image_url: formValues.imageUrl,
-                        category: formValues.category,
-                        sale_status: formValues.isPaid ? 'de_paga' : 'disponible',
-                        price_mxn: formValues.price,
-                        stripe_price_id: null,
-                        target_roles: ['starter', 'premium', 'tienda']
-                    };
-
-                    const { data, error } = await _supabase.from('accessories').insert([payload]).select().single();
-                    if (!error && data) {
-                        allAvailableAccessories.unshift(data);
-                    } else {
-                        allAvailableAccessories.unshift({ ...payload, id: 'temp_' + Date.now() });
-                    }
-
-                    renderAccessoriesGrid();
-                    Swal.fire({ icon: 'success', title: 'Accesorio Creado', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
-                } catch (e) {
-                    Swal.fire('Error', 'No se pudo guardar: ' + e.message, 'error');
-                }
-            }
-        }
 
         async function editAccessoryInfo(acc) {
             const isPaid = acc.sale_status === 'de_paga';
