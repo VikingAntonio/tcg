@@ -582,6 +582,8 @@ const state = {
     deckCoins: { player1: null, player2: null },   // Store selected coin URL for each player
     deckDice: { player1: null, player2: null },    // Store selected dice URL for each player
     deckCounters: { player1: null, player2: null }, // Store selected counter URL for each player
+    deckCalculators: { player1: null, player2: null }, // Store selected calculator theme/URL
+    deckTokens: { player1: null, player2: null }, // Store selected token card URL
     currentUser: null
 };
 
@@ -763,7 +765,7 @@ async function fetchDeckCards(deckId, playerKey) {
         try {
             const { data: deckMeta, error: deckErr } = await _supabase
                 .from('decks')
-                .select('sleeves, mats, coin, dice, counters')
+                .select('sleeves, mats, coin, dice, counters, calculator, token')
                 .eq('id', deckId)
                 .single();
             if (!deckErr && deckMeta) {
@@ -772,6 +774,8 @@ async function fetchDeckCards(deckId, playerKey) {
                 state.deckCoins[playerKey] = deckMeta.coin || null;
                 state.deckDice[playerKey] = deckMeta.dice || null;
                 state.deckCounters[playerKey] = deckMeta.counters || null;
+                state.deckCalculators[playerKey] = deckMeta.calculator || null;
+                state.deckTokens[playerKey] = deckMeta.token || null;
 
                 // Apply player1's custom mat to the playmat background
                 if (playerKey === 'player1' && deckMeta.mats) {
@@ -781,11 +785,23 @@ async function fetchDeckCards(deckId, playerKey) {
                         "background-position": "center"
                     });
                 }
+
+                // Update coin display in mobile tools panel if player matches currentRole
+                const myRole = (typeof currentRole !== 'undefined' && currentRole === 'player2') ? 'player2' : 'player1';
+                if (playerKey === myRole && state.deckCoins[playerKey]) {
+                    updateMobileCoinPanelDesign(state.deckCoins[playerKey]);
+                }
+                if (playerKey === myRole && state.deckCounters[playerKey]) {
+                    updateMobileCounterPanelDesign(state.deckCounters[playerKey]);
+                }
             } else {
                 state.deckSleeves[playerKey] = null;
                 state.deckMats[playerKey] = null;
                 state.deckCoins[playerKey] = null;
                 state.deckDice[playerKey] = null;
+                state.deckCounters[playerKey] = null;
+                state.deckCalculators[playerKey] = null;
+                state.deckTokens[playerKey] = null;
             }
         } catch (metaE) {
             console.warn("Error fetching deck accessories, fallback:", metaE);
@@ -5505,6 +5521,57 @@ window.setupPokemonPrizes = setupPokemonPrizes;
             window.duelLastCoinResult = window.duelLastCoinResult || null;
             window.duelLastDiceResult = window.duelLastDiceResult || null;
 
+            // Actualizar diseño de la moneda en el panel de herramientas móviles
+            window.updateMobileCoinPanelDesign = function(coinVal) {
+                if (!coinVal) return;
+                const is3D = coinVal.toLowerCase().includes('.gltf') || coinVal.toLowerCase().includes('.glb');
+                const $coinBtn = $(".coin-action-btn");
+                if (!$coinBtn.length) return;
+
+                if (is3D) {
+                    $coinBtn.html(`
+                        <model-viewer src="${coinVal}" auto-rotate camera-controls style="width: 100%; height: 100%; border-radius: 50%; pointer-events: none;"></model-viewer>
+                    `);
+                } else {
+                    let headsImg = coinVal;
+                    let tailsImg = coinVal;
+                    if (coinVal.startsWith('{') && coinVal.includes('}')) {
+                        try {
+                            const parsed = JSON.parse(coinVal);
+                            headsImg = parsed.heads || parsed.cara || headsImg;
+                            tailsImg = parsed.tails || parsed.cruz || tailsImg;
+                        } catch (_) {}
+                    }
+                    $coinBtn.html(`
+                        <div class="coin-inner" style="width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s;">
+                            <div class="coin-front" style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 50%; overflow: hidden; background: #000; border: 2px solid #ffd700;">
+                                <img src="${headsImg}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                            </div>
+                            <div class="coin-back" style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; transform: rotateY(180deg); border-radius: 50%; overflow: hidden; background: #000; border: 2px solid #ffd700;">
+                                <img src="${tailsImg}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                            </div>
+                        </div>
+                    `);
+                }
+            };
+
+            // Actualizar diseño del contador en el panel de herramientas móviles
+            window.updateMobileCounterPanelDesign = function(counterVal) {
+                if (!counterVal) return;
+                const $src = $(".ygo-counter-source");
+                if ($src.length) {
+                    $src.css({
+                        "background-image": `url('${counterVal}')`,
+                        "background-size": "contain",
+                        "background-repeat": "no-repeat",
+                        "background-position": "center",
+                        "color": "#fff",
+                        "text-shadow": "0 0 4px #000, 0 0 6px #000, 1px 1px 2px #000",
+                        "border": "none"
+                    });
+                }
+            };
+
             window.renderAccessoryResultsInPanel = function() {
                 if (window.duelLastDiceResult !== null) {
                     $(".dice-action-btn").text(window.duelLastDiceResult);
@@ -5757,11 +5824,15 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                 const turnPlayerKey = state.activeTurn || "player1";
                 const pSuffix = turnPlayerKey === "player1" ? 1 : 2;
 
-                const userTokens = state.deckTokens && state.deckTokens[turnPlayerKey] ? state.deckTokens[turnPlayerKey] : [];
+                const userTokens = state.deckTokens && state.deckTokens[turnPlayerKey] ? state.deckTokens[turnPlayerKey] : null;
 
                 let availableTokens = [];
-                if (userTokens && userTokens.length > 0) {
+                if (Array.isArray(userTokens) && userTokens.length > 0) {
                     availableTokens = userTokens;
+                } else if (typeof userTokens === 'string' && userTokens.trim() !== '') {
+                    availableTokens = [
+                        { name: "Token Personalizado", imageUrl: userTokens, description: "Token Seleccionado del Deck." }
+                    ];
                 } else {
                     availableTokens = [
                         { name: "Ficha de Monstruo (Token)", imageUrl: "img/token.png", description: "Ficha Especial." }

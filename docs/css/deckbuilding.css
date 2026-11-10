@@ -657,6 +657,15 @@ body {
     height: 100%;
     object-fit: cover;
 }
+#preview-box-coin,
+#preview-box-counters,
+.acc-preview-box.is-circular {
+    border-radius: 50% !important;
+}
+#preview-box-coin img,
+#preview-box-counters img {
+    border-radius: 50% !important;
+}
 .acc-preview-none {
     font-size: 8px;
     text-transform: uppercase;

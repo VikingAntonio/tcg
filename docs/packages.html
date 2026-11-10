@@ -1025,6 +1025,8 @@
                 <button type="button" class="assistant-tab-btn" data-cat="coin">Coins</button>
                 <button type="button" class="assistant-tab-btn" data-cat="dice">Dados</button>
                 <button type="button" class="assistant-tab-btn" data-cat="counters">Contadores</button>
+                <button type="button" class="assistant-tab-btn" data-cat="calculator">Calculadoras</button>
+                <button type="button" class="assistant-tab-btn" data-cat="token">Tokens</button>
                 <button type="button" class="assistant-tab-btn" data-cat="mats">Playmat</button>
             </div>
 
@@ -2038,7 +2040,10 @@
                 if (activeAccessoryCategory === 'sleeves') catLabel = 'sleeves';
                 else if (activeAccessoryCategory === 'deckbox') catLabel = 'decks';
                 else if (activeAccessoryCategory === 'coin') catLabel = 'coins';
+                else if (activeAccessoryCategory === 'dice') catLabel = 'dados';
                 else if (activeAccessoryCategory === 'counters') catLabel = 'contadores';
+                else if (activeAccessoryCategory === 'calculator') catLabel = 'calculadoras';
+                else if (activeAccessoryCategory === 'token') catLabel = 'tokens';
                 else if (activeAccessoryCategory === 'mats') catLabel = 'playmats';
 
                 $container.html(`<div style="text-align: center; color: #94a3b8; grid-column: 1/-1; padding: 30px;">No hay ${catLabel} registrados. Arrastra y suelta imágenes en la zona superior para comenzar.</div>`);
@@ -2060,12 +2065,16 @@
                 else if (category === 'coin') catBadgeText = 'Coin';
                 else if (category === 'dice') catBadgeText = 'Dado';
                 else if (category === 'counters') catBadgeText = 'Contador';
+                else if (category === 'calculator') catBadgeText = 'Calculadora';
+                else if (category === 'token') catBadgeText = 'Token';
                 else if (category === 'mats') catBadgeText = 'Playmat';
 
                 let imgAspectStyle = 'aspect-ratio: 2/3;';
                 if (category === 'coin') imgAspectStyle = 'aspect-ratio: 1 / 1; border-radius: 50%; object-fit: cover;';
                 else if (category === 'dice') imgAspectStyle = 'aspect-ratio: 1 / 1; border-radius: 12px; object-fit: contain;';
                 else if (category === 'counters') imgAspectStyle = 'aspect-ratio: 1 / 1; max-width: 140px; max-height: 140px; border-radius: 50%; object-fit: contain;';
+                else if (category === 'calculator') imgAspectStyle = 'aspect-ratio: 4/5; border-radius: 12px; object-fit: cover;';
+                else if (category === 'token') imgAspectStyle = 'aspect-ratio: 2.5/3.5; border-radius: 8px; object-fit: cover;';
                 else if (category === 'mats') imgAspectStyle = 'aspect-ratio: 16/9;';
 
                 const is3DModel = acc.image_url && (acc.image_url.toLowerCase().includes('.gltf') || acc.image_url.toLowerCase().includes('.glb'));
@@ -2678,6 +2687,8 @@
                                 <option value="coin" ${acc.category === 'coin' ? 'selected' : ''}>Coins (Monedas)</option>
                                 <option value="dice" ${acc.category === 'dice' ? 'selected' : ''}>Dice (Dados)</option>
                                 <option value="counters" ${acc.category === 'counters' ? 'selected' : ''}>Contadores</option>
+                                <option value="calculator" ${acc.category === 'calculator' ? 'selected' : ''}>Calculadora LP</option>
+                                <option value="token" ${acc.category === 'token' ? 'selected' : ''}>Token / Ficha</option>
                                 <option value="mats" ${acc.category === 'mats' ? 'selected' : ''}>Playmat (Tapete)</option>
                             </select>
                         </div>
