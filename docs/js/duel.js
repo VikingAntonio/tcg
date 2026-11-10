@@ -341,13 +341,21 @@ async function fetchDeckCards(deckId, playerKey) {
                 state.deckCoins[playerKey] = deckMeta.coin || null;
                 state.deckDice[playerKey] = deckMeta.dice || null;
 
-                // Apply player1's custom mat to the playmat background
-                if (playerKey === 'player1' && deckMeta.mats) {
-                    $("#playmat").css({
-                        "background-image": `url('${deckMeta.mats}')`,
-                        "background-size": "cover",
-                        "background-position": "center"
-                    });
+                // Apply half-playmats per player side
+                if (typeof window.updateHalfPlaymats === 'function') {
+                    window.updateHalfPlaymats();
+                } else {
+                    $("#playmat").css("background-image", "none");
+                    if (state.deckMats.player1) {
+                        $("#player-mat-p1").css("background-image", `url('${state.deckMats.player1}')`);
+                    } else {
+                        $("#player-mat-p1").css("background-image", "none");
+                    }
+                    if (state.deckMats.player2) {
+                        $("#player-mat-p2").css("background-image", `url('${state.deckMats.player2}')`);
+                    } else {
+                        $("#player-mat-p2").css("background-image", "none");
+                    }
                 }
             } else {
                 state.deckSleeves[playerKey] = null;

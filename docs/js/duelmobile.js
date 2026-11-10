@@ -5518,6 +5518,9 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                     }
                 }
 
+                // Close mobile accessories panel immediately so user sees the toss animation
+                $('#accessories-collapsible-panel').fadeOut(150);
+
                 const $overlay = $("#duel-toss-overlay");
                 const $title = $("#duel-toss-title");
                 const $stage = $("#duel-toss-stage");
@@ -5526,6 +5529,8 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                 $title.text(`[${playerSuffix}] Lanzamiento de Dado`);
                 $resultText.css({ opacity: 0, transform: "scale(0.6)" }).text("");
                 $stage.empty();
+
+                const rollDuration = 1800; // Roll duration before stopping
 
                 if (is3D) {
                     $stage.html(`
@@ -5540,13 +5545,26 @@ window.setupPokemonPrizes = setupPokemonPrizes;
 
                     setTimeout(() => {
                         clearInterval(rotInterval);
-                    }, 1400);
+                        const viewer = document.getElementById("toss-dice-3d");
+                        const diceAngles = {
+                            1: "0deg 90deg 105%",
+                            2: "90deg 90deg 105%",
+                            3: "180deg 90deg 105%",
+                            4: "270deg 90deg 105%",
+                            5: "0deg 0deg 105%",
+                            6: "0deg 180deg 105%"
+                        };
+                        if (viewer) viewer.setAttribute("camera-orbit", diceAngles[rollResult] || "0deg 90deg 105%");
+                    }, rollDuration);
                 } else if (customDice) {
                     $stage.html(`
                         <div id="toss-dice-2d" style="width: 120px; height: 120px; border-radius: 16px; overflow: hidden; box-shadow: 0 0 25px rgba(0,210,255,0.6); display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); border: 2px solid #00d2ff; animation: diceRollAnimation 1.2s infinite ease-in-out;">
                             <img src="${customDice}" style="width: 100%; height: 100%; object-fit: contain;">
                         </div>
                     `);
+                    setTimeout(() => {
+                        $("#toss-dice-2d").css({ "animation": "none", "transform": "scale(1.08)" });
+                    }, rollDuration);
                 } else {
                     $stage.html(`
                         <div id="toss-dice-default" style="width: 100px; height: 100px; border-radius: 16px; background: radial-gradient(circle at center, rgba(0, 210, 255, 0.4) 0%, rgba(10, 15, 22, 0.95) 100%); border: 3px solid #00d2ff; display: flex; align-items: center; justify-content: center; font-family: 'Orbitron', sans-serif; font-size: 3rem; font-weight: 900; color: #00d2ff; box-shadow: 0 0 30px rgba(0,210,255,0.7); animation: diceRollAnimation 1.2s infinite ease-in-out;">
@@ -5560,24 +5578,26 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                     }, 80);
                     setTimeout(() => {
                         clearInterval(numInterval);
-                        $("#toss-dice-default").text(rollResult);
-                    }, 1300);
+                        $("#toss-dice-default").css("animation", "none").text(rollResult);
+                    }, rollDuration);
                 }
 
                 $overlay.fadeIn(200).css("display", "flex");
 
+                // Reveal result only when the dice stops spinning
                 setTimeout(() => {
-                    $resultText.text(`Resultado: ${rollResult}`).css({ opacity: 1, transform: "scale(1.1)" });
-                    window.duelLastDiceResult = rollResult;
-                    window.renderAccessoryResultsInPanel();
+                    $resultText.text(`Resultado: ${rollResult}`).css({ opacity: 1, transform: "scale(1.15)" });
                     if (shouldBroadcast) {
                         sendGameAction(`[${playerSuffix}] Lanzó un dado y obtuvo: 🎲 ${rollResult}`);
                     }
-                }, 1350);
+                }, rollDuration + 50);
 
+                // Hold result for 2 seconds after stopping before closing overlay and persisting result to panel
                 setTimeout(() => {
+                    window.duelLastDiceResult = rollResult;
+                    window.renderAccessoryResultsInPanel();
                     $overlay.fadeOut(250);
-                }, 2400);
+                }, rollDuration + 2050);
             };
 
             // Ejecutor cinemático de animación de moneda móvil
@@ -5601,6 +5621,9 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                     }
                 }
 
+                // Close mobile accessories panel immediately so user sees the toss animation
+                $('#accessories-collapsible-panel').fadeOut(150);
+
                 const $overlay = $("#duel-toss-overlay");
                 const $title = $("#duel-toss-title");
                 const $stage = $("#duel-toss-stage");
@@ -5609,6 +5632,8 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                 $title.text(`[${playerSuffix}] Lanzamiento de Moneda`);
                 $resultText.css({ opacity: 0, transform: "scale(0.6)" }).text("");
                 $stage.empty();
+
+                const flipDuration = 1800; // Flip duration before stopping
 
                 if (is3D) {
                     $stage.html(`
@@ -5626,13 +5651,17 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                         const finalOrbit = (coinResult === "Cara") ? "0deg 90deg 105%" : "180deg 90deg 105%";
                         const viewer = document.getElementById("toss-coin-3d");
                         if (viewer) viewer.setAttribute("camera-orbit", finalOrbit);
-                    }, 1400);
+                    }, flipDuration);
                 } else if (customCoin) {
                     $stage.html(`
                         <div id="toss-coin-2d" style="width: 130px; height: 130px; border-radius: 50%; overflow: hidden; box-shadow: 0 0 25px rgba(255,215,0,0.6); display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); border: 3px solid #ffd700; animation: coinFlipAnimation 1.2s infinite ease-in-out;">
                             <img src="${customCoin}" style="width: 100%; height: 100%; object-fit: contain;">
                         </div>
                     `);
+                    setTimeout(() => {
+                        const finalAngle = (coinResult === "Cara") ? "rotateY(0deg)" : "rotateY(180deg)";
+                        $("#toss-coin-2d").css({ "animation": "none", "transform": finalAngle + " scale(1.08)" });
+                    }, flipDuration);
                 } else {
                     $stage.html(`
                         <div class="tcg-coin flipping" style="width: 120px; height: 120px;">
@@ -5642,22 +5671,28 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                             </div>
                         </div>
                     `);
+                    setTimeout(() => {
+                        const finalAngle = (coinResult === "Cara") ? "rotateY(0deg)" : "rotateY(180deg)";
+                        $(".coin-inner").css({ "animation": "none", "transform": finalAngle });
+                    }, flipDuration);
                 }
 
                 $overlay.fadeIn(200).css("display", "flex");
 
+                // Reveal result only when the coin stops spinning
                 setTimeout(() => {
-                    $resultText.text(`Resultado: ${coinResult}`).css({ opacity: 1, transform: "scale(1.1)" });
-                    window.duelLastCoinResult = coinResult;
-                    window.renderAccessoryResultsInPanel();
+                    $resultText.text(`Resultado: ${coinResult}`).css({ opacity: 1, transform: "scale(1.15)" });
                     if (shouldBroadcast) {
                         sendGameAction(`[${playerSuffix}] Lanzó una moneda y obtuvo: 🪙 ${coinResult}`);
                     }
-                }, 1350);
+                }, flipDuration + 50);
 
+                // Hold result for 2 seconds after stopping before closing overlay and persisting result to panel
                 setTimeout(() => {
+                    window.duelLastCoinResult = coinResult;
+                    window.renderAccessoryResultsInPanel();
                     $overlay.fadeOut(250);
-                }, 2400);
+                }, flipDuration + 2050);
             };
 
             // 1. Dice Roll Logic (50% / uniforme 1 a 6)

@@ -916,9 +916,14 @@ async function loadAndRenderAccessories() {
                 const isLocked = !canUse;
                 const price = Math.max(5, Number(acc.price_mxn) || 25);
 
+                const is3D = acc.image_url && (acc.image_url.toLowerCase().includes('.gltf') || acc.image_url.toLowerCase().includes('.glb'));
+                const mediaHtml = is3D
+                    ? `<model-viewer src="${acc.image_url}" auto-rotate camera-controls style="width: 100%; height: 100%; border-radius: 6px;" shadow-intensity="1"></model-viewer>`
+                    : `<img src="${acc.image_url}" onerror="this.src='https://via.placeholder.com/150?text=Error'">`;
+
                 const $item = $(`
                     <div class="accessory-item type-${key} ${isSelected ? 'selected' : ''} ${isLocked ? 'is-locked' : ''}" data-type="${key}" data-value="${acc.image_url}" data-id="${acc.id}" data-locked="${isLocked ? '1' : '0'}" title="${escapeHtml(acc.name)}">
-                        <img src="${acc.image_url}" onerror="this.src='https://via.placeholder.com/150?text=Error'">
+                        ${mediaHtml}
                         ${isLocked ? `
                             <div class="accessory-lock-overlay">
                                 <i class="fas fa-lock"></i>
