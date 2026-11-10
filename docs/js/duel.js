@@ -152,6 +152,7 @@ const state = {
     deckMats: { player1: null, player2: null }, // Store selected playmat URL for each player
     deckCoins: { player1: null, player2: null },   // Store selected coin URL for each player
     deckDice: { player1: null, player2: null },    // Store selected dice URL for each player
+    deckCounters: { player1: null, player2: null }, // Store selected counter URL for each player
     currentUser: null
 };
 
@@ -332,7 +333,7 @@ async function fetchDeckCards(deckId, playerKey) {
         try {
             const { data: deckMeta, error: deckErr } = await _supabase
                 .from('decks')
-                .select('sleeves, mats, coin, dice')
+                .select('sleeves, mats, coin, dice, counters')
                 .eq('id', deckId)
                 .single();
             if (!deckErr && deckMeta) {
@@ -340,6 +341,7 @@ async function fetchDeckCards(deckId, playerKey) {
                 state.deckMats[playerKey] = deckMeta.mats || null;
                 state.deckCoins[playerKey] = deckMeta.coin || null;
                 state.deckDice[playerKey] = deckMeta.dice || null;
+                state.deckCounters[playerKey] = deckMeta.counters || null;
 
                 // Apply half-playmats per player side
                 if (typeof window.updateHalfPlaymats === 'function') {

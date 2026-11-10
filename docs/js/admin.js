@@ -1,4 +1,19 @@
 
+function getAccessoryDisplayUrl(rawUrl) {
+    if (!rawUrl) return '';
+    if (typeof rawUrl === 'string' && rawUrl.trim().startsWith('{')) {
+        try {
+            const parsed = JSON.parse(rawUrl);
+            if (parsed.heads) return parsed.heads;
+            if (parsed.tails) return parsed.tails;
+            if (parsed['1']) return parsed['1'];
+            const keys = Object.keys(parsed).sort();
+            if (keys.length > 0 && parsed[keys[0]]) return parsed[keys[0]];
+        } catch(e) {}
+    }
+    return rawUrl;
+}
+
 function generateDeckAccessoriesBundleHtml(deck) {
     const defaultMat = 'img/tablero_poke.jpg';
     const defaultBox = 'https://res.cloudinary.com/dfm5vgdbe/image/upload/v1724040000/default_box.png';
@@ -12,11 +27,12 @@ function generateDeckAccessoriesBundleHtml(deck) {
 
     const renderItemMedia = (url, cls) => {
         if (!url) return '';
-        const is3D = url.toLowerCase().includes('.gltf') || url.toLowerCase().includes('.glb');
+        const displayUrl = getAccessoryDisplayUrl(url);
+        const is3D = displayUrl.toLowerCase().includes('.gltf') || displayUrl.toLowerCase().includes('.glb');
         if (is3D) {
-            return `<model-viewer src="${url}" auto-rotate camera-controls class="${cls}" style="background: transparent; pointer-events: none;"></model-viewer>`;
+            return `<model-viewer src="${displayUrl}" auto-rotate camera-controls class="${cls}" style="background: transparent; pointer-events: none;"></model-viewer>`;
         }
-        return `<img src="${url}" alt="Accesorio" class="${cls}" onerror="this.style.display='none'">`;
+        return `<img src="${displayUrl}" alt="Accesorio" class="${cls}" onerror="this.style.display='none'">`;
     };
 
     return `
@@ -2919,11 +2935,12 @@ function renderAccessoriesGrid(accessories) {
         // Update preview box image
         const $previewBox = $(previewBoxId);
         if (selectedVal) {
-            const is3D = selectedVal.toLowerCase().includes('.gltf') || selectedVal.toLowerCase().includes('.glb');
+            const displayVal = getAccessoryDisplayUrl(selectedVal);
+            const is3D = displayVal.toLowerCase().includes('.gltf') || displayVal.toLowerCase().includes('.glb');
             if (is3D) {
-                $previewBox.html(`<model-viewer src="${selectedVal}" auto-rotate camera-controls style="width:100%; height:100%; border-radius:8px;" shadow-intensity="1"></model-viewer>`);
+                $previewBox.html(`<model-viewer src="${displayVal}" auto-rotate camera-controls style="width:100%; height:100%; border-radius:8px;" shadow-intensity="1"></model-viewer>`);
             } else {
-                $previewBox.html(`<img src="${selectedVal}" alt="Preview" onerror="this.src='https://via.placeholder.com/150?text=Error'">`);
+                $previewBox.html(`<img src="${displayVal}" alt="Preview" onerror="this.src='https://via.placeholder.com/150?text=Error'">`);
             }
         } else {
             $previewBox.html(`<span class="acc-preview-none">Ninguno</span>`);
@@ -2966,10 +2983,11 @@ function renderAccessoriesGrid(accessories) {
             const isLocked = !canUse;
             const price = Math.max(5, Number(acc.price_mxn) || 25);
 
-            const is3D = acc.image_url && (acc.image_url.toLowerCase().includes('.gltf') || acc.image_url.toLowerCase().includes('.glb'));
+            const displayUrl = getAccessoryDisplayUrl(acc.image_url);
+            const is3D = displayUrl && (displayUrl.toLowerCase().includes('.gltf') || displayUrl.toLowerCase().includes('.glb'));
             const mediaHtml = is3D
-                ? `<model-viewer src="${acc.image_url}" auto-rotate camera-controls style="width: 100%; height: 100%; border-radius: 6px;" shadow-intensity="1"></model-viewer>`
-                : `<img src="${acc.image_url}" alt="${escapeHtml(acc.name)}" onerror="this.src='https://via.placeholder.com/150?text=Error'">`;
+                ? `<model-viewer src="${displayUrl}" auto-rotate camera-controls style="width: 100%; height: 100%; border-radius: 6px;" shadow-intensity="1"></model-viewer>`
+                : `<img src="${displayUrl}" alt="${escapeHtml(acc.name)}" onerror="this.src='https://via.placeholder.com/150?text=Error'">`;
 
             const $item = $(`
                 <div class="accessory-item type-${key} ${isSelected ? 'selected' : ''} ${isLocked ? 'is-locked' : ''}" data-value="${acc.image_url}" data-id="${acc.id}" data-locked="${isLocked ? '1' : '0'}" title="${escapeHtml(acc.name)}">

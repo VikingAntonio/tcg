@@ -1,0 +1,91 @@
+================================================================================
+GUÍA DE MEDIDAS PERFECTAS PARA PRODUCTOS Y ACCESORIOS - VIKING TCG
+================================================================================
+
+Este documento detalla las medidas y proporciones exactas para diseñar, subir y mostrar
+cada tipo de producto y accesorio en la plataforma (constructor de decks, accesorios,
+tienda, tablero de duelo en PC y móvil).
+
+--------------------------------------------------------------------------------
+1. PLAYMATS (TAPETES DE DUELO)
+--------------------------------------------------------------------------------
+- Proporción de aspecto (Aspect Ratio): 16:9 (o estándar TCG internacional 24" x 14" ~ 12:7).
+- Dimensiones recomendadas:
+  * Óptima / Alta Definición: 1920 x 1080 píxeles (16:9) o 2048 x 1152 píxeles.
+  * Estándar físico TCG (24 x 14 pulgadas): 2400 x 1400 píxeles.
+  * Formato: PNG o JPG optimizado (máx. 2MB a 4MB para carga rápida).
+- Área visible y distribución:
+  * El tablero de juego en duel.html divide el campo en 2 mitades (#player-mat-p1 y #player-mat-p2).
+  * Si subes un tapete para tu mitad de campo (#player-mat), procura que las zonas de cartas importantes
+    tengan un margen de respiro de al menos 40px en los bordes.
+
+--------------------------------------------------------------------------------
+2. MONEDAS (COINS)
+--------------------------------------------------------------------------------
+- Proporción de aspecto (Aspect Ratio): 1:1 Estricto (Cuadrado con fondo transparente).
+- Dimensiones recomendadas:
+  * Óptima: 512 x 512 píxeles.
+  * Alternativa HD: 600 x 600 píxeles o 1024 x 1024 píxeles.
+  * Formato: PNG con fondo transparente (Canal Alfa indispensable).
+- Formas soportadas:
+  * Círculos clásicos.
+  * Hexágonos (6 lados), Octágonos (8 lados), Decágonos (10 lados), Dodecágonos (12 lados) o formas geométricas/troqueladas.
+- Regla de diseño clave:
+  * La imagen que subas debe ser perfectamente cuadrada (1:1), centrando el diseño de la moneda en el lienzo.
+  * Los bordes de la moneda (ya sea circular, hexagonal u octagonal) deben quedar contenidos de forma simétrica
+    dentro del lienzo de 512x512 píxeles para que la rotación y la animación 3D/2D giren sobre su centro exacto sin oscilar.
+  * En monedas de 2 caras (Cara y Cruz), ambas imágenes deben tener exactamente el mismo tamaño (512x512 px) para que encajen simétricamente.
+
+--------------------------------------------------------------------------------
+3. DADOS (DICE)
+--------------------------------------------------------------------------------
+- Proporción de aspecto (Aspect Ratio): 1:1 Estricto para cada cara (1 al 6).
+- Dimensiones recomendadas:
+  * Óptima: 512 x 512 píxeles por cara.
+  * Alternativa ligera: 256 x 256 píxeles por cara.
+  * Formato: PNG o JPG centrado.
+- Modelos 3D (.gltf / .glb):
+  * Modelo cúbico simétrico 1x1x1 unidades centrado en el origen (0, 0, 0).
+  * Textura UV cuadrada de 1024x1024 o 2048x2048 px mapeando las 6 caras (1 a 6).
+
+--------------------------------------------------------------------------------
+4. CONTADORES (COUNTERS)
+--------------------------------------------------------------------------------
+- Proporción de aspecto (Aspect Ratio): 1:1 Estricto (Cuadrado con fondo transparente).
+- Dimensiones recomendadas:
+  * Óptima: 256 x 256 píxeles (o 512 x 512 píxeles para detalles ultra nítidos).
+  * Formato: PNG con canal alfa transparente (imprescindible).
+- Diseños posibles:
+  * Nubes, flamas, espadas, estrellas, gemas, caras, calaveras, etc.
+- Zona de reserva para el número:
+  * El sistema renderiza dinámicamente el valor numérico (+1, 10, etc.) en el CENTRO exacto del diseño.
+  * Asegúrate de que el centro del diseño (aproximadamente el 50% central) tenga buen contraste o un área despejada
+    para que el texto numérico (blanco con sombra/borde) sea perfectamente legible tanto en tamaño normal como en miniatura.
+
+--------------------------------------------------------------------------------
+5. SLEEVES (MICAS / PROTECTORES)
+--------------------------------------------------------------------------------
+- Proporción de aspecto (Aspect Ratio): Proporción estándar de carta TCG 2.5 : 3.5 (~ 1 : 1.4).
+- Dimensiones recomendadas:
+  * Óptima: 600 x 840 píxeles o 750 x 1050 píxeles.
+  * Formato: JPG o PNG de alta calidad.
+- Regla de diseño:
+  * Mantén el contenido principal y los logos lejos de los bordes externos (margen de seguridad de 20px)
+    para evitar recortes en miniaturas y renderizado en mano o cementerio.
+
+--------------------------------------------------------------------------------
+6. DECKBOX (PORTADECKS)
+--------------------------------------------------------------------------------
+- Proporción de aspecto (Aspect Ratio): 1:1 o 4:5.
+- Dimensiones recomendadas:
+  * 2D: 600 x 600 píxeles (PNG o JPG).
+  * 3D (.gltf / .glb): Modelo de caja con proporción aproximada ancho 7cm x fondo 5cm x alto 10cm.
+
+================================================================================
+RESUMEN RÁPIDO DE SUBIDA:
+- Playmats:    1920 x 1080 px  (16:9)
+- Monedas:     512 x 512 px    (1:1 PNG transparente)
+- Dados:       512 x 512 px    (1:1 por cada cara)
+- Contadores:  256 x 256 px    (1:1 PNG transparente, centro despejado)
+- Sleeves:     600 x 840 px    (2.5:3.5)
+================================================================================

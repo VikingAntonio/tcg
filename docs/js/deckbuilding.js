@@ -9,6 +9,21 @@ function escapeHtml(str) {
         .replace(/'/g, '&#39;');
 }
 
+function getAccessoryDisplayUrl(rawUrl) {
+    if (!rawUrl) return '';
+    if (typeof rawUrl === 'string' && rawUrl.trim().startsWith('{')) {
+        try {
+            const parsed = JSON.parse(rawUrl);
+            if (parsed.heads) return parsed.heads;
+            if (parsed.tails) return parsed.tails;
+            if (parsed['1']) return parsed['1'];
+            const keys = Object.keys(parsed).sort();
+            if (keys.length > 0 && parsed[keys[0]]) return parsed[keys[0]];
+        } catch(e) {}
+    }
+    return rawUrl;
+}
+
 function generateDeckAccessoriesBundleHtml(deck) {
     const defaultMat = 'img/tablero_poke.jpg';
     const defaultBox = 'https://res.cloudinary.com/dfm5vgdbe/image/upload/v1724040000/default_box.png';
@@ -22,11 +37,12 @@ function generateDeckAccessoriesBundleHtml(deck) {
 
     const renderItemMedia = (url, cls) => {
         if (!url) return '';
-        const is3D = url.toLowerCase().includes('.gltf') || url.toLowerCase().includes('.glb');
+        const displayUrl = getAccessoryDisplayUrl(url);
+        const is3D = displayUrl.toLowerCase().includes('.gltf') || displayUrl.toLowerCase().includes('.glb');
         if (is3D) {
-            return `<model-viewer src="${url}" auto-rotate camera-controls class="${cls}" style="background: transparent; pointer-events: none;"></model-viewer>`;
+            return `<model-viewer src="${displayUrl}" auto-rotate camera-controls class="${cls}" style="background: transparent; pointer-events: none;"></model-viewer>`;
         }
-        return `<img src="${url}" alt="Accesorio" class="${cls}" onerror="this.style.display='none'">`;
+        return `<img src="${displayUrl}" alt="Accesorio" class="${cls}" onerror="this.style.display='none'">`;
     };
 
     return `
@@ -52,6 +68,7 @@ let selectedSleeves = null;
 let selectedDeckbox = null;
 let selectedCoin = null;
 let selectedDice = null;
+let selectedCounters = null;
 let selectedMats = null;
 
 $(document).ready(async function() {
@@ -168,6 +185,7 @@ $(document).ready(async function() {
         else if (key === 'deckbox') selectedDeckbox = val;
         else if (key === 'coin') selectedCoin = val;
         else if (key === 'dice') selectedDice = val;
+        else if (key === 'counters') selectedCounters = val;
         else if (key === 'mats') selectedMats = val;
 
         $item.siblings().removeClass('selected');
@@ -625,6 +643,7 @@ async function loadDeckData() {
         selectedDeckbox = deck.deckbox || null;
         selectedCoin = deck.coin || null;
         selectedDice = deck.dice || null;
+        selectedCounters = deck.counters || null;
         selectedMats = deck.mats || null;
 
         // Fetch Deck Cards
@@ -856,6 +875,7 @@ async function loadAndRenderAccessories() {
                 else if (r === 'deckbox' || e === 'deckbox') cat = 'deckbox';
                 else if (r === 'coin' || e === 'coin') cat = 'coin';
                 else if (r === 'dice' || e === 'dice') cat = 'dice';
+                else if (r.includes('counter') || e.includes('counter')) cat = 'counters';
 
                 return {
                     id: v.id,
@@ -871,7 +891,7 @@ async function loadAndRenderAccessories() {
 
         const userRole = (currentUser?.role || 'starter').toLowerCase();
         const isAdmin = userRole === 'admin';
-        const types = ['sleeves', 'deckbox', 'coin', 'dice', 'mats'];
+        const types = ['sleeves', 'deckbox', 'coin', 'dice', 'counters', 'mats'];
 
         types.forEach(key => {
             const $grid = $('#grid-' + key);
@@ -893,15 +913,17 @@ async function loadAndRenderAccessories() {
             else if (key === 'deckbox') activeVal = selectedDeckbox;
             else if (key === 'coin') activeVal = selectedCoin;
             else if (key === 'dice') activeVal = selectedDice;
+            else if (key === 'counters') activeVal = selectedCounters;
             else if (key === 'mats') activeVal = selectedMats;
 
             const $previewBox = $(`#preview-box-${key}`);
             if (activeVal) {
-                const is3D = activeVal.toLowerCase().includes('.gltf') || activeVal.toLowerCase().includes('.glb');
+                const displayVal = getAccessoryDisplayUrl(activeVal);
+                const is3D = displayVal.toLowerCase().includes('.gltf') || displayVal.toLowerCase().includes('.glb');
                 if (is3D) {
-                    $previewBox.html(`<model-viewer src="${activeVal}" auto-rotate camera-controls style="width:100%;height:100%;"></model-viewer>`);
+                    $previewBox.html(`<model-viewer src="${displayVal}" auto-rotate camera-controls style="width:100%;height:100%;"></model-viewer>`);
                 } else {
-                    $previewBox.html(`<img src="${activeVal}" style="width:100%;height:100%;object-fit:cover;">`);
+                    $previewBox.html(`<img src="${displayVal}" style="width:100%;height:100%;object-fit:cover;">`);
                 }
             } else {
                 $previewBox.html(`<span class="acc-preview-none">Ninguno</span>`);
@@ -926,10 +948,11 @@ async function loadAndRenderAccessories() {
                 const isLocked = !canUse;
                 const price = Math.max(5, Number(acc.price_mxn) || 25);
 
-                const is3D = acc.image_url && (acc.image_url.toLowerCase().includes('.gltf') || acc.image_url.toLowerCase().includes('.glb'));
+                const displayUrl = getAccessoryDisplayUrl(acc.image_url);
+                const is3D = displayUrl && (displayUrl.toLowerCase().includes('.gltf') || displayUrl.toLowerCase().includes('.glb'));
                 const mediaHtml = is3D
-                    ? `<model-viewer src="${acc.image_url}" auto-rotate camera-controls style="width: 100%; height: 100%; border-radius: 6px;" shadow-intensity="1"></model-viewer>`
-                    : `<img src="${acc.image_url}" onerror="this.src='https://via.placeholder.com/150?text=Error'">`;
+                    ? `<model-viewer src="${displayUrl}" auto-rotate camera-controls style="width: 100%; height: 100%; border-radius: 6px;" shadow-intensity="1"></model-viewer>`
+                    : `<img src="${displayUrl}" onerror="this.src='https://via.placeholder.com/150?text=Error'">`;
 
                 const $item = $(`
                     <div class="accessory-item type-${key} ${isSelected ? 'selected' : ''} ${isLocked ? 'is-locked' : ''}" data-type="${key}" data-value="${acc.image_url}" data-id="${acc.id}" data-locked="${isLocked ? '1' : '0'}" title="${escapeHtml(acc.name)}">
@@ -969,17 +992,19 @@ async function loadAndRenderAccessories() {
                     else if (key === 'deckbox') selectedDeckbox = val;
                     else if (key === 'coin') selectedCoin = val;
                     else if (key === 'dice') selectedDice = val;
+                    else if (key === 'counters') selectedCounters = val;
                     else if (key === 'mats') selectedMats = val;
 
                     $item.siblings().removeClass('selected');
                     $item.addClass('selected');
 
                     if (val) {
-                        const is3D = val.toLowerCase().includes('.gltf') || val.toLowerCase().includes('.glb');
+                        const displayVal = getAccessoryDisplayUrl(val);
+                        const is3D = displayVal.toLowerCase().includes('.gltf') || displayVal.toLowerCase().includes('.glb');
                         if (is3D) {
-                            $previewBox.html(`<model-viewer src="${val}" auto-rotate camera-controls style="width:100%;height:100%;"></model-viewer>`);
+                            $previewBox.html(`<model-viewer src="${displayVal}" auto-rotate camera-controls style="width:100%;height:100%;"></model-viewer>`);
                         } else {
-                            $previewBox.html(`<img src="${val}" style="width:100%;height:100%;object-fit:cover;">`);
+                            $previewBox.html(`<img src="${displayVal}" style="width:100%;height:100%;object-fit:cover;">`);
                         }
                     } else {
                         $previewBox.html(`<span class="acc-preview-none">Ninguno</span>`);
@@ -1024,6 +1049,7 @@ async function saveDeck() {
             deckbox: selectedDeckbox,
             coin: selectedCoin,
             dice: selectedDice,
+            counters: selectedCounters,
             mats: selectedMats
         };
 
