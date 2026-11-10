@@ -239,6 +239,58 @@ body {
     }
 }
 
+@media screen and (max-width: 680px) {
+    .workspace-header {
+        gap: 4px;
+        padding-bottom: 4px;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .workspace-header::-webkit-scrollbar {
+        display: none;
+    }
+
+    .header-left-group {
+        gap: 4px;
+        flex-shrink: 0;
+    }
+
+    .header-meta-container {
+        gap: 4px;
+        flex-shrink: 0;
+    }
+
+    #deck-name-input {
+        width: 90px;
+        font-size: 0.75rem;
+        padding: 4px 6px;
+    }
+
+    #deck-format-input {
+        width: 80px;
+        font-size: 0.7rem;
+        padding: 4px 4px;
+    }
+
+    .header-actions {
+        gap: 4px;
+        flex-shrink: 0;
+    }
+
+    .header-actions .btn,
+    .header-actions .btn-testear-animated {
+        padding: 4px 6px !important;
+        font-size: 0.7rem !important;
+    }
+
+    .btn-header-back {
+        padding: 4px 8px;
+        font-size: 0.75rem;
+    }
+}
+
 /* 2-Column Layout */
 .workspace-layout {
     display: grid;

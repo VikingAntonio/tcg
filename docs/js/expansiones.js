@@ -1,3 +1,8 @@
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
 $(document).ready(function() {
     let currentExpansionCards = [];
     let allSets = []; // Cache for all sets across TCGs
@@ -8,7 +13,10 @@ $(document).ready(function() {
         showView('expansiones');
         loadExpansionAlbums();
         fetchAllTCGSets();
-    }
+    };
+
+    // Pre-fetch sets immediately in background
+    setTimeout(fetchAllTCGSets, 1000);
 
     // --- Data Fetching ---
     async function fetchAllTCGSets() {
@@ -16,12 +24,12 @@ $(document).ready(function() {
 
         try {
             const [ygRes, pkRes] = await Promise.all([
-                fetch('https://db.ygoprodeck.com/api/v7/cardsets.php').then(r => r.json()),
-                fetch('https://api.tcgdex.net/v2/en/sets').then(r => r.json())
+                fetch('https://db.ygoprodeck.com/api/v7/cardsets.php').then(r => r.json()).catch(() => []),
+                fetch('https://api.tcgdex.net/v2/en/sets').then(r => r.json()).catch(() => [])
             ]);
 
-            const ygSets = ygRes.map(s => ({ id: s.set_name, name: s.set_name, tcg: 'yugioh' }));
-            const pkSets = pkRes.map(s => ({ id: s.id, name: s.name, tcg: 'pokemon' }));
+            const ygSets = Array.isArray(ygRes) ? ygRes.map(s => ({ id: s.set_name, name: s.set_name, tcg: 'yugioh' })) : [];
+            const pkSets = Array.isArray(pkRes) ? pkRes.map(s => ({ id: s.id, name: s.name, tcg: 'pokemon' })) : [];
             const opSets = [
                 { id: 'OP-01', name: 'Romance Dawn (OP-01)', tcg: 'onepiece' },
                 { id: 'OP-02', name: 'Paramount War (OP-02)', tcg: 'onepiece' },
@@ -29,7 +37,9 @@ $(document).ready(function() {
                 { id: 'OP-04', name: 'Kingdoms of Intrigue (OP-04)', tcg: 'onepiece' },
                 { id: 'OP-05', name: 'Awakening of the New Era (OP-05)', tcg: 'onepiece' },
                 { id: 'OP-06', name: 'Wings of the Captain (OP-06)', tcg: 'onepiece' },
-                { id: 'OP-07', name: '500 Years in the Future (OP-07)', tcg: 'onepiece' }
+                { id: 'OP-07', name: '500 Years in the Future (OP-07)', tcg: 'onepiece' },
+                { id: 'OP-08', name: 'Two Legends (OP-08)', tcg: 'onepiece' },
+                { id: 'OP-09', name: 'The New Four Emperors (OP-09)', tcg: 'onepiece' }
             ];
 
             allSets = [...ygSets, ...pkSets, ...opSets];
@@ -142,25 +152,29 @@ $(document).ready(function() {
     }
 
     // --- Autocomplete Logic ---
-    $('#expansion-search-input').on('input', function() {
+    $('#expansion-search-input').on('input focus', async function() {
         clearTimeout(searchTimer);
         const query = $(this).val().toLowerCase().trim();
         const tcgFilter = $('#expansion-tcg-select').val();
 
-        if (query.length < 2) {
+        if (allSets.length === 0) {
+            await fetchAllTCGSets();
+        }
+
+        if (query.length < 1) {
             $('#expansion-search-results').removeClass('active').empty();
             return;
         }
 
         searchTimer = setTimeout(() => {
             const filtered = allSets.filter(s => {
-                const matchesTcg = tcgFilter === 'all' || s.tcg === tcgFilter;
-                const matchesQuery = s.name.toLowerCase().includes(query);
+                const matchesTcg = !tcgFilter || tcgFilter === 'all' || s.tcg === tcgFilter;
+                const matchesQuery = (s.name || '').toLowerCase().includes(query) || (s.id || '').toLowerCase().includes(query);
                 return matchesTcg && matchesQuery;
             }).slice(0, 50);
 
             displayAutocompleteResults(filtered);
-        }, 300);
+        }, 150);
     });
 
     function displayAutocompleteResults(results) {
@@ -168,16 +182,20 @@ $(document).ready(function() {
         $container.empty();
 
         if (results.length === 0) {
-            $container.append('<div class="menu-item">Sin resultados</div>');
+            $container.append('<div class="menu-item" style="padding: 10px 14px; color: #94a3b8; font-size: 0.85rem;">Sin resultados</div>');
         } else {
             results.forEach(s => {
+                const tcgColor = s.tcg === 'yugioh' ? '#eab308' : (s.tcg === 'pokemon' ? '#38bdf8' : '#f43f5e');
                 const $item = $(`
-                    <div class="menu-item" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
-                        <span>${s.name}</span>
-                        <small style="opacity:0.5; font-size:10px; text-transform:uppercase;">${s.tcg}</small>
+                    <div class="menu-item" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.06); transition: background 0.15s ease;">
+                        <span style="font-weight: 600; font-size: 0.85rem; color: #f8fafc; padding-right: 8px;">${escapeHtml(s.name)}</span>
+                        <span style="background: rgba(255,255,255,0.08); color: ${tcgColor}; border: 1px solid ${tcgColor}; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0;">${s.tcg}</span>
                     </div>
                 `);
-                $item.click(() => {
+                $item.on('mouseenter', function() { $(this).css('background', 'rgba(0, 210, 255, 0.15)'); });
+                $item.on('mouseleave', function() { $(this).css('background', 'transparent'); });
+                $item.on('click', function(e) {
+                    e.stopPropagation();
                     $('#expansion-search-input').val(s.name);
                     $('#expansion-selected-id').val(s.id);
                     $container.removeClass('active').empty();
@@ -186,7 +204,18 @@ $(document).ready(function() {
                 $container.append($item);
             });
         }
-        $container.addClass('active');
+        $container.css({
+            'display': 'flex',
+            'position': 'absolute',
+            'top': '100%',
+            'left': '0',
+            'right': '0',
+            'width': '100%',
+            'z-index': '10005',
+            'background': '#0f172a',
+            'border': '1.5px solid rgba(0, 210, 255, 0.4)',
+            'box-shadow': '0 15px 35px rgba(0,0,0,0.8)'
+        }).addClass('active');
     }
 
     $(document).on('click', function(e) {

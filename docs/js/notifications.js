@@ -301,6 +301,40 @@
                 font-size: 0.88rem;
                 font-weight: 600;
             }
+            @media (max-width: 640px) {
+                .notifications-dropdown-menu {
+                    position: fixed !important;
+                    top: 65px !important;
+                    left: 12px !important;
+                    right: 12px !important;
+                    width: auto !important;
+                    max-width: calc(100vw - 24px) !important;
+                    max-height: calc(100vh - 85px) !important;
+                    border-radius: 18px !important;
+                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9), 0 0 25px rgba(0, 210, 255, 0.3) !important;
+                }
+                .notifications-header {
+                    padding: 12px 14px !important;
+                    font-size: 0.86rem !important;
+                }
+                .notifications-list {
+                    max-height: calc(100vh - 150px) !important;
+                    padding: 12px !important;
+                    gap: 10px !important;
+                }
+                .notification-card {
+                    padding: 12px 12px !important;
+                    font-size: 0.8rem !important;
+                    border-radius: 12px !important;
+                }
+                .notif-title-text {
+                    font-size: 0.88rem !important;
+                }
+                .notif-body-text {
+                    font-size: 0.8rem !important;
+                    line-height: 1.4 !important;
+                }
+            }
         `;
         $('<style id="viking-notification-styles">').text(css).appendTo('head');
     }
