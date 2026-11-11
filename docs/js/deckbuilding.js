@@ -68,12 +68,25 @@ function generateDeckAccessoriesBundleHtml(deck) {
         return `<img src="${displayUrl}" alt="Accesorio" class="${cls}" onerror="this.style.display='none'">`;
     };
 
+    const rawCounters = deck.counters || null;
+    const countersList = window.normalizeDeckCounters ? window.normalizeDeckCounters(rawCounters) : (rawCounters ? [rawCounters] : []);
+
+    let countersHtml = '';
+    if (countersList.length > 0) {
+        const items = countersList.map((cUrl, idx) => {
+            const dUrl = getAccessoryDisplayUrl(cUrl);
+            return `<img src="${dUrl}" alt="Contador ${idx+1}" class="deck-bundle-counter-img" onerror="this.style.display='none'">`;
+        }).join('');
+        countersHtml = `<div class="deck-bundle-counters-container">${items}</div>`;
+    }
+
     return `
         <div class="deck-accessories-bundle-preview" title="Accesorios del Deck: ${escapeHtml(deck.name || '')}">
             ${renderItemMedia(mat, 'deck-bundle-mat')}
             ${renderItemMedia(sleeves, 'deck-bundle-sleeves')}
             ${renderItemMedia(box, 'deck-bundle-box')}
             ${renderItemMedia(coin, 'deck-bundle-coin')}
+            ${countersHtml}
         </div>
     `;
 }
@@ -91,7 +104,7 @@ let selectedSleeves = null;
 let selectedDeckbox = null;
 let selectedCoin = null;
 let selectedDice = null;
-let selectedCounters = null;
+let selectedCounters = []; // Array of up to 3 URLs
 let selectedCalculator = null;
 let selectedToken = null;
 let selectedMats = null;
@@ -217,18 +230,44 @@ $(document).ready(async function() {
         else if (key === 'deckbox') selectedDeckbox = val;
         else if (key === 'coin') selectedCoin = val;
         else if (key === 'dice') selectedDice = val;
-        else if (key === 'counters') selectedCounters = val;
+        else if (key === 'counters') {
+            if (!val) {
+                selectedCounters = [];
+                $item.siblings().removeClass('selected');
+                $item.addClass('selected');
+            } else {
+                $item.siblings('.none-option').removeClass('selected');
+                const existingIdx = selectedCounters.indexOf(val);
+                if (existingIdx > -1) {
+                    selectedCounters.splice(existingIdx, 1);
+                    $item.removeClass('selected');
+                } else {
+                    if (selectedCounters.length >= 3) {
+                        const removed = selectedCounters.shift();
+                        $(`.accessory-item[data-type="counters"][data-value="${CSS.escape(removed)}"]`).removeClass('selected');
+                    }
+                    selectedCounters.push(val);
+                    $item.addClass('selected');
+                }
+                if (selectedCounters.length === 0) {
+                    $item.siblings('.none-option').addClass('selected');
+                }
+            }
+        }
         else if (key === 'calculator') selectedCalculator = val;
         else if (key === 'token') selectedToken = val;
         else if (key === 'mats') selectedMats = val;
 
-        $item.siblings().removeClass('selected');
-        $item.addClass('selected');
+        if (key !== 'counters') {
+            $item.siblings().removeClass('selected');
+            $item.addClass('selected');
+        }
 
         // Update preview thumbnail inside modal
         const $previewBox = $(`#preview-box-${key}`);
-        if (val) {
-            const displayVal = getAccessoryDisplayUrl(val);
+        const previewVal = (key === 'counters') ? (selectedCounters[0] || null) : val;
+        if (previewVal) {
+            const displayVal = getAccessoryDisplayUrl(previewVal);
             $previewBox.html(`<img src="${displayVal}" style="width:100%;height:100%;object-fit:cover;">`);
         } else {
             $previewBox.html(`<span class="acc-preview-none">Ninguno</span>`);
@@ -678,7 +717,7 @@ async function loadDeckData() {
         selectedDeckbox = deck.deckbox || null;
         selectedCoin = deck.coin || null;
         selectedDice = deck.dice || null;
-        selectedCounters = deck.counters || null;
+        selectedCounters = window.normalizeDeckCounters ? window.normalizeDeckCounters(deck.counters) : (deck.counters ? [deck.counters] : []);
         selectedCalculator = deck.calculator || null;
         selectedToken = deck.token || null;
         selectedMats = deck.mats || null;
@@ -956,7 +995,7 @@ async function loadAndRenderAccessories() {
             else if (key === 'deckbox') activeVal = selectedDeckbox;
             else if (key === 'coin') activeVal = selectedCoin;
             else if (key === 'dice') activeVal = selectedDice;
-            else if (key === 'counters') activeVal = selectedCounters;
+            else if (key === 'counters') activeVal = selectedCounters && selectedCounters.length > 0 ? selectedCounters[0] : null;
             else if (key === 'calculator') activeVal = selectedCalculator;
             else if (key === 'token') activeVal = selectedToken;
             else if (key === 'mats') activeVal = selectedMats;
@@ -970,7 +1009,7 @@ async function loadAndRenderAccessories() {
             }
 
             // "Ninguno" Option
-            const isNoneSelected = !activeVal;
+            const isNoneSelected = (key === 'counters') ? (!selectedCounters || selectedCounters.length === 0) : !activeVal;
             const $noneItem = $(`
                 <div class="accessory-item none-option ${isNoneSelected ? 'selected' : ''}" data-type="${key}" data-value="">
                     <div style="font-size: 10px; opacity: 0.7;">Ninguno</div>
@@ -979,7 +1018,9 @@ async function loadAndRenderAccessories() {
             $grid.append($noneItem);
 
             filtered.forEach(acc => {
-                const isSelected = acc.image_url === activeVal;
+                const isSelected = (key === 'counters')
+                    ? (Array.isArray(selectedCounters) && selectedCounters.includes(acc.image_url))
+                    : (acc.image_url === activeVal);
                 const isPaid = (acc.sale_status === 'de_paga');
                 const isOwned = window.TCGPurchase?.hasUserPurchased('accessory', acc.id, currentUser);
                 const roles = acc.target_roles || ['starter', 'premium', 'tienda'];
@@ -1062,16 +1103,42 @@ async function loadAndRenderAccessories() {
                     else if (key === 'deckbox') selectedDeckbox = val;
                     else if (key === 'coin') selectedCoin = val;
                     else if (key === 'dice') selectedDice = val;
-                    else if (key === 'counters') selectedCounters = val;
+                    else if (key === 'counters') {
+                        if (!val) {
+                            selectedCounters = [];
+                            $item.siblings().removeClass('selected');
+                            $item.addClass('selected');
+                        } else {
+                            $item.siblings('.none-option').removeClass('selected');
+                            const exIdx = selectedCounters.indexOf(val);
+                            if (exIdx > -1) {
+                                selectedCounters.splice(exIdx, 1);
+                                $item.removeClass('selected');
+                            } else {
+                                if (selectedCounters.length >= 3) {
+                                    const removed = selectedCounters.shift();
+                                    $(`.accessory-item[data-type="counters"][data-value="${CSS.escape(removed)}"]`).removeClass('selected');
+                                }
+                                selectedCounters.push(val);
+                                $item.addClass('selected');
+                            }
+                            if (selectedCounters.length === 0) {
+                                $item.siblings('.none-option').addClass('selected');
+                            }
+                        }
+                    }
                     else if (key === 'calculator') selectedCalculator = val;
                     else if (key === 'token') selectedToken = val;
                     else if (key === 'mats') selectedMats = val;
 
-                    $item.siblings().removeClass('selected');
-                    $item.addClass('selected');
+                    if (key !== 'counters') {
+                        $item.siblings().removeClass('selected');
+                        $item.addClass('selected');
+                    }
 
-                    if (val) {
-                        const displayVal = getAccessoryDisplayUrl(val);
+                    const currPreviewVal = (key === 'counters') ? (selectedCounters[0] || null) : val;
+                    if (currPreviewVal) {
+                        const displayVal = getAccessoryDisplayUrl(currPreviewVal);
                         $previewBox.html(`<img src="${displayVal}" style="width:100%;height:100%;object-fit:cover;">`);
                     } else {
                         $previewBox.html(`<span class="acc-preview-none">Ninguno</span>`);
@@ -1107,6 +1174,13 @@ async function saveDeck() {
         const formatTag = $('#deck-format-input').val().trim();
 
         // 1. Update deck metadata & accessories with resilient column fallback
+        let savedCountersVal = null;
+        if (Array.isArray(selectedCounters) && selectedCounters.length > 0) {
+            savedCountersVal = selectedCounters.length === 1 ? selectedCounters[0] : JSON.stringify(selectedCounters);
+        } else if (typeof selectedCounters === 'string' && selectedCounters.trim()) {
+            savedCountersVal = selectedCounters;
+        }
+
         let deckUpdate = {
             name,
             format_tag: formatTag,
@@ -1114,7 +1188,7 @@ async function saveDeck() {
             deckbox: selectedDeckbox,
             coin: selectedCoin,
             dice: selectedDice,
-            counters: selectedCounters,
+            counters: savedCountersVal,
             mats: selectedMats
         };
 

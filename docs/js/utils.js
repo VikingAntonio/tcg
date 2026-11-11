@@ -9,6 +9,31 @@ window.optimizeCloudinaryUrl = function(url, width = 500, height = 500) {
     return url.replace('/upload/', `/upload/w_${width},h_${height},c_limit,q_auto,f_auto/`);
 };
 
+// Helper to safely parse and normalize deck counters (single string, JSON array, or list, up to 3)
+window.normalizeDeckCounters = function(rawVal) {
+    if (!rawVal) return [];
+    if (Array.isArray(rawVal)) {
+        return rawVal.filter(u => typeof u === 'string' && u.trim().length > 0).slice(0, 3);
+    }
+    if (typeof rawVal === 'string') {
+        const trimmed = rawVal.trim();
+        if (!trimmed) return [];
+        if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+            try {
+                const parsed = JSON.parse(trimmed);
+                if (Array.isArray(parsed)) {
+                    return parsed.filter(u => typeof u === 'string' && u.trim().length > 0).slice(0, 3);
+                }
+            } catch (_) {}
+        }
+        if (trimmed.includes(',')) {
+            return trimmed.split(',').map(s => s.trim()).filter(Boolean).slice(0, 3);
+        }
+        return [trimmed];
+    }
+    return [];
+};
+
 // parseDateSafe.js - Shared date parsing utility
 function parseDateSafe(dateStr) {
     if (!dateStr) return null;

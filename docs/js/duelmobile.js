@@ -5576,19 +5576,28 @@ window.setupPokemonPrizes = setupPokemonPrizes;
 
             // Actualizar diseño del contador en el panel de herramientas móviles (100% 2D)
             window.updateMobileCounterPanelDesign = function(counterVal) {
-                if (!counterVal) return;
-                const $src = $(".ygo-counter-source");
-                if ($src.length) {
-                    $src.css({
-                        "background-image": `url('${counterVal}')`,
-                        "background-size": "contain",
-                        "background-repeat": "no-repeat",
-                        "background-position": "center",
-                        "color": "#fff",
-                        "text-shadow": "0 0 4px #000, 0 0 6px #000, 1px 1px 2px #000",
-                        "border": "none"
-                    });
+                const list = window.normalizeDeckCounters ? window.normalizeDeckCounters(counterVal) : (counterVal ? [counterVal] : []);
+                const $container = $("#ygo-counters-container-mobile");
+                if (!$container.length) return;
+
+                if (list.length === 0) {
+                    $container.html(`
+                        <div class="counter-source ygo-counter-source" draggable="true" style="cursor: grab; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 50%; background: radial-gradient(circle, #ffeaa7 0%, #fdcb6e 60%, #e17055 100%); border: 2px solid #fff; box-shadow: 0 0 8px rgba(253, 203, 110, 0.8); color: #2d3436; font-weight: bold; font-size: 1rem;">
+                            1
+                        </div>
+                    `);
+                    return;
                 }
+
+                let html = '';
+                list.forEach((url, idx) => {
+                    html += `
+                        <div class="counter-source ygo-counter-source has-custom-img" draggable="true" data-design="${escapeHtml(url)}" style="cursor: grab; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; width: 42px; height: 42px; background-image: url('${url}'); background-size: contain; background-repeat: no-repeat; background-position: center; border: none !important; border-radius: 0 !important; box-shadow: none !important; color: #fff; font-weight: bold; font-size: 1rem; text-shadow: 0 0 4px #000, 0 0 6px #000, 1px 1px 2px #000; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.9));" title="Contador ${idx + 1}">
+                            1
+                        </div>
+                    `;
+                });
+                $container.html(html);
             };
 
             window.renderAccessoryResultsInPanel = function() {
@@ -5983,7 +5992,12 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                         activeCounterDragVal = { type: "MOVE_YGO_COUNTER", cardInstanceId: instId, player: cPlayer };
                     } else if ($(this).hasClass("ygo-counter-source")) {
                         const pKey = (typeof currentRole !== 'undefined' && currentRole === 'player2') ? 'player2' : 'player1';
-                        const customImg = (state.deckCounters && state.deckCounters[pKey]) ? state.deckCounters[pKey] : null;
+                        let customImg = $(this).attr("data-design") || null;
+                        if (!customImg) {
+                            const raw = (state.deckCounters && state.deckCounters[pKey]) ? state.deckCounters[pKey] : null;
+                            const parsed = window.normalizeDeckCounters ? window.normalizeDeckCounters(raw) : (raw ? [raw] : []);
+                            customImg = parsed.length > 0 ? parsed[0] : null;
+                        }
                         activeCounterDragVal = { type: "YGO", player: pKey, design: customImg };
                     } else {
                         activeCounterDragVal = parseInt($(this).data("val"));
@@ -6130,7 +6144,12 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                     const isYGO = activeTouchDragSource.hasClass("ygo-counter-source");
                     if (isYGO) {
                         const pKey = (typeof currentRole !== 'undefined' && currentRole === 'player2') ? 'player2' : 'player1';
-                        const customImg = (state.deckCounters && state.deckCounters[pKey]) ? state.deckCounters[pKey] : null;
+                        let customImg = activeTouchDragSource.attr("data-design") || null;
+                        if (!customImg) {
+                            const raw = (state.deckCounters && state.deckCounters[pKey]) ? state.deckCounters[pKey] : null;
+                            const parsed = window.normalizeDeckCounters ? window.normalizeDeckCounters(raw) : (raw ? [raw] : []);
+                            customImg = parsed.length > 0 ? parsed[0] : null;
+                        }
                         activeCounterDragVal = { type: "YGO", player: pKey, design: customImg };
                     } else {
                         activeCounterDragVal = parseInt(activeTouchDragSource.data("val"));

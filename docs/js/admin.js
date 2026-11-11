@@ -58,12 +58,25 @@ function generateDeckAccessoriesBundleHtml(deck) {
         return `<img src="${displayUrl}" alt="Accesorio" class="${cls}" onerror="this.style.display='none'">`;
     };
 
+    const rawCounters = deck.counters || null;
+    const countersList = window.normalizeDeckCounters ? window.normalizeDeckCounters(rawCounters) : (rawCounters ? [rawCounters] : []);
+
+    let countersHtml = '';
+    if (countersList.length > 0) {
+        const items = countersList.map((cUrl, idx) => {
+            const dUrl = getAccessoryDisplayUrl(cUrl);
+            return `<img src="${dUrl}" alt="Contador ${idx+1}" class="deck-bundle-counter-img" onerror="this.style.display='none'">`;
+        }).join('');
+        countersHtml = `<div class="deck-bundle-counters-container">${items}</div>`;
+    }
+
     return `
         <div class="deck-accessories-bundle-preview" title="Accesorios del Deck: ${escapeHtml(deck.name || '')}">
             ${renderItemMedia(mat, 'deck-bundle-mat')}
             ${renderItemMedia(sleeves, 'deck-bundle-sleeves')}
             ${renderItemMedia(box, 'deck-bundle-box')}
             ${renderItemMedia(coin, 'deck-bundle-coin')}
+            ${countersHtml}
         </div>
     `;
 }
@@ -1300,7 +1313,13 @@ $(document).ready(async function() {
         const deckbox = window.selectedDeckbox || null;
         const coin = window.selectedCoin || null;
         const dice = window.selectedDice || null;
-        const counters = window.selectedCounters || null;
+        let savedCounters = null;
+        if (Array.isArray(window.selectedCounters) && window.selectedCounters.length > 0) {
+            savedCounters = window.selectedCounters.length === 1 ? window.selectedCounters[0] : JSON.stringify(window.selectedCounters);
+        } else if (typeof window.selectedCounters === 'string' && window.selectedCounters.trim()) {
+            savedCounters = window.selectedCounters;
+        }
+        const counters = savedCounters;
         const mats = window.selectedMats || null;
 
         let updateData = { name, is_public, format_tag, use_special_price, special_price, sleeves, deckbox, coin, dice, counters, mats };
@@ -2880,7 +2899,7 @@ async function editDeck(deck) {
     window.selectedDeckbox = target.deckbox || null;
     window.selectedCoin = target.coin || null;
     window.selectedDice = target.dice || null;
-    window.selectedCounters = target.counters || null;
+    window.selectedCounters = window.normalizeDeckCounters ? window.normalizeDeckCounters(target.counters) : (target.counters ? [target.counters] : []);
     window.selectedMats = target.mats || null;
 
     loadAndRenderAccessories();
@@ -2962,16 +2981,22 @@ function renderAccessoriesGrid(accessories) {
 
         // Name and Preview display
         let currentSelectedName = 'Ninguno';
-        const found = filtered.find(acc => acc.image_url === selectedVal);
+        const primaryVal = (key === 'counters')
+            ? (Array.isArray(selectedVal) && selectedVal.length > 0 ? selectedVal[0] : null)
+            : selectedVal;
+        const found = filtered.find(acc => acc.image_url === primaryVal);
         if (found) {
             currentSelectedName = found.name;
+            if (key === 'counters' && Array.isArray(selectedVal) && selectedVal.length > 1) {
+                currentSelectedName += ` (+${selectedVal.length - 1})`;
+            }
         }
         $(nameId).text(currentSelectedName);
 
-        // Update preview box image
+        // Update preview box image (strictly 1 primary counter in slot)
         const $previewBox = $(previewBoxId);
-        if (selectedVal) {
-            const displayVal = getAccessoryDisplayUrl(selectedVal);
+        if (primaryVal) {
+            const displayVal = getAccessoryDisplayUrl(primaryVal);
             $previewBox.html(`<img src="${displayVal}" alt="Preview" onerror="this.src='https://via.placeholder.com/150?text=Error'">`);
         } else {
             $previewBox.html(`<span class="acc-preview-none">Ninguno</span>`);
@@ -2997,7 +3022,9 @@ function renderAccessoriesGrid(accessories) {
         }
 
         // Render "Ninguno" Option
-        const isNoneSelected = !selectedVal;
+        const isNoneSelected = (key === 'counters')
+            ? (!selectedVal || selectedVal.length === 0)
+            : !selectedVal;
         const $noneItem = $(`
             <div class="accessory-item none-option type-${key} ${isNoneSelected ? 'selected' : ''}" data-value="">
                 <div>Ninguno</div>
@@ -3007,7 +3034,9 @@ function renderAccessoriesGrid(accessories) {
 
         // Render DB options with paid / unlocked / plan states
         filtered.forEach(acc => {
-            const isSelected = acc.image_url === selectedVal;
+            const isSelected = (key === 'counters')
+                ? (Array.isArray(selectedVal) && selectedVal.includes(acc.image_url))
+                : (acc.image_url === selectedVal);
             const isPaid = (acc.sale_status === 'de_paga');
             const isOwned = window.TCGPurchase?.hasUserPurchased('accessory', acc.id, currentUser);
             const roles = acc.target_roles || ['starter', 'premium', 'tienda'];
@@ -3109,15 +3138,50 @@ function renderAccessoriesGrid(accessories) {
                 else if (key === 'deckbox') window.selectedDeckbox = val;
                 else if (key === 'coin') window.selectedCoin = val;
                 else if (key === 'dice') window.selectedDice = val;
-                else if (key === 'counters') window.selectedCounters = val;
+                else if (key === 'counters') {
+                    if (!val) {
+                        window.selectedCounters = [];
+                        $item.siblings().removeClass('selected');
+                        $item.addClass('selected');
+                    } else {
+                        if (!Array.isArray(window.selectedCounters)) window.selectedCounters = [];
+                        $item.siblings('.none-option').removeClass('selected');
+                        const exIdx = window.selectedCounters.indexOf(val);
+                        if (exIdx > -1) {
+                            window.selectedCounters.splice(exIdx, 1);
+                            $item.removeClass('selected');
+                        } else {
+                            if (window.selectedCounters.length >= 3) {
+                                const removed = window.selectedCounters.shift();
+                                $(`.accessory-item.type-counters[data-value="${CSS.escape(removed)}"]`).removeClass('selected');
+                            }
+                            window.selectedCounters.push(val);
+                            $item.addClass('selected');
+                        }
+                        if (window.selectedCounters.length === 0) {
+                            $item.siblings('.none-option').addClass('selected');
+                        }
+                    }
+                }
                 else if (key === 'mats') window.selectedMats = val;
 
-                $item.siblings().removeClass('selected');
-                $item.addClass('selected');
+                if (key !== 'counters') {
+                    $item.siblings().removeClass('selected');
+                    $item.addClass('selected');
+                }
 
-                $(nameId).text(acc.name || 'Ninguno');
-                if (val) {
-                    const disp = getAccessoryDisplayUrl(val);
+                let previewCounterVal = val;
+                if (key === 'counters') {
+                    previewCounterVal = (Array.isArray(window.selectedCounters) && window.selectedCounters.length > 0)
+                        ? window.selectedCounters[0] : null;
+                    const cCount = (Array.isArray(window.selectedCounters) ? window.selectedCounters.length : 0);
+                    $(nameId).text(previewCounterVal ? (acc.name + (cCount > 1 ? ` (+${cCount - 1})` : '')) : 'Ninguno');
+                } else {
+                    $(nameId).text(acc.name || 'Ninguno');
+                }
+
+                if (previewCounterVal) {
+                    const disp = getAccessoryDisplayUrl(previewCounterVal);
                     $previewBox.html(`<img src="${disp}" alt="${acc.name}" onerror="this.src='https://via.placeholder.com/150?text=Error'">`);
                 } else {
                     $previewBox.html(`<span class="acc-preview-none">Ninguno</span>`);
@@ -3170,29 +3234,62 @@ $(document).on('click', '.accessory-item', function() {
     } else if (isDice) {
         window.selectedDice = val;
     } else if (isCounters) {
-        window.selectedCounters = val;
+        if (!val) {
+            window.selectedCounters = [];
+            $item.siblings().removeClass('selected');
+            $item.addClass('selected');
+        } else {
+            if (!Array.isArray(window.selectedCounters)) window.selectedCounters = [];
+            $item.siblings('.none-option').removeClass('selected');
+            const exIdx = window.selectedCounters.indexOf(val);
+            if (exIdx > -1) {
+                window.selectedCounters.splice(exIdx, 1);
+                $item.removeClass('selected');
+            } else {
+                if (window.selectedCounters.length >= 3) {
+                    const removed = window.selectedCounters.shift();
+                    $(`.accessory-item.type-counters[data-value="${CSS.escape(removed)}"]`).removeClass('selected');
+                }
+                window.selectedCounters.push(val);
+                $item.addClass('selected');
+            }
+            if (window.selectedCounters.length === 0) {
+                $item.siblings('.none-option').addClass('selected');
+            }
+        }
     } else if (isMats) {
         window.selectedMats = val;
     }
 
-    // Toggle active state in the grid
-    $item.siblings().removeClass('selected');
-    $item.addClass('selected');
+    if (!isCounters) {
+        // Toggle active state in the grid
+        $item.siblings().removeClass('selected');
+        $item.addClass('selected');
+    }
 
     // Update name label & preview box
-    const headerName = $item.attr('title') || 'Ninguno';
+    let headerName = $item.attr('title') || 'Ninguno';
     let key = '';
     if (isSleeves) key = 'sleeves';
     else if (isDeckbox) key = 'deckbox';
     else if (isCoin) key = 'coin';
     else if (isDice) key = 'dice';
-    else if (isCounters) key = 'counters';
+    else if (isCounters) {
+        key = 'counters';
+        const cCount = (Array.isArray(window.selectedCounters) ? window.selectedCounters.length : 0);
+        if (cCount > 1) {
+            headerName += ` (+${cCount - 1})`;
+        }
+    }
     else if (isMats) key = 'mats';
 
     $(`#selected-${key}-name`).text(headerName);
     const $previewBox = $(`#preview-box-${key}`);
-    if (val) {
-        const disp = getAccessoryDisplayUrl(val);
+    const previewVal = isCounters
+        ? (Array.isArray(window.selectedCounters) && window.selectedCounters.length > 0 ? window.selectedCounters[0] : null)
+        : val;
+    if (previewVal) {
+        const disp = getAccessoryDisplayUrl(previewVal);
         $previewBox.html(`<img src="${disp}" alt="${headerName}" onerror="this.src='https://via.placeholder.com/150?text=Error'">`);
     } else {
         $previewBox.html(`<span class="acc-preview-none">Ninguno</span>`);

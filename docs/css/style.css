@@ -7290,3 +7290,23 @@ body.theme-purple .tag-select-adaptive option {
     0%, 100% { transform: scale(1) rotate(0deg); }
     50% { transform: scale(1.06) rotate(6deg); }
 }
+.deck-accessories-bundle-preview .deck-bundle-counters-container {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    z-index: 5;
+    pointer-events: none;
+}
+.deck-accessories-bundle-preview .deck-bundle-counter-img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.9));
+    transition: transform 0.2s ease;
+}
+.deck-accessories-bundle-preview:hover .deck-bundle-counter-img {
+    transform: scale(1.1);
+}
