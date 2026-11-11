@@ -320,19 +320,31 @@
             box-shadow: 0 10px 25px rgba(0,0,0,0.5);
         }
 
-        .acc-card-image-box.type-coin img, .acc-card-image-box.type-coin model-viewer,
-        .acc-card-image-box.type-counters img, .acc-card-image-box.type-counters model-viewer {
+        .acc-card-image-box.type-coin img,
+        .acc-card-image-box.type-counters img,
+        .acc-card-image-box.type-dice img {
             aspect-ratio: 1 / 1;
             width: auto;
             height: auto;
             max-width: 190px;
             max-height: 190px;
-            border-radius: 50%;
+            border-radius: 8px;
             object-fit: contain;
         }
 
-        .deluxe-acc-card:hover .acc-card-image-box img {
+        .deluxe-acc-card:hover .acc-card-image-box img:not(.acc-slider-current-img) {
             transform: scale(1.06) rotate(1deg);
+        }
+
+        @keyframes pulseSlideHint {
+            0%, 100% { opacity: 0.85; transform: translateX(-50%) scale(1); }
+            50% { opacity: 1; transform: translateX(-50%) scale(1.05); box-shadow: 0 0 10px rgba(0, 210, 255, 0.5); }
+        }
+
+        .in-image-arrow:hover {
+            background: rgba(0, 210, 255, 0.4) !important;
+            border-color: #00d2ff !important;
+            transform: scale(1.1);
         }
 
         .acc-card-zoom-hint {
@@ -873,11 +885,13 @@
                             if (isMulti && faces.length > 0) {
                                 return `
                                     <div class="acc-card-image-box ${category === 'coin' || category === 'dice' ? 'type-coin' : ''} acc-slider-container" data-faces='${JSON.stringify(faces).replace(/'/g, "&apos;")}' title="Ver en grande" style="position: relative;">
-                                        <img src="${faces[0].url}" alt="${escapeHtml(item.name || 'Accesorio')}" class="acc-slider-current-img" style="width: 100%; height: 100%; object-fit: contain;">
-                                        <div style="position: absolute; bottom: 6px; left: 0; right: 0; display: flex; align-items: center; justify-content: center; gap: 6px; z-index: 5;">
-                                            <button type="button" class="btn-acc-card-slide-prev" style="background: rgba(0,0,0,0.65); border: 1px solid #475569; color: #fff; border-radius: 4px; padding: 2px 6px; font-size: 0.65rem; cursor: pointer;">&lt;</button>
-                                            <span class="acc-card-slide-label" style="font-size: 0.68rem; color: #00d2ff; font-weight: 700; background: rgba(0,0,0,0.7); padding: 1px 6px; border-radius: 4px;">${faces[0].label} (1/${faces.length})</span>
-                                            <button type="button" class="btn-acc-card-slide-next" style="background: rgba(0,0,0,0.65); border: 1px solid #475569; color: #fff; border-radius: 4px; padding: 2px 6px; font-size: 0.65rem; cursor: pointer;">&gt;</button>
+                                        <img src="${faces[0].url}" alt="${escapeHtml(item.name || 'Accesorio')}" class="acc-slider-current-img" style="width: 100%; height: 100%; object-fit: contain; transition: transform 0.25s ease;">
+                                        <div class="acc-in-image-controls" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; padding: 6px; pointer-events: none; z-index: 6;">
+                                            <button type="button" class="btn-acc-card-slide-prev in-image-arrow" style="pointer-events: auto; background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(0, 210, 255, 0.4); color: #fff; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; cursor: pointer; backdrop-filter: blur(4px); transition: all 0.2s;"><i class="fas fa-chevron-left"></i></button>
+                                            <button type="button" class="btn-acc-card-slide-next in-image-arrow" style="pointer-events: auto; background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(0, 210, 255, 0.4); color: #fff; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; cursor: pointer; backdrop-filter: blur(4px); transition: all 0.2s;"><i class="fas fa-chevron-right"></i></button>
+                                        </div>
+                                        <div class="acc-in-image-badge" style="position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 4px; background: rgba(5, 10, 20, 0.75); border: 1px solid rgba(0, 210, 255, 0.35); border-radius: 20px; padding: 2px 10px; font-size: 0.65rem; color: #00d2ff; font-weight: 800; pointer-events: none; z-index: 6; backdrop-filter: blur(4px); animation: pulseSlideHint 2.5s infinite;">
+                                            <span class="acc-card-slide-label">${faces[0].label} (1/${faces.length})</span>
                                         </div>
                                     </div>
                                 `;

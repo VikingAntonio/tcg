@@ -5541,11 +5541,11 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                 }
                 $coinBtn.html(`
                     <div class="coin-inner" style="width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s;">
-                        <div class="coin-front" style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 50%; overflow: hidden; background: #000; border: 2px solid #ffd700;">
-                            <img src="${headsImg}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;" onerror="this.src='https://via.placeholder.com/50?text=Coin'">
+                        <div class="coin-front" style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 50%; overflow: hidden; background: transparent; border: 2px solid #ffd700;">
+                            <img src="${headsImg}" style="width: 100%; height: 100%; object-fit: contain; display: block;" onerror="this.src='https://via.placeholder.com/50?text=Coin'">
                         </div>
-                        <div class="coin-back" style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; transform: rotateY(180deg); border-radius: 50%; overflow: hidden; background: #000; border: 2px solid #ffd700;">
-                            <img src="${tailsImg}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;" onerror="this.src='https://via.placeholder.com/50?text=Coin'">
+                        <div class="coin-back" style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; transform: rotateY(180deg); border-radius: 50%; overflow: hidden; background: transparent; border: 2px solid #ffd700;">
+                            <img src="${tailsImg}" style="width: 100%; height: 100%; object-fit: contain; display: block;" onerror="this.src='https://via.placeholder.com/50?text=Coin'">
                         </div>
                     </div>
                 `);
@@ -5762,10 +5762,10 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                     $stage.html(`
                         <div id="toss-coin-2d" class="tcg-coin" style="width: 130px; height: 130px; perspective: 1000px;">
                             <div class="coin-inner" style="width: 100%; height: 100%; position: relative; transform-style: preserve-3d; animation: coinFlipAnimation 1.2s infinite ease-in-out;">
-                                <div class="coin-front" style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 50%; overflow: hidden; border: 3px solid #ffd700; box-shadow: 0 0 25px rgba(255,215,0,0.6); background: rgba(0,0,0,0.5);">
+                                <div class="coin-front" style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 50%; overflow: hidden; border: 3px solid #ffd700; box-shadow: 0 0 25px rgba(255,215,0,0.6); background: transparent;">
                                     <img src="${headsImg}" style="width: 100%; height: 100%; object-fit: contain;">
                                 </div>
-                                <div class="coin-back" style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; transform: rotateY(180deg); border-radius: 50%; overflow: hidden; border: 3px solid #ffd700; box-shadow: 0 0 25px rgba(255,215,0,0.6); background: rgba(0,0,0,0.5);">
+                                <div class="coin-back" style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; transform: rotateY(180deg); border-radius: 50%; overflow: hidden; border: 3px solid #ffd700; box-shadow: 0 0 25px rgba(255,215,0,0.6); background: transparent;">
                                     <img src="${tailsImg}" style="width: 100%; height: 100%; object-fit: contain;">
                                 </div>
                             </div>
@@ -6308,10 +6308,10 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                         if (mGroupKeys.length === 1) {
                             const g = mGroups[mGroupKeys[0]];
                             const customStyle = g.design
-                                ? `background-image: url('${g.design}'); background-size: contain; background-repeat: no-repeat; background-position: center; border: none; text-shadow: 0 0 4px #000, 0 0 6px #000, 1px 1px 2px #000; color: #fff;`
-                                : `background: radial-gradient(circle, #ffeaa7 0%, #fdcb6e 60%, #e17055 100%); border: 2px solid #fff; color: #2d3436;`;
+                                ? `background-image: url('${g.design}'); background-size: contain; background-repeat: no-repeat; background-position: center; border: none; text-shadow: 0 0 4px #000, 0 0 6px #000, 1px 1px 2px #000; color: #fff; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.85)); border-radius: 0;`
+                                : `background: radial-gradient(circle, #ffeaa7 0%, #fdcb6e 60%, #e17055 100%); border: 2px solid #fff; color: #2d3436; border-radius: 50%;`;
                             $card.append(`
-                                <div class="card-counter-badge counter-source ygo-placed-counter" data-instance-id="${card.instanceId}" data-player="${g.player}" draggable="true" style="position: absolute; top: -6px; right: -6px; width: 26px; height: 26px; border-radius: 50%; box-shadow: 0 0 8px rgba(0,0,0,0.85); font-weight: bold; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; z-index: 100; cursor: grab; user-select: none; ${customStyle}" title="Total: ${g.count}">
+                                <div class="card-counter-badge counter-source ygo-placed-counter" data-instance-id="${card.instanceId}" data-player="${g.player}" draggable="true" style="position: absolute; top: -6px; right: -6px; width: 26px; height: 26px; font-weight: bold; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; z-index: 100; cursor: grab; user-select: none; ${customStyle}" title="Total: ${g.count}">
                                     ${g.count}
                                 </div>
                             `);
@@ -6319,11 +6319,11 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                             mGroupKeys.forEach((pKey, gIdx) => {
                                 const g = mGroups[pKey];
                                 const customStyle = g.design
-                                    ? `background-image: url('${g.design}'); background-size: contain; background-repeat: no-repeat; background-position: center; border: none; text-shadow: 0 0 4px #000, 0 0 6px #000, 1px 1px 2px #000; color: #fff;`
-                                    : (pKey === 'player1' ? 'background: linear-gradient(135deg, #00d2ff, #0055ff); border: 2px solid #fff; color: #fff;' : 'background: linear-gradient(135deg, #ff1b6b, #9333ea); border: 2px solid #fff; color: #fff;');
+                                    ? `background-image: url('${g.design}'); background-size: contain; background-repeat: no-repeat; background-position: center; border: none; text-shadow: 0 0 4px #000, 0 0 6px #000, 1px 1px 2px #000; color: #fff; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.85)); border-radius: 0;`
+                                    : (pKey === 'player1' ? 'background: linear-gradient(135deg, #00d2ff, #0055ff); border: 2px solid #fff; color: #fff; border-radius: 50%;' : 'background: linear-gradient(135deg, #ff1b6b, #9333ea); border: 2px solid #fff; color: #fff; border-radius: 50%;');
                                 const rightOffset = -6 - (gIdx * 30);
                                 $card.append(`
-                                    <div class="card-counter-badge counter-source ygo-placed-counter" data-instance-id="${card.instanceId}" data-player="${g.player}" draggable="true" style="position: absolute; top: -6px; right: ${rightOffset}px; width: 26px; height: 26px; border-radius: 50%; box-shadow: 0 0 8px rgba(0,0,0,0.85); font-weight: bold; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; z-index: 100; cursor: grab; user-select: none; ${customStyle}" title="Total ${pKey === 'player1' ? 'J1' : 'J2'}: ${g.count}">
+                                    <div class="card-counter-badge counter-source ygo-placed-counter" data-instance-id="${card.instanceId}" data-player="${g.player}" draggable="true" style="position: absolute; top: -6px; right: ${rightOffset}px; width: 26px; height: 26px; font-weight: bold; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; z-index: 100; cursor: grab; user-select: none; ${customStyle}" title="Total ${pKey === 'player1' ? 'J1' : 'J2'}: ${g.count}">
                                         ${g.count}
                                     </div>
                                 `);

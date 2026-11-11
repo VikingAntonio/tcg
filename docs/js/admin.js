@@ -2982,11 +2982,30 @@ function renderAccessoriesGrid(accessories) {
             const isLocked = !canUse;
             const price = Math.max(5, Number(acc.price_mxn) || 25);
 
+            const faces = getAccessoryFaces(acc.image_url);
             const displayUrl = getAccessoryDisplayUrl(acc.image_url);
-            const mediaHtml = `<img src="${displayUrl}" alt="${escapeHtml(acc.name)}" onerror="this.src='https://via.placeholder.com/150?text=Error'">`;
+            const isMulti = faces.length > 1;
+
+            let mediaHtml = '';
+            if (isMulti) {
+                mediaHtml = `
+                    <div class="acc-multiface-slot" style="position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+                        <img src="${faces[0].url}" alt="${escapeHtml(acc.name)}" class="acc-slot-active-img" style="width: 100%; height: 100%; object-fit: contain;">
+                        <div class="acc-slot-nav" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; padding: 2px; pointer-events: none; z-index: 5;">
+                            <button type="button" class="btn-acc-slot-prev" style="pointer-events: auto; background: rgba(0,0,0,0.65); border: 1px solid rgba(0,210,255,0.4); color: #fff; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; cursor: pointer;"><i class="fas fa-chevron-left"></i></button>
+                            <button type="button" class="btn-acc-slot-next" style="pointer-events: auto; background: rgba(0,0,0,0.65); border: 1px solid rgba(0,210,255,0.4); color: #fff; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; cursor: pointer;"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                        <div style="position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); border: 1px solid rgba(0,210,255,0.3); border-radius: 12px; padding: 1px 6px; font-size: 0.6rem; color: #00d2ff; font-weight: 700; pointer-events: none; z-index: 5;">
+                            <span class="acc-slot-label">${faces[0].label} (1/${faces.length})</span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                mediaHtml = `<img src="${displayUrl}" alt="${escapeHtml(acc.name)}" onerror="this.src='https://via.placeholder.com/150?text=Error'">`;
+            }
 
             const $item = $(`
-                <div class="accessory-item type-${key} ${isSelected ? 'selected' : ''} ${isLocked ? 'is-locked' : ''}" data-value="${acc.image_url}" data-id="${acc.id}" data-locked="${isLocked ? '1' : '0'}" title="${escapeHtml(acc.name)}">
+                <div class="accessory-item type-${key} ${isSelected ? 'selected' : ''} ${isLocked ? 'is-locked' : ''}" data-value="${escapeHtml(typeof acc.image_url === 'object' ? JSON.stringify(acc.image_url) : acc.image_url)}" data-id="${acc.id}" data-locked="${isLocked ? '1' : '0'}" title="${escapeHtml(acc.name)}">
                     ${mediaHtml}
                     ${isLocked ? `
                         <div class="accessory-lock-overlay">
@@ -2994,16 +3013,37 @@ function renderAccessoriesGrid(accessories) {
                             <span>$${price}</span>
                         </div>
                     ` : ''}
-                    <div class="accessory-zoom-btn" data-url="${acc.image_url}"><i class="fas fa-search"></i></div>
+                    <div class="accessory-zoom-btn" data-url="${escapeHtml(typeof acc.image_url === 'object' ? JSON.stringify(acc.image_url) : acc.image_url)}"><i class="fas fa-search"></i></div>
                 </div>
             `);
+
+            if (isMulti) {
+                let currentIdx = 0;
+                const $activeImg = $item.find('.acc-slot-active-img');
+                const $activeLabel = $item.find('.acc-slot-label');
+
+                $item.find('.btn-acc-slot-prev').on('click', function(e) {
+                    e.stopPropagation();
+                    currentIdx = (currentIdx - 1 + faces.length) % faces.length;
+                    $activeImg.attr('src', faces[currentIdx].url);
+                    $activeLabel.text(`${faces[currentIdx].label} (${currentIdx + 1}/${faces.length})`);
+                });
+
+                $item.find('.btn-acc-slot-next').on('click', function(e) {
+                    e.stopPropagation();
+                    currentIdx = (currentIdx + 1) % faces.length;
+                    $activeImg.attr('src', faces[currentIdx].url);
+                    $activeLabel.text(`${faces[currentIdx].label} (${currentIdx + 1}/${faces.length})`);
+                });
+            }
 
             // Zoom handler
             $item.find('.accessory-zoom-btn').on('click', function(e) {
                 e.stopPropagation();
+                const activeZoomImg = $item.find('.acc-slot-active-img').attr('src') || getAccessoryDisplayUrl(acc.image_url);
                 Swal.fire({
                     title: acc.name,
-                    imageUrl: getAccessoryDisplayUrl(acc.image_url),
+                    imageUrl: activeZoomImg,
                     imageAlt: acc.name,
                     showConfirmButton: false,
                     showCloseButton: true,
