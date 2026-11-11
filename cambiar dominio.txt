@@ -1,0 +1,240 @@
+================================================================================
+GUÍA COMPLETA Y LISTA DE MODIFICACIONES PARA CAMBIO DE DOMINIO
+(Migración de vikingtcg.xyz a un NUEVO DOMINIO a futuro)
+================================================================================
+
+Este documento detalla todas las acciones, cambios en archivos, configuraciones
+en Supabase, pasarelas de pago y proveedores que deberán realizarse en caso de
+adquirir y utilizar un nuevo dominio en lugar de vikingtcg.xyz.
+
+--------------------------------------------------------------------------------
+1. CONFIGURACIÓN EN SUPABASE DASHBOARD
+--------------------------------------------------------------------------------
+* Authentication -> URL Configuration:
+  - Cambiar "Site URL": Modificar https://vikingtcg.xyz por https://tunuevodominio.com
+  - Cambiar "Redirect URLs":
+    * Agregar https://tunuevodominio.com/**
+    * Agregar https://tunuevodominio.com/reset-password.html
+    * Agregar https://tunuevodominio.com/admin.html
+    * Agregar https://tunuevodominio.com/session-bridge.html
+    * Agregar https://tunuevodominio.com/widgets.html
+    (Nota: Si mantienes activo el dominio anterior durante la transición, deja ambos
+    en las Redirect URLs permitidas para no romper sesiones viejas).
+
+* Authentication -> Email Templates:
+  - Verificar en plantillas de Confirm Signup, Magic Link y Reset Password si hay
+    enlaces absolutos o nombres que mencionen vikingtcg.xyz.
+
+* Base de Datos Supabase (Tablas con datos registrados):
+  - Tabla `widget_domains`:
+    Si los clientes o tú mismo tenían autorizado el dominio vikingtcg.xyz para
+    embebidos de widgets, registrar o actualizar al nuevo dominio.
+  - Tabla `usuarios`:
+    * Verificar columnas `store_logo` o `banner_url` si algún usuario tiene guardada
+      la imagen por defecto 'https://vikingtcg.xyz/favi.png'. De ser necesario,
+      ejecutar script SQL:
+      UPDATE usuarios SET store_logo = REPLACE(store_logo, 'vikingtcg.xyz', 'tunuevodominio.com') WHERE store_logo LIKE '%vikingtcg.xyz%';
+  - Tabla `preorders` y `sealed_products`:
+    * Verificar si en descripciones o imágenes hay enlaces absolutos a vikingtcg.xyz.
+  - Supabase Auth Users (`auth.users`):
+    * OJO con usuarios creados por nombre de usuario ficticio:
+      En `docs/js/binders.js` se hace login con `${user}@vikingtcg.xyz`.
+      Si se cambia ese sufijo a `@tunuevodominio.com`, los usuarios ya registrados
+      en auth.users con `@vikingtcg.xyz` requerirán una migración en `auth.users`
+      o mantener la compatibilidad en el código para permitir login con ambos dominios.
+
+--------------------------------------------------------------------------------
+2. SUPABASE EDGE FUNCTIONS
+--------------------------------------------------------------------------------
+* `supabase/functions/create-checkout-session/index.ts`:
+  - Línea 124:
+    Cambiar la URL de retorno por defecto en Stripe Checkout:
+    const redirectOrigin = reqBody.return_url || "https://tunuevodominio.com/widgets.html";
+    (Actualmente tiene: "https://vikingtcg.xyz/widgets.html").
+
+* `supabase/functions/ProductoSellado/index.ts`, `spirit-chat/index.ts`, `tracking/index.ts`:
+  - Las cabeceras CORS usan wildcard `Access-Control-Allow-Origin: *`, por lo que
+    seguirán funcionando sin problemas, pero si se llega a restringir CORS a futuro,
+    deberá agregarse https://tunuevodominio.com.
+
+--------------------------------------------------------------------------------
+3. HOSTING, DNS Y GITHUB PAGES
+--------------------------------------------------------------------------------
+* Archivo `docs/CNAME`:
+  - Reemplazar el texto 'vikingtcg.xyz' por 'tunuevodominio.com'.
+* Proveedor de Dominio (DNS):
+  - Configurar los registros DNS (A Records / CNAME) apuntando a GitHub Pages
+    (185.199.108.153, 185.199.109.153, 185.199.110.153, 185.199.111.153 o CNAME a tu usuario.github.io).
+* Repositorio de GitHub:
+  - Settings -> Pages -> Custom domain: Ingresar tunuevodominio.com y marcar "Enforce HTTPS".
+
+--------------------------------------------------------------------------------
+4. ARCHIVOS DEL FRONTEND: WIDGETS Y CROSS-ORIGIN SESSION
+--------------------------------------------------------------------------------
+* `docs/js/viking-widget.js`:
+  Este archivo es el componente de widgets incrustables (<vikingdev-chatbot>, <vikingdev-binders>, etc.).
+  Tiene URLs absolutas al dominio padre:
+  - Línea 1206:
+    const baseUrl = 'https://tunuevodominio.com/public.html';
+  - Línea 1257:
+    <a href="https://tunuevodominio.com" target="_blank" ...>
+  - Líneas 1452 y 2751:
+    const popup = window.open('https://tunuevodominio.com/session-bridge.html', ...);
+  - Líneas 1454 y 2753:
+    window.open('https://tunuevodominio.com/index.html', '_blank');
+  - Líneas 1576 y 2875 (Validación del dominio principal):
+    if (!detectedUserId && window.location.hostname !== 'tunuevodominio.com')
+  - Líneas 1608 y 2907 (Iframe para session bridge):
+    iframe.src = 'https://tunuevodominio.com/session-bridge.html';
+  - Línea 2433:
+    window.open('https://tunuevodominio.com/perfil.html', '_blank');
+
+* `docs/session-bridge.html`:
+  - Línea 47: Logo/Favicon:
+    Cambiar src="https://vikingtcg.xyz/favi.png" por src="https://tunuevodominio.com/favi.png" o "./favi.png".
+  - Línea 295:
+    Revisar fallback de autenticación `${emailOrUser}@vikingtcg.com` o el dominio correspondiente.
+
+* `docs/js/vikingdevUI.js`:
+  - Línea 38: const baseUrl = 'https://tunuevodominio.com/public.html';
+  - Línea 96: <a href="https://tunuevodominio.com" ...>
+
+--------------------------------------------------------------------------------
+5. ARCHIVOS DEL FRONTEND: CÓDIGOS EMBEBIDOS Y PANELES
+--------------------------------------------------------------------------------
+* `docs/widgets.html`:
+  - Líneas 491-494: En la generación de snippets copiables para los clientes:
+    <script src="https://tunuevodominio.com/js/viking-widget.js" defer></script>
+    (Actualmente genera: https://vikingtcg.xyz/js/viking-widget.js).
+    Nota: Todos los clientes externos que hayan incrustado el widget en sus sitios
+    deberán actualizar el tag <script> a la nueva URL para seguir recibiendo el JS.
+
+* `docs/admin.html`:
+  - Línea 744: El botón tile 'Home / Inicio':
+    <a href="https://tunuevodominio.com/" class="tile tile-blue tile-large" id="btn-home">
+
+* `docs/js/landing.js`:
+  - Línea 128: Redirección forzada tras login:
+    window.location.href = 'https://tunuevodominio.com/admin.html';
+* `docs/js/landing2.js`:
+  - Línea 134: Redirección forzada tras login:
+    window.location.href = 'https://tunuevodominio.com/admin.html';
+
+* `docs/js/binders.js`:
+  - Línea 636: En `handleLogin()`:
+    signInWithPassword({ email: `${user}@vikingtcg.xyz`, password: pass });
+    Cambiar o dar compatibilidad si se registran usuarios con el nuevo dominio.
+
+--------------------------------------------------------------------------------
+6. ARCHIVOS DEL FRONTEND: FAVICON E IMÁGENES ABSOLUTAS
+--------------------------------------------------------------------------------
+En múltiples archivos HTML y JS, el favicon o la imagen por defecto está referenciada
+de forma absoluta como `https://vikingtcg.xyz/favi.png`.
+(Recomendación técnica al migrar: cambiar a ruta relativa `favi.png` o `https://tunuevodominio.com/favi.png`):
+
+* Archivos HTML con `<link rel="icon" ... href="https://vikingtcg.xyz/favi.png">`:
+  - docs/admin.html
+  - docs/adminClaim.html
+  - docs/accesorios.html
+  - docs/binders.html
+  - docs/carrito.html
+  - docs/claim.html
+  - docs/clientes.html
+  - docs/configDuel.html
+  - docs/configDuelMobile.html
+  - docs/configMagic.html
+  - docs/custom.html
+  - docs/deckbuilding.html
+  - docs/dominios.html
+  - docs/duel.html
+  - docs/duelmobile.html
+  - docs/eventos.html
+  - docs/expanciones.html
+  - docs/index.html
+  - docs/inversiones.html
+  - docs/learn.html
+  - docs/magic.html
+  - docs/magicMobile.html
+  - docs/packages.html
+  - docs/perfil.html
+  - docs/play.html
+  - docs/preventas.html
+  - docs/productoSellado.html
+  - docs/public.html
+  - docs/reset-password.html
+  - docs/scanner.html
+  - docs/subastas.html
+  - docs/tracking.html
+  - docs/users.html
+  - docs/wanted.html
+  - docs/widgets.html
+
+* Referencias a 'https://vikingtcg.xyz/favi.png' dentro de Scripts y elementos img:
+  - docs/public.html (Línea 46 - #public-store-logo)
+  - docs/dominios.html (Línea 108 - #user-store-logo)
+  - docs/learn.html (Línea 692 - #user-store-logo)
+  - docs/expanciones.html (Línea 586 - fallback #dropdown-user-logo)
+  - docs/js/admin.js (Línea 4112 - fallback poster spirit)
+  - docs/js/app.js (Línea 5501 - fallback imagen modal público)
+  - docs/js/duel.js (Líneas 426 y 447 - imagen fallback)
+  - docs/js/duelmobile.js (Líneas 851 y 872 - imagen fallback)
+  - docs/packages.html (Líneas 3118, 3139, 3273, 3332, 3338, 3414, 3479, 3714, 3907)
+
+--------------------------------------------------------------------------------
+7. SERVICE WORKER Y CACHÉ
+--------------------------------------------------------------------------------
+* `docs/sw.js`:
+  - Incrementar el identificador `STATIC_CACHE` (ej. de 'viking-cache-v...' a 'viking-cache-v..._newdomain')
+    para que todos los navegadores limpien la caché anterior e instalen los nuevos archivos.
+
+--------------------------------------------------------------------------------
+8. LINKS PÚBLICOS, QR CODES Y REDES SOCIALES
+--------------------------------------------------------------------------------
+* Links Públicos de Tiendas y Binders:
+  - En el código actual, la mayoría de los módulos generan los links públicos de forma
+    dinámica utilizando `window.location.origin` (por ejemplo:
+    `const publicUrl = `${window.location.origin}/${identifier}`;` en admin.js y landing.js).
+    Esto significa que AUTOMÁTICAMENTE adoptarán el nuevo dominio en cuanto los usuarios
+    entren desde tunuevodominio.com.
+  - Sin embargo, los links que los clientes ya hayan compartido físicamente o en redes
+    (en biografías de Instagram, WhatsApp, tarjetas de presentación impresas con QR):
+    * Seguirán apuntando a vikingtcg.xyz/su_tienda.
+    * ACCIÓN REQUERIDA: Es fundamental mantener el dominio viejo vikingtcg.xyz activo
+      con una redirección 301 (permanente) a nivel DNS o Cloudflare hacia tunuevodominio.com/$1
+      para que ningún cliente pierda ventas ni escaneos de códigos QR previos.
+
+* Enrutador SPA 404 (`docs/404.html`):
+  - El script ya utiliza `l.hostname` dinámico para redirigir paths cortos
+    (ej: tunuevodominio.com/mitienda -> tunuevodominio.com/public.html?id=mitienda).
+    Funcionará de manera transparente en el nuevo dominio.
+
+--------------------------------------------------------------------------------
+9. PASARELA DE PAGOS (STRIPE)
+--------------------------------------------------------------------------------
+* Dashboard de Stripe (Desarrollo y Producción):
+  - Webhooks:
+    El webhook de Stripe apunta a la Edge Function de Supabase
+    (https://<project-ref>.supabase.co/functions/v1/stripe-webhook), por lo que
+    las notificaciones servidor-servidor NO se rompen por el cambio de dominio.
+  - Configuración de Portal de Clientes y Checkout:
+    Actualizar en Stripe -> Settings -> Customer Portal y Branding el dominio
+    autorizado y enlaces a términos / privacidad / soporte a tunuevodominio.com.
+
+--------------------------------------------------------------------------------
+10. RESUMEN DE PASOS EN ORDEN CRONOLÓGICO PARA EL DÍA DE LA MIGRACIÓN
+--------------------------------------------------------------------------------
+1. Comprar y configurar DNS del nuevo dominio apuntando a GitHub Pages.
+2. Modificar `docs/CNAME` con el nuevo dominio.
+3. Actualizar Site URL y Redirect URLs en Supabase Auth.
+4. Actualizar `supabase/functions/create-checkout-session/index.ts` con el nuevo dominio y desplegar la Edge Function.
+5. Reemplazar 'vikingtcg.xyz' por 'tunuevodominio.com' en:
+   - `docs/js/viking-widget.js`
+   - `docs/widgets.html`
+   - `docs/js/landing.js` y `docs/js/landing2.js`
+   - `docs/admin.html`
+   - `docs/session-bridge.html` y `docs/js/vikingdevUI.js`
+   - Los tags `<link rel="icon">` en todos los archivos HTML (o pasarlos a './favi.png').
+6. Incrementar la versión del Service Worker en `docs/sw.js`.
+7. En el registrador del dominio anterior (vikingtcg.xyz), configurar redirección 301
+   hacia el nuevo dominio para preservar tráfico y códigos QR existentes.
+================================================================================
