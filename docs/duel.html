@@ -923,6 +923,16 @@
             color: var(--primary-color);
             box-shadow: 0 0 12px rgba(0, 210, 255, 0.4);
         }
+        .ygo-counter-source.has-custom-img {
+            background: transparent !important;
+            border: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.9));
+        }
+        .ygo-counter-source.has-custom-img .pulse-ring {
+            display: none !important;
+        }
         .pulse-ring {
             position: absolute;
             width: 100%;
@@ -1458,7 +1468,7 @@
                         <!-- Counters/Contadores Section -->
                         <div class="accessories-section" id="accessories-counters-section-unified">
                             <h3 class="counter-section-title" style="font-size: 0.9rem; margin-bottom: 4px; color: #00d2ff;">Contadores</h3>
-                            <div class="ygo-only-tool counter-source-wrapper" style="display: flex; justify-content: center;">
+                            <div class="ygo-only-tool counter-source-wrapper" id="ygo-counters-container-pc" style="display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;">
                                 <div class="counter-source ygo-counter-source" draggable="true">
                                     +1
                                     <div class="pulse-ring"></div>
@@ -3826,19 +3836,29 @@
 
             // Actualizar diseño del contador en el panel de herramientas PC (100% 2D)
             window.updatePCCounterPanelDesign = function(counterVal) {
-                if (!counterVal) return;
-                const $src = $(".ygo-counter-source");
-                if ($src.length) {
-                    $src.css({
-                        "background-image": `url('${counterVal}')`,
-                        "background-size": "contain",
-                        "background-repeat": "no-repeat",
-                        "background-position": "center",
-                        "color": "#fff",
-                        "text-shadow": "0 0 4px #000, 0 0 6px #000, 1px 1px 2px #000",
-                        "border": "none"
-                    });
+                const list = window.normalizeDeckCounters ? window.normalizeDeckCounters(counterVal) : (counterVal ? [counterVal] : []);
+                const $container = $("#ygo-counters-container-pc");
+                if (!$container.length) return;
+
+                if (list.length === 0) {
+                    $container.html(`
+                        <div class="counter-source ygo-counter-source" draggable="true">
+                            +1
+                            <div class="pulse-ring"></div>
+                        </div>
+                    `);
+                    return;
                 }
+
+                let html = '';
+                list.forEach((url, idx) => {
+                    html += `
+                        <div class="counter-source ygo-counter-source has-custom-img" draggable="true" data-design="${escapeHtml(url)}" style="background-image: url('${url}'); background-size: contain; background-repeat: no-repeat; background-position: center; border: none !important; border-radius: 0 !important; box-shadow: none !important; color: #fff; text-shadow: 0 0 4px #000, 0 0 6px #000, 1px 1px 2px #000; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.9));" title="Contador ${idx + 1}">
+                            +1
+                        </div>
+                    `;
+                });
+                $container.html(html);
             };
 
             window.renderAccessoryResultsInPanel = function() {
@@ -4441,7 +4461,12 @@
                 } else {
                     if ($(this).hasClass("ygo-counter-source")) {
                         const pKey = (typeof currentRole !== 'undefined' && currentRole === 'player2') ? 'player2' : 'player1';
-                        const customImg = (state.deckCounters && state.deckCounters[pKey]) ? state.deckCounters[pKey] : null;
+                        let customImg = $(this).attr("data-design") || null;
+                        if (!customImg) {
+                            const raw = (state.deckCounters && state.deckCounters[pKey]) ? state.deckCounters[pKey] : null;
+                            const parsed = window.normalizeDeckCounters ? window.normalizeDeckCounters(raw) : (raw ? [raw] : []);
+                            customImg = parsed.length > 0 ? parsed[0] : null;
+                        }
                         activeCounterDragVal = { type: "YGO", player: pKey, design: customImg };
                     } else {
                         activeCounterDragVal = parseInt($(this).data("val"));
@@ -4554,7 +4579,12 @@
                     const isYGO = activeTouchDragSource.hasClass("ygo-counter-source");
                     if (isYGO) {
                         const pKey = (typeof currentRole !== 'undefined' && currentRole === 'player2') ? 'player2' : 'player1';
-                        const customImg = (state.deckCounters && state.deckCounters[pKey]) ? state.deckCounters[pKey] : null;
+                        let customImg = activeTouchDragSource.attr("data-design") || null;
+                        if (!customImg) {
+                            const raw = (state.deckCounters && state.deckCounters[pKey]) ? state.deckCounters[pKey] : null;
+                            const parsed = window.normalizeDeckCounters ? window.normalizeDeckCounters(raw) : (raw ? [raw] : []);
+                            customImg = parsed.length > 0 ? parsed[0] : null;
+                        }
                         activeCounterDragVal = { type: "YGO", player: pKey, design: customImg };
                     } else {
                         activeCounterDragVal = parseInt(activeTouchDragSource.data("val"));
@@ -4750,7 +4780,7 @@
                             groupKeys.forEach((pKey, gIdx) => {
                                 const g = groups[pKey];
                                 const customStyle = g.design
-                                    ? `background-image: url('${g.design}'); background-size: contain; background-repeat: no-repeat; background-position: center; border-radius: 50%;`
+                                    ? `background-image: url('${g.design}'); background-size: contain; background-repeat: no-repeat; background-position: center; border-radius: 0;`
                                     : (pKey === 'player1' ? 'background: linear-gradient(135deg, #00d2ff, #0055ff);' : 'background: linear-gradient(135deg, #ff1b6b, #9333ea);');
                                 const hasCustomClass = g.design ? 'has-custom-img' : '';
                                 const rightOffset = -12 - (gIdx * 32);
