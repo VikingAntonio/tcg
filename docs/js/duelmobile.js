@@ -786,10 +786,13 @@ async function fetchDeckCards(deckId, playerKey) {
                     });
                 }
 
-                // Update coin display in mobile tools panel if player matches currentRole
+                // Update coin, dice and counter display in mobile tools panel if player matches currentRole
                 const myRole = (typeof currentRole !== 'undefined' && currentRole === 'player2') ? 'player2' : 'player1';
                 if (playerKey === myRole && state.deckCoins[playerKey]) {
                     updateMobileCoinPanelDesign(state.deckCoins[playerKey]);
+                }
+                if (playerKey === myRole && state.deckDice[playerKey] && typeof updateMobileDicePanelDesign === 'function') {
+                    updateMobileDicePanelDesign(state.deckDice[playerKey]);
                 }
                 if (playerKey === myRole && state.deckCounters[playerKey]) {
                     updateMobileCounterPanelDesign(state.deckCounters[playerKey]);
@@ -5521,41 +5524,57 @@ window.setupPokemonPrizes = setupPokemonPrizes;
             window.duelLastCoinResult = window.duelLastCoinResult || null;
             window.duelLastDiceResult = window.duelLastDiceResult || null;
 
-            // Actualizar diseño de la moneda en el panel de herramientas móviles
+            // Actualizar diseño de la moneda en el panel de herramientas móviles (100% 2D)
             window.updateMobileCoinPanelDesign = function(coinVal) {
                 if (!coinVal) return;
-                const is3D = coinVal.toLowerCase().includes('.gltf') || coinVal.toLowerCase().includes('.glb');
                 const $coinBtn = $(".coin-action-btn");
                 if (!$coinBtn.length) return;
 
-                if (is3D) {
-                    $coinBtn.html(`
-                        <model-viewer src="${coinVal}" auto-rotate camera-controls style="width: 100%; height: 100%; border-radius: 50%; pointer-events: none;"></model-viewer>
-                    `);
-                } else {
-                    let headsImg = coinVal;
-                    let tailsImg = coinVal;
-                    if (coinVal.startsWith('{') && coinVal.includes('}')) {
-                        try {
-                            const parsed = JSON.parse(coinVal);
-                            headsImg = parsed.heads || parsed.cara || headsImg;
-                            tailsImg = parsed.tails || parsed.cruz || tailsImg;
-                        } catch (_) {}
-                    }
-                    $coinBtn.html(`
-                        <div class="coin-inner" style="width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s;">
-                            <div class="coin-front" style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 50%; overflow: hidden; background: #000; border: 2px solid #ffd700;">
-                                <img src="${headsImg}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
-                            </div>
-                            <div class="coin-back" style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; transform: rotateY(180deg); border-radius: 50%; overflow: hidden; background: #000; border: 2px solid #ffd700;">
-                                <img src="${tailsImg}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
-                            </div>
+                let headsImg = coinVal;
+                let tailsImg = coinVal;
+                if (typeof coinVal === 'string' && coinVal.startsWith('{') && coinVal.includes('}')) {
+                    try {
+                        const parsed = JSON.parse(coinVal);
+                        headsImg = parsed.heads || parsed.cara || headsImg;
+                        tailsImg = parsed.tails || parsed.cruz || tailsImg;
+                    } catch (_) {}
+                }
+                $coinBtn.html(`
+                    <div class="coin-inner" style="width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s;">
+                        <div class="coin-front" style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 50%; overflow: hidden; background: #000; border: 2px solid #ffd700;">
+                            <img src="${headsImg}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;" onerror="this.src='https://via.placeholder.com/50?text=Coin'">
                         </div>
-                    `);
+                        <div class="coin-back" style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; transform: rotateY(180deg); border-radius: 50%; overflow: hidden; background: #000; border: 2px solid #ffd700;">
+                            <img src="${tailsImg}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;" onerror="this.src='https://via.placeholder.com/50?text=Coin'">
+                        </div>
+                    </div>
+                `);
+            };
+
+            // Actualizar diseño del dado en el panel de herramientas móviles (100% 2D)
+            window.updateMobileDicePanelDesign = function(diceVal) {
+                if (!diceVal) return;
+                const $diceBtn = $(".dice-action-btn");
+                if (!$diceBtn.length) return;
+
+                let diceFaceImg = diceVal;
+                if (typeof diceVal === 'string' && diceVal.startsWith('{') && diceVal.includes('}')) {
+                    try {
+                        const parsed = JSON.parse(diceVal);
+                        const curRes = window.duelLastDiceResult || '1';
+                        diceFaceImg = parsed[curRes] || parsed['1'] || Object.values(parsed)[0] || diceFaceImg;
+                    } catch (_) {}
+                }
+
+                if (diceFaceImg && (diceFaceImg.startsWith('http') || diceFaceImg.startsWith('data:') || diceFaceImg.startsWith('img/'))) {
+                    $diceBtn.html(`<img src="${diceFaceImg}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px; display: block;" onerror="this.style.display='none'">`);
+                    $diceBtn.css({ "padding": "0", "overflow": "hidden" });
+                } else {
+                    $diceBtn.text(window.duelLastDiceResult || "1");
                 }
             };
 
-            // Actualizar diseño del contador en el panel de herramientas móviles
+            // Actualizar diseño del contador en el panel de herramientas móviles (100% 2D)
             window.updateMobileCounterPanelDesign = function(counterVal) {
                 if (!counterVal) return;
                 const $src = $(".ygo-counter-source");
@@ -5573,8 +5592,15 @@ window.setupPokemonPrizes = setupPokemonPrizes;
             };
 
             window.renderAccessoryResultsInPanel = function() {
+                const turnPlayer = (typeof currentRole !== 'undefined' && currentRole === 'player2') ? 'player2' : 'player1';
+                const customDice = (state.deckDice && state.deckDice[turnPlayer]) ? state.deckDice[turnPlayer] : null;
+
                 if (window.duelLastDiceResult !== null) {
-                    $(".dice-action-btn").text(window.duelLastDiceResult);
+                    if (customDice) {
+                        window.updateMobileDicePanelDesign(customDice);
+                    } else {
+                        $(".dice-action-btn").text(window.duelLastDiceResult);
+                    }
                 }
                 if (window.duelLastCoinResult !== null) {
                     if (window.duelLastCoinResult === "Cara") {
@@ -5585,11 +5611,10 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                 }
             };
 
-            // Ejecutor cinemático de animación de dado móvil
+            // Ejecutor cinemático de animación de dado móvil (100% 2D con imágenes)
             window.executeCinematicDiceRoll = function(turnPlayer, rollResult, shouldBroadcast = true) {
                 const playerSuffix = (turnPlayer === "player1" ? "P1" : "P2");
                 const customDice = (state.deckDice && state.deckDice[turnPlayer]) ? state.deckDice[turnPlayer] : null;
-                const is3D = customDice && (customDice.toLowerCase().includes('.gltf') || customDice.toLowerCase().includes('.glb'));
 
                 if (shouldBroadcast) {
                     sendGameAction(`[${playerSuffix}] Está lanzando un dado...`);
@@ -5620,34 +5645,10 @@ window.setupPokemonPrizes = setupPokemonPrizes;
 
                 const rollDuration = 1800; // Roll duration before stopping
 
-                if (is3D) {
-                    $stage.html(`
-                        <model-viewer id="toss-dice-3d" src="${customDice}" auto-rotate camera-controls style="width: 100%; height: 100%;" shadow-intensity="1"></model-viewer>
-                    `);
-                    let rot = 0;
-                    const rotInterval = setInterval(() => {
-                        rot += 35;
-                        const viewer = document.getElementById("toss-dice-3d");
-                        if (viewer) viewer.setAttribute("camera-orbit", `${rot}deg 75deg 105%`);
-                    }, 50);
-
-                    setTimeout(() => {
-                        clearInterval(rotInterval);
-                        const viewer = document.getElementById("toss-dice-3d");
-                        const diceAngles = {
-                            1: "0deg 90deg 105%",
-                            2: "90deg 90deg 105%",
-                            3: "180deg 90deg 105%",
-                            4: "270deg 90deg 105%",
-                            5: "0deg 0deg 105%",
-                            6: "0deg 180deg 105%"
-                        };
-                        if (viewer) viewer.setAttribute("camera-orbit", diceAngles[rollResult] || "0deg 90deg 105%");
-                    }, rollDuration);
-                } else if (customDice) {
+                if (customDice) {
                     let diceFaceImg = customDice;
                     let parsedDiceFaces = null;
-                    if (customDice.startsWith('{') && customDice.includes('}')) {
+                    if (typeof customDice === 'string' && customDice.startsWith('{') && customDice.includes('}')) {
                         try {
                             parsedDiceFaces = JSON.parse(customDice);
                             diceFaceImg = parsedDiceFaces[rollResult] || parsedDiceFaces['1'] || diceFaceImg;
@@ -5714,11 +5715,10 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                 }, rollDuration + 2050);
             };
 
-            // Ejecutor cinemático de animación de moneda móvil
+            // Ejecutor cinemático de animación de moneda móvil (100% 2D con imágenes)
             window.executeCinematicCoinFlip = function(turnPlayer, coinResult, shouldBroadcast = true) {
                 const playerSuffix = (turnPlayer === "player1" ? "P1" : "P2");
                 const customCoin = (state.deckCoins && state.deckCoins[turnPlayer]) ? state.deckCoins[turnPlayer] : null;
-                const is3D = customCoin && (customCoin.toLowerCase().includes('.gltf') || customCoin.toLowerCase().includes('.glb'));
 
                 if (shouldBroadcast) {
                     sendGameAction(`[${playerSuffix}] Está lanzando una moneda...`);
@@ -5749,27 +5749,10 @@ window.setupPokemonPrizes = setupPokemonPrizes;
 
                 const flipDuration = 1800; // Flip duration before stopping
 
-                if (is3D) {
-                    $stage.html(`
-                        <model-viewer id="toss-coin-3d" src="${customCoin}" auto-rotate camera-controls style="width: 100%; height: 100%;" shadow-intensity="1"></model-viewer>
-                    `);
-                    let rotY = 0;
-                    const rotInterval = setInterval(() => {
-                        rotY += 45;
-                        const viewer = document.getElementById("toss-coin-3d");
-                        if (viewer) viewer.setAttribute("camera-orbit", `${rotY}deg 80deg 105%`);
-                    }, 50);
-
-                    setTimeout(() => {
-                        clearInterval(rotInterval);
-                        const finalOrbit = (coinResult === "Cara") ? "0deg 90deg 105%" : "180deg 90deg 105%";
-                        const viewer = document.getElementById("toss-coin-3d");
-                        if (viewer) viewer.setAttribute("camera-orbit", finalOrbit);
-                    }, flipDuration);
-                } else if (customCoin) {
+                if (customCoin) {
                     let headsImg = customCoin;
                     let tailsImg = customCoin;
-                    if (customCoin.startsWith('{') && customCoin.includes('}')) {
+                    if (typeof customCoin === 'string' && customCoin.startsWith('{') && customCoin.includes('}')) {
                         try {
                             const parsed = JSON.parse(customCoin);
                             headsImg = parsed.heads || parsed.cara || headsImg;

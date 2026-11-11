@@ -870,14 +870,7 @@
                                 } catch(e) {}
                             }
 
-                            if (item.image_url && (item.image_url.toLowerCase().includes(".gltf") || item.image_url.toLowerCase().includes(".glb"))) {
-                                return `
-                                    <div class="acc-card-image-box ${category === 'coin' || category === 'dice' ? 'type-coin' : ''}" data-url="${item.image_url}" title="Ver en grande">
-                                        <model-viewer src="${item.image_url}" auto-rotate camera-controls style="width: 100%; height: 100%;" shadow-intensity="1"></model-viewer>
-                                        <div class="acc-card-zoom-hint"><i class="fas fa-search-plus"></i></div>
-                                    </div>
-                                `;
-                            } else if (isMulti && faces.length > 0) {
+                            if (isMulti && faces.length > 0) {
                                 return `
                                     <div class="acc-card-image-box ${category === 'coin' || category === 'dice' ? 'type-coin' : ''} acc-slider-container" data-faces='${JSON.stringify(faces).replace(/'/g, "&apos;")}' title="Ver en grande" style="position: relative;">
                                         <img src="${faces[0].url}" alt="${escapeHtml(item.name || 'Accesorio')}" class="acc-slider-current-img" style="width: 100%; height: 100%; object-fit: contain;">
@@ -952,29 +945,17 @@
                 $card.find('.acc-card-image-box').on('click', function(e) {
                     if ($(e.target).closest('button').length > 0) return;
                     e.stopPropagation();
-                    const is3D = item.image_url && (item.image_url.toLowerCase().includes('.gltf') || item.image_url.toLowerCase().includes('.glb'));
                     const curImgSrc = $(this).find('img').attr('src') || item.image_url;
 
-                    if (is3D) {
-                        Swal.fire({
-                            title: item.name,
-                            html: `<div style="width: 100%; height: 350px; display: flex; align-items: center; justify-content: center;"><model-viewer src="${item.image_url}" auto-rotate camera-controls style="width: 100%; height: 100%; background: transparent;"></model-viewer></div>`,
-                            showConfirmButton: false,
-                            showCloseButton: true,
-                            background: '#0a101f',
-                            color: '#fff'
-                        });
-                    } else {
-                        Swal.fire({
-                            title: item.name,
-                            imageUrl: curImgSrc,
-                            imageAlt: item.name,
-                            showConfirmButton: false,
-                            showCloseButton: true,
-                            background: '#0a101f',
-                            color: '#fff'
-                        });
-                    }
+                    Swal.fire({
+                        title: item.name,
+                        imageUrl: curImgSrc,
+                        imageAlt: item.name,
+                        showConfirmButton: false,
+                        showCloseButton: true,
+                        background: '#0a101f',
+                        color: '#fff'
+                    });
                 });
 
                 // Buy click

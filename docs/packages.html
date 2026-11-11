@@ -1030,40 +1030,17 @@
                 <button type="button" class="assistant-tab-btn" data-cat="mats">Playmat</button>
             </div>
 
-            <!-- Dual Drag & Drop Zones for Accessories (2D Images vs 3D GLTF Models) -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px;">
-                <!-- Dropzone 1: Puras Imágenes (Cloudinary) -->
+            <!-- Drag & Drop Zone for Accessories (Only 2D Images) -->
+            <div style="max-width: 600px; margin: 0 auto;">
                 <div class="sticker-dropzone-modern" id="accessory-drag-drop-zone" style="margin: 0; min-height: 140px;">
                     <i class="fas fa-image" style="font-size: 2.2rem; color: #00d2ff; margin-bottom: 6px;"></i>
                     <div style="font-weight: 800; color: #fff; font-size: 1rem;" id="accessory-drag-label">
                         Imágenes 2D (.PNG, .JPG, .WEBP)
                     </div>
                     <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 4px;">
-                        Subida automática a Cloudinary optimizada para la categoría activa.
+                        Subida automática a Cloudinary para accesorios (Dados 6 imágenes, Monedas 2 imágenes, Contadores 1:1).
                     </div>
                     <input type="file" id="input-accessory-file" accept="image/*" multiple style="display: none;">
-                </div>
-
-                <!-- Dropzone 2: Modelos 3D (.GLTF, .GLB, .BIN) (Supabase Storage 'spirits' bucket) -->
-                <div class="sticker-dropzone-modern" id="accessory-3d-dropzone" style="margin: 0; min-height: 140px; border-color: rgba(192, 132, 252, 0.4);">
-                    <i class="fas fa-cube" style="font-size: 2.2rem; color: #c084fc; margin-bottom: 6px;"></i>
-                    <div style="font-weight: 800; color: #fff; font-size: 1rem;" id="accessory-3d-label">
-                        Modelos 3D (.GLTF, .GLB, .BIN)
-                    </div>
-                    <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 4px;">
-                        Almacenamiento en Supabase Storage (bucket spirits) con visor 3D interactivo.
-                    </div>
-                    <input type="file" id="input-accessory-3d-file" accept=".gltf,.glb,.bin,model/gltf-binary,model/gltf+json" multiple style="display: none;">
-                </div>
-            </div>
-
-            <!-- 3D Model Viewer Live Test / Inspector for Accessories -->
-            <div id="acc-3d-preview-box" style="display: none; margin-top: 15px; background: rgba(0,0,0,0.4); border: 1.5px solid #c084fc; border-radius: 12px; padding: 12px; position: relative;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <span style="font-size: 0.85rem; font-weight: 700; color: #c084fc;"><i class="fas fa-cube"></i> Visor 3D Interactivo (Model Viewer)</span>
-                    <button type="button" onclick="$('#acc-3d-preview-box').slideUp();" style="background: transparent; border: none; color: #ff4757; cursor: pointer;"><i class="fas fa-times"></i></button>
-                </div>
-                <div id="acc-3d-modelviewer-container" style="width: 100%; height: 260px; border-radius: 8px; overflow: hidden; background: #0b111e;">
                 </div>
             </div>
 
@@ -1481,38 +1458,6 @@
             $stickerFileInput.on('change', async function() {
                 if (this.files && this.files.length > 0) {
                     await handleStickerFilesBatch(this.files);
-                    $(this).val('');
-                }
-            });
-
-            // 3D Models Drag & Drop (Supabase 'spirits' bucket)
-            const $acc3dDropZone = $('#accessory-3d-dropzone');
-            const $acc3dFileInput = $('#input-accessory-3d-file');
-
-            $acc3dDropZone.on('click', function() { $acc3dFileInput.click(); });
-
-            $acc3dDropZone.on('dragover dragenter', function(e) {
-                e.preventDefault(); e.stopPropagation();
-                $(this).addClass('dragover');
-            });
-
-            $acc3dDropZone.on('dragleave drop', function(e) {
-                e.preventDefault(); e.stopPropagation();
-                $(this).removeClass('dragover');
-            });
-
-            $acc3dDropZone.on('drop', async function(e) {
-                e.preventDefault(); e.stopPropagation();
-                $(this).removeClass('dragover');
-                const files = e.originalEvent.dataTransfer.files;
-                if (files && files.length > 0) {
-                    await handleAccessory3DFilesBatch(files);
-                }
-            });
-
-            $acc3dFileInput.on('change', async function() {
-                if (this.files && this.files.length > 0) {
-                    await handleAccessory3DFilesBatch(this.files);
                     $(this).val('');
                 }
             });
@@ -2077,8 +2022,6 @@
                 else if (category === 'token') imgAspectStyle = 'aspect-ratio: 2.5/3.5; border-radius: 8px; object-fit: cover;';
                 else if (category === 'mats') imgAspectStyle = 'aspect-ratio: 16/9;';
 
-                const is3DModel = acc.image_url && (acc.image_url.toLowerCase().includes('.gltf') || acc.image_url.toLowerCase().includes('.glb'));
-
                 let visualHtml = '';
                 let isMultiFace = false;
                 let parsedFaces = [];
@@ -2100,9 +2043,7 @@
                     } catch(e) {}
                 }
 
-                if (is3DModel) {
-                    visualHtml = `<model-viewer src="${acc.image_url}" auto-rotate camera-controls style="${imgAspectStyle} width: 100%; max-height: 160px; background: rgba(0,0,0,0.4); border-radius: 8px;" shadow-intensity="1"></model-viewer>`;
-                } else if (isMultiFace && parsedFaces.length > 0) {
+                if (isMultiFace && parsedFaces.length > 0) {
                     visualHtml = `
                         <div class="acc-multiface-slider" data-idx="0" style="position: relative; width: 100%; display: flex; flex-direction: column; align-items: center;">
                             <img src="${parsedFaces[0].url}" alt="${escapeHtml(acc.name || 'Accesorio')}" class="sticker-visual-img acc-slider-img" style="${imgAspectStyle} max-height: 140px; object-fit: contain;">
@@ -2123,7 +2064,6 @@
                             <span style="background: rgba(0, 210, 255, 0.2); border: 1px solid #00d2ff; color: #00d2ff; font-size: 0.68rem; font-weight: 800; padding: 2px 8px; border-radius: 4px; text-transform: uppercase;">
                                 ${catBadgeText}
                             </span>
-                            ${is3DModel ? '<span style="background: rgba(192, 132, 252, 0.2); border: 1px solid #c084fc; color: #c084fc; font-size: 0.68rem; font-weight: 800; padding: 2px 8px; border-radius: 4px;"><i class="fas fa-cube"></i> 3D</span>' : ''}
                             ${isHidden ? '<span style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #ef4444; font-size: 0.68rem; font-weight: 800; padding: 2px 8px; border-radius: 4px;">OCULTO</span>' : ''}
                         </div>
 
@@ -2552,117 +2492,6 @@
             }
         }
 
-        async function handleAccessory3DFilesBatch(files) {
-            if (!files || files.length === 0) return;
-
-            const fileArray = Array.from(files);
-            // Separate main GLTF/GLB and auxiliary files (.bin, textures .png, .jpg, etc.)
-            let mainGltfFile = null;
-            const extraFiles = [];
-
-            fileArray.forEach(file => {
-                const n = file.name.toLowerCase();
-                if (!mainGltfFile && (n.endsWith('.gltf') || n.endsWith('.glb'))) {
-                    mainGltfFile = file;
-                } else {
-                    extraFiles.push(file);
-                }
-            });
-
-            if (!mainGltfFile) {
-                Swal.fire('Formato no válido', 'Por favor selecciona o arrastra al menos un archivo principal 3D (.gltf o .glb).', 'warning');
-                return;
-            }
-
-            $('#accessory-3d-label').html('<i class="fas fa-spinner fa-spin"></i> Subiendo modelo 3D...');
-            Swal.fire({
-                title: 'Cargando modelo 3D...',
-                html: `Procesando modelo principal <b>${escapeHtml(mainGltfFile.name)}</b> y ${extraFiles.length} archivo(s) complementarios en Supabase (spirits)...`,
-                allowOutsideClick: false,
-                didOpen: () => Swal.showLoading()
-            });
-
-            const targetCat = (activeAccessoryCategory === 'all') ? 'coin' : activeAccessoryCategory;
-
-            try {
-                // 1. Upload into a unique folder in the 'spirits' bucket to preserve relative asset paths (.bin, textures)
-                const folderId = Date.now() + '_' + Math.floor(Math.random() * 1000);
-                const gltfPath = `accessories_models/${folderId}/${mainGltfFile.name}`;
-
-                let modelUrl = '';
-                if (window._supabase && window._supabase.storage) {
-                    const { data: uploadData, error: uploadErr } = await _supabase.storage.from('spirits').upload(gltfPath, mainGltfFile);
-                    if (uploadErr) throw uploadErr;
-                    const { data: pubUrlData } = _supabase.storage.from('spirits').getPublicUrl(gltfPath);
-                    modelUrl = pubUrlData ? pubUrlData.publicUrl : '';
-
-                    // 2. Upload all auxiliary files (.bin, textures, images) into the EXACT SAME folder
-                    for (const extraFile of extraFiles) {
-                        const extraPath = `accessories_models/${folderId}/${extraFile.name}`;
-                        const { error: extraErr } = await _supabase.storage.from('spirits').upload(extraPath, extraFile);
-                        if (extraErr) console.warn("Error subiendo archivo complementario 3D:", extraFile.name, extraErr);
-                    }
-                }
-
-                if (!modelUrl) {
-                    modelUrl = URL.createObjectURL(mainGltfFile);
-                }
-
-                const cleanName = mainGltfFile.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
-                const payload = {
-                    name: cleanName.charAt(0).toUpperCase() + cleanName.slice(1) + ' (3D)',
-                    image_url: modelUrl,
-                    category: targetCat,
-                    sale_status: 'oculto', // Pendiente de revisión hasta Guardar Cambios
-                    price_mxn: 50.00,
-                    stripe_price_id: null,
-                    target_roles: ['starter', 'premium', 'tienda']
-                };
-
-                let savedItem = null;
-                if (window._supabase) {
-                    const { data, error } = await _supabase.from('accessories').insert([payload]).select().single();
-                    if (!error && data) {
-                        savedItem = data;
-                        allAvailableAccessories.unshift(data);
-                    }
-                }
-                if (!savedItem) {
-                    savedItem = { ...payload, id: 'temp_3d_' + Date.now() };
-                    allAvailableAccessories.unshift(savedItem);
-                }
-
-                $('#accessory-3d-label').text('Modelos 3D (.GLTF, .GLB, .BIN)');
-
-                // Show 1 single interactive model viewer preview matching standard preview aspect
-                $('#acc-3d-preview-box').slideDown();
-                let previewAspect = 'aspect-ratio: 1; max-width: 260px; height: 260px; margin: 0 auto;';
-                if (targetCat === 'sleeves') previewAspect = 'aspect-ratio: 2/3; max-width: 200px; height: 260px; margin: 0 auto;';
-                else if (targetCat === 'mats') previewAspect = 'aspect-ratio: 16/9; max-width: 400px; height: 225px; margin: 0 auto;';
-
-                $('#acc-3d-modelviewer-container').html(`
-                    <div style="${previewAspect} border-radius: 8px; overflow: hidden; background: #0b111e; display: flex; align-items: center; justify-content: center;">
-                        <model-viewer src="${modelUrl}" auto-rotate camera-controls style="width:100%; height:100%;" shadow-intensity="1"></model-viewer>
-                    </div>
-                `);
-
-                renderAccessoriesGrid();
-
-                Swal.fire({
-                    icon: 'success',
-                    title: '¡Modelo 3D Guardado!',
-                    text: `Se subió el modelo 3D "${payload.name}" a la categoría ${targetCat.toUpperCase()} con todos sus archivos vinculados.`,
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 3000
-                });
-            } catch (e) {
-                console.error('Error uploading 3D accessories batch:', e);
-                $('#accessory-3d-label').text('Modelos 3D (.GLTF, .GLB, .BIN)');
-                Swal.fire('Error al cargar', 'Ocurrió un detalle al procesar el modelo 3D: ' + (e.message || ''), 'error');
-            }
-        }
 
 
         async function editAccessoryInfo(acc) {
