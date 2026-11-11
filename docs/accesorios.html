@@ -887,11 +887,8 @@
                                     <div class="acc-card-image-box ${category === 'coin' || category === 'dice' ? 'type-coin' : ''} acc-slider-container" data-faces='${JSON.stringify(faces).replace(/'/g, "&apos;")}' title="Ver en grande" style="position: relative;">
                                         <img src="${faces[0].url}" alt="${escapeHtml(item.name || 'Accesorio')}" class="acc-slider-current-img" style="width: 100%; height: 100%; object-fit: contain; transition: transform 0.25s ease;">
                                         <div class="acc-in-image-controls" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; padding: 6px; pointer-events: none; z-index: 6;">
-                                            <button type="button" class="btn-acc-card-slide-prev in-image-arrow" style="pointer-events: auto; background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(0, 210, 255, 0.4); color: #fff; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; cursor: pointer; backdrop-filter: blur(4px); transition: all 0.2s;"><i class="fas fa-chevron-left"></i></button>
-                                            <button type="button" class="btn-acc-card-slide-next in-image-arrow" style="pointer-events: auto; background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(0, 210, 255, 0.4); color: #fff; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; cursor: pointer; backdrop-filter: blur(4px); transition: all 0.2s;"><i class="fas fa-chevron-right"></i></button>
-                                        </div>
-                                        <div class="acc-in-image-badge" style="position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 4px; background: rgba(5, 10, 20, 0.75); border: 1px solid rgba(0, 210, 255, 0.35); border-radius: 20px; padding: 2px 10px; font-size: 0.65rem; color: #00d2ff; font-weight: 800; pointer-events: none; z-index: 6; backdrop-filter: blur(4px); animation: pulseSlideHint 2.5s infinite;">
-                                            <span class="acc-card-slide-label">${faces[0].label} (1/${faces.length})</span>
+                                            <button type="button" class="btn-acc-card-slide-prev in-image-arrow" style="pointer-events: auto; background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(0, 210, 255, 0.3); color: #fff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; cursor: pointer; backdrop-filter: blur(4px); opacity: 0.7; transition: opacity 0.2s;"><i class="fas fa-chevron-left"></i></button>
+                                            <button type="button" class="btn-acc-card-slide-next in-image-arrow" style="pointer-events: auto; background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(0, 210, 255, 0.3); color: #fff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; cursor: pointer; backdrop-filter: blur(4px); opacity: 0.7; transition: opacity 0.2s;"><i class="fas fa-chevron-right"></i></button>
                                         </div>
                                     </div>
                                 `;
@@ -937,20 +934,17 @@
                     if (facesData.length > 1) {
                         let curFaceIdx = 0;
                         const $curImg = $sliderBox.find('.acc-slider-current-img');
-                        const $curLabel = $sliderBox.find('.acc-card-slide-label');
 
                         $sliderBox.find('.btn-acc-card-slide-prev').on('click', function(e) {
                             e.stopPropagation();
                             curFaceIdx = (curFaceIdx - 1 + facesData.length) % facesData.length;
                             $curImg.attr('src', facesData[curFaceIdx].url);
-                            $curLabel.text(`${facesData[curFaceIdx].label} (${curFaceIdx + 1}/${facesData.length})`);
                         });
 
                         $sliderBox.find('.btn-acc-card-slide-next').on('click', function(e) {
                             e.stopPropagation();
                             curFaceIdx = (curFaceIdx + 1) % facesData.length;
                             $curImg.attr('src', facesData[curFaceIdx].url);
-                            $curLabel.text(`${facesData[curFaceIdx].label} (${curFaceIdx + 1}/${facesData.length})`);
                         });
                     }
                 }
