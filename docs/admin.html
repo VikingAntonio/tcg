@@ -2875,8 +2875,8 @@
 
         .selected-acc-preview-container {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 14px;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
             margin-bottom: 20px;
             width: 100%;
         }
@@ -2885,7 +2885,7 @@
             background: rgba(15, 23, 42, 0.7);
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 14px;
-            padding: 12px;
+            padding: 8px 6px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -2900,8 +2900,8 @@
         }
 
         .acc-preview-box {
-            width: 80px;
-            height: 105px;
+            width: 65px;
+            height: 65px;
             border-radius: 8px;
             overflow: hidden;
             background: rgba(0,0,0,0.4);
@@ -2910,6 +2910,22 @@
             justify-content: center;
             margin: 6px 0;
             border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #preview-box-coin,
+        #preview-box-counters,
+        .acc-preview-box.is-circular {
+            width: 65px;
+            height: 65px;
+            border-radius: 50% !important;
+            aspect-ratio: 1 / 1 !important;
+        }
+
+        #preview-box-coin img,
+        #preview-box-counters img,
+        .acc-preview-box.is-circular img {
+            border-radius: 50% !important;
+            object-fit: cover;
         }
 
         .acc-preview-box img {
@@ -3008,6 +3024,18 @@
         .accessory-item.type-coin {
             aspect-ratio: 1/1;
             border-radius: 50%;
+        }
+        .accessory-item.type-dice {
+            aspect-ratio: 1/1;
+            border-radius: 12px;
+        }
+        .accessory-item.type-counters {
+            aspect-ratio: 1/1;
+            border-radius: 50%;
+        }
+        .accessory-item.type-counters img {
+            border-radius: 50%;
+            object-fit: contain;
         }
         .accessory-item.type-mats {
             aspect-ratio: 16/9;
@@ -3167,10 +3195,24 @@
                 </div>
                 <div class="selected-acc-preview-card" data-target-tab="coin">
                     <span class="acc-preview-title">Coin</span>
-                    <div class="acc-preview-box" id="preview-box-coin">
+                    <div class="acc-preview-box is-circular" id="preview-box-coin">
                         <span class="acc-preview-none">Ninguno</span>
                     </div>
                     <span class="acc-preview-name" id="selected-coin-name">Ninguno</span>
+                </div>
+                <div class="selected-acc-preview-card" data-target-tab="dice">
+                    <span class="acc-preview-title">Dado</span>
+                    <div class="acc-preview-box" id="preview-box-dice">
+                        <span class="acc-preview-none">Ninguno</span>
+                    </div>
+                    <span class="acc-preview-name" id="selected-dice-name">Ninguno</span>
+                </div>
+                <div class="selected-acc-preview-card" data-target-tab="counters">
+                    <span class="acc-preview-title">Contadores</span>
+                    <div class="acc-preview-box is-circular" id="preview-box-counters">
+                        <span class="acc-preview-none">Ninguno</span>
+                    </div>
+                    <span class="acc-preview-name" id="selected-counters-name">Ninguno</span>
                 </div>
                 <div class="selected-acc-preview-card" data-target-tab="mats">
                     <span class="acc-preview-title">Playmat</span>
@@ -3186,6 +3228,8 @@
                 <button class="acc-tab-btn active" data-tab="sleeves">sleeves</button>
                 <button class="acc-tab-btn" data-tab="deckbox">deckbox</button>
                 <button class="acc-tab-btn" data-tab="coin">coin</button>
+                <button class="acc-tab-btn" data-tab="dice">dados</button>
+                <button class="acc-tab-btn" data-tab="counters">contadores</button>
                 <button class="acc-tab-btn" data-tab="mats">mats</button>
             </div>
 
@@ -3208,6 +3252,20 @@
                 <!-- Coin Tab -->
                 <div class="acc-tab-pane" id="pane-coin">
                     <div id="grid-coin" class="accessory-grid">
+                        <!-- Dynamic items -->
+                    </div>
+                </div>
+
+                <!-- Dice Tab -->
+                <div class="acc-tab-pane" id="pane-dice">
+                    <div id="grid-dice" class="accessory-grid">
+                        <!-- Dynamic items -->
+                    </div>
+                </div>
+
+                <!-- Counters Tab -->
+                <div class="acc-tab-pane" id="pane-counters">
+                    <div id="grid-counters" class="accessory-grid">
                         <!-- Dynamic items -->
                     </div>
                 </div>

@@ -363,6 +363,15 @@ async function fetchDeckCards(deckId, playerKey) {
                         $("#player-mat-p2").css("background-image", "none");
                     }
                 }
+
+                // Update coin and counter display in PC tools panel if player matches currentRole
+                const myRole = (typeof currentRole !== 'undefined' && currentRole === 'player2') ? 'player2' : 'player1';
+                if (playerKey === myRole && state.deckCoins[playerKey] && typeof window.updatePCCoinPanelDesign === 'function') {
+                    window.updatePCCoinPanelDesign(state.deckCoins[playerKey]);
+                }
+                if (playerKey === myRole && state.deckCounters[playerKey] && typeof window.updatePCCounterPanelDesign === 'function') {
+                    window.updatePCCounterPanelDesign(state.deckCounters[playerKey]);
+                }
             } else {
                 state.deckSleeves[playerKey] = null;
                 state.deckMats[playerKey] = null;

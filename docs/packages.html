@@ -1858,10 +1858,10 @@
                     const payload = {
                         name: cleanName,
                         url: url,
-                        sale_status: 'disponible', // Default gratis
+                        sale_status: 'oculto', // Pendiente de revisión hasta Guardar Cambios
                         price_mxn: 25,
                         stripe_price_id: null,
-                        target_roles: ['starter', 'premium', 'tienda'] // Default all packages
+                        target_roles: ['starter', 'premium', 'tienda']
                     };
 
                     const { data, error } = await _supabase.from('stickers').insert([payload]).select().single();
@@ -2297,7 +2297,7 @@
                         name: cleanName.charAt(0).toUpperCase() + cleanName.slice(1),
                         image_url: secureUrl,
                         category: targetCat,
-                        sale_status: 'disponible',
+                        sale_status: 'oculto', // Pendiente de revisión hasta Guardar Cambios
                         price_mxn: 25.00,
                         stripe_price_id: null,
                         target_roles: ['starter', 'premium', 'tienda']
@@ -2414,7 +2414,7 @@
                     name: formValues.name,
                     image_url: JSON.stringify(coinPayloadData),
                     category: 'coin',
-                    sale_status: 'disponible',
+                    sale_status: 'oculto', // Pendiente de revisión hasta Guardar Cambios
                     price_mxn: 25.00,
                     stripe_price_id: null,
                     target_roles: ['starter', 'premium', 'tienda']
@@ -2523,7 +2523,7 @@
                     name: formValues.name,
                     image_url: JSON.stringify(dicePayloadData),
                     category: 'dice',
-                    sale_status: 'disponible',
+                    sale_status: 'oculto', // Pendiente de revisión hasta Guardar Cambios
                     price_mxn: 25.00,
                     stripe_price_id: null,
                     target_roles: ['starter', 'premium', 'tienda']
@@ -2613,7 +2613,7 @@
                     name: cleanName.charAt(0).toUpperCase() + cleanName.slice(1) + ' (3D)',
                     image_url: modelUrl,
                     category: targetCat,
-                    sale_status: 'disponible',
+                    sale_status: 'oculto', // Pendiente de revisión hasta Guardar Cambios
                     price_mxn: 50.00,
                     stripe_price_id: null,
                     target_roles: ['starter', 'premium', 'tienda']
@@ -2766,10 +2766,8 @@
                     // Gather paid status and price
                     const isPaid = $c.find('.chk-acc-paid-toggle').is(':checked');
                     const match = allAvailableAccessories.find(a => String(a.id) === String(accId));
+                    // Upon clicking "GUARDAR CAMBIOS DE ACCESORIOS", newly uploaded and reviewed items become active
                     let saleStatus = isPaid ? 'de_paga' : 'disponible';
-                    if (match && match.sale_status === 'oculto') {
-                        saleStatus = 'oculto'; // Preserve hidden status if configured
-                    }
 
                     const price = Math.max(5, parseFloat($c.find('.acc-price-input').val()) || 25);
 
