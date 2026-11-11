@@ -364,10 +364,13 @@ async function fetchDeckCards(deckId, playerKey) {
                     }
                 }
 
-                // Update coin and counter display in PC tools panel if player matches currentRole
+                // Update coin, dice and counter display in PC tools panel if player matches currentRole
                 const myRole = (typeof currentRole !== 'undefined' && currentRole === 'player2') ? 'player2' : 'player1';
                 if (playerKey === myRole && state.deckCoins[playerKey] && typeof window.updatePCCoinPanelDesign === 'function') {
                     window.updatePCCoinPanelDesign(state.deckCoins[playerKey]);
+                }
+                if (playerKey === myRole && state.deckDice[playerKey] && typeof window.updatePCDicePanelDesign === 'function') {
+                    window.updatePCDicePanelDesign(state.deckDice[playerKey]);
                 }
                 if (playerKey === myRole && state.deckCounters[playerKey] && typeof window.updatePCCounterPanelDesign === 'function') {
                     window.updatePCCounterPanelDesign(state.deckCounters[playerKey]);

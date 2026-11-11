@@ -28,10 +28,6 @@ function generateDeckAccessoriesBundleHtml(deck) {
     const renderItemMedia = (url, cls) => {
         if (!url) return '';
         const displayUrl = getAccessoryDisplayUrl(url);
-        const is3D = displayUrl.toLowerCase().includes('.gltf') || displayUrl.toLowerCase().includes('.glb');
-        if (is3D) {
-            return `<model-viewer src="${displayUrl}" auto-rotate camera-controls class="${cls}" style="background: transparent; pointer-events: none;"></model-viewer>`;
-        }
         return `<img src="${displayUrl}" alt="Accesorio" class="${cls}" onerror="this.style.display='none'">`;
     };
 
@@ -2942,12 +2938,7 @@ function renderAccessoriesGrid(accessories) {
         const $previewBox = $(previewBoxId);
         if (selectedVal) {
             const displayVal = getAccessoryDisplayUrl(selectedVal);
-            const is3D = displayVal.toLowerCase().includes('.gltf') || displayVal.toLowerCase().includes('.glb');
-            if (is3D) {
-                $previewBox.html(`<model-viewer src="${displayVal}" auto-rotate camera-controls style="width:100%; height:100%; border-radius:8px;" shadow-intensity="1"></model-viewer>`);
-            } else {
-                $previewBox.html(`<img src="${displayVal}" alt="Preview" onerror="this.src='https://via.placeholder.com/150?text=Error'">`);
-            }
+            $previewBox.html(`<img src="${displayVal}" alt="Preview" onerror="this.src='https://via.placeholder.com/150?text=Error'">`);
         } else {
             $previewBox.html(`<span class="acc-preview-none">Ninguno</span>`);
         }
@@ -2992,10 +2983,7 @@ function renderAccessoriesGrid(accessories) {
             const price = Math.max(5, Number(acc.price_mxn) || 25);
 
             const displayUrl = getAccessoryDisplayUrl(acc.image_url);
-            const is3D = displayUrl && (displayUrl.toLowerCase().includes('.gltf') || displayUrl.toLowerCase().includes('.glb'));
-            const mediaHtml = is3D
-                ? `<model-viewer src="${displayUrl}" auto-rotate camera-controls style="width: 100%; height: 100%; border-radius: 6px;" shadow-intensity="1"></model-viewer>`
-                : `<img src="${displayUrl}" alt="${escapeHtml(acc.name)}" onerror="this.src='https://via.placeholder.com/150?text=Error'">`;
+            const mediaHtml = `<img src="${displayUrl}" alt="${escapeHtml(acc.name)}" onerror="this.src='https://via.placeholder.com/150?text=Error'">`;
 
             const $item = $(`
                 <div class="accessory-item type-${key} ${isSelected ? 'selected' : ''} ${isLocked ? 'is-locked' : ''}" data-value="${acc.image_url}" data-id="${acc.id}" data-locked="${isLocked ? '1' : '0'}" title="${escapeHtml(acc.name)}">
@@ -3062,12 +3050,7 @@ function renderAccessoriesGrid(accessories) {
                 $(nameId).text(acc.name || 'Ninguno');
                 if (val) {
                     const disp = getAccessoryDisplayUrl(val);
-                    const is3DVal = disp.toLowerCase().includes('.gltf') || disp.toLowerCase().includes('.glb');
-                    if (is3DVal) {
-                        $previewBox.html(`<model-viewer src="${disp}" auto-rotate camera-controls style="width:100%; height:100%; border-radius:8px;" shadow-intensity="1"></model-viewer>`);
-                    } else {
-                        $previewBox.html(`<img src="${disp}" alt="${acc.name}" onerror="this.src='https://via.placeholder.com/150?text=Error'">`);
-                    }
+                    $previewBox.html(`<img src="${disp}" alt="${acc.name}" onerror="this.src='https://via.placeholder.com/150?text=Error'">`);
                 } else {
                     $previewBox.html(`<span class="acc-preview-none">Ninguno</span>`);
                 }
@@ -3142,12 +3125,7 @@ $(document).on('click', '.accessory-item', function() {
     const $previewBox = $(`#preview-box-${key}`);
     if (val) {
         const disp = getAccessoryDisplayUrl(val);
-        const is3DVal = disp.toLowerCase().includes('.gltf') || disp.toLowerCase().includes('.glb');
-        if (is3DVal) {
-            $previewBox.html(`<model-viewer src="${disp}" auto-rotate camera-controls style="width:100%; height:100%; border-radius:8px;" shadow-intensity="1"></model-viewer>`);
-        } else {
-            $previewBox.html(`<img src="${disp}" alt="${headerName}" onerror="this.src='https://via.placeholder.com/150?text=Error'">`);
-        }
+        $previewBox.html(`<img src="${disp}" alt="${headerName}" onerror="this.src='https://via.placeholder.com/150?text=Error'">`);
     } else {
         $previewBox.html(`<span class="acc-preview-none">Ninguno</span>`);
     }

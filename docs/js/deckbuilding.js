@@ -38,10 +38,6 @@ function generateDeckAccessoriesBundleHtml(deck) {
     const renderItemMedia = (url, cls) => {
         if (!url) return '';
         const displayUrl = getAccessoryDisplayUrl(url);
-        const is3D = displayUrl.toLowerCase().includes('.gltf') || displayUrl.toLowerCase().includes('.glb');
-        if (is3D) {
-            return `<model-viewer src="${displayUrl}" auto-rotate camera-controls class="${cls}" style="background: transparent; pointer-events: none;"></model-viewer>`;
-        }
         return `<img src="${displayUrl}" alt="Accesorio" class="${cls}" onerror="this.style.display='none'">`;
     };
 
@@ -199,12 +195,7 @@ $(document).ready(async function() {
         const $previewBox = $(`#preview-box-${key}`);
         if (val) {
             const displayVal = getAccessoryDisplayUrl(val);
-            const is3D = displayVal.toLowerCase().includes('.gltf') || displayVal.toLowerCase().includes('.glb');
-            if (is3D) {
-                $previewBox.html(`<model-viewer src="${displayVal}" auto-rotate camera-controls style="width:100%;height:100%;"></model-viewer>`);
-            } else {
-                $previewBox.html(`<img src="${displayVal}" style="width:100%;height:100%;object-fit:cover;">`);
-            }
+            $previewBox.html(`<img src="${displayVal}" style="width:100%;height:100%;object-fit:cover;">`);
         } else {
             $previewBox.html(`<span class="acc-preview-none">Ninguno</span>`);
         }
@@ -933,12 +924,7 @@ async function loadAndRenderAccessories() {
             const $previewBox = $(`#preview-box-${key}`);
             if (activeVal) {
                 const displayVal = getAccessoryDisplayUrl(activeVal);
-                const is3D = displayVal.toLowerCase().includes('.gltf') || displayVal.toLowerCase().includes('.glb');
-                if (is3D) {
-                    $previewBox.html(`<model-viewer src="${displayVal}" auto-rotate camera-controls style="width:100%;height:100%;"></model-viewer>`);
-                } else {
-                    $previewBox.html(`<img src="${displayVal}" style="width:100%;height:100%;object-fit:cover;">`);
-                }
+                $previewBox.html(`<img src="${displayVal}" style="width:100%;height:100%;object-fit:cover;">`);
             } else {
                 $previewBox.html(`<span class="acc-preview-none">Ninguno</span>`);
             }
@@ -963,10 +949,7 @@ async function loadAndRenderAccessories() {
                 const price = Math.max(5, Number(acc.price_mxn) || 25);
 
                 const displayUrl = getAccessoryDisplayUrl(acc.image_url);
-                const is3D = displayUrl && (displayUrl.toLowerCase().includes('.gltf') || displayUrl.toLowerCase().includes('.glb'));
-                const mediaHtml = is3D
-                    ? `<model-viewer src="${displayUrl}" auto-rotate camera-controls style="width: 100%; height: 100%; border-radius: 6px;" shadow-intensity="1"></model-viewer>`
-                    : `<img src="${displayUrl}" onerror="this.src='https://via.placeholder.com/150?text=Error'">`;
+                const mediaHtml = `<img src="${displayUrl}" onerror="this.src='https://via.placeholder.com/150?text=Error'">`;
 
                 const $item = $(`
                     <div class="accessory-item type-${key} ${isSelected ? 'selected' : ''} ${isLocked ? 'is-locked' : ''}" data-type="${key}" data-value="${acc.image_url}" data-id="${acc.id}" data-locked="${isLocked ? '1' : '0'}" title="${escapeHtml(acc.name)}">
@@ -1016,12 +999,7 @@ async function loadAndRenderAccessories() {
 
                     if (val) {
                         const displayVal = getAccessoryDisplayUrl(val);
-                        const is3D = displayVal.toLowerCase().includes('.gltf') || displayVal.toLowerCase().includes('.glb');
-                        if (is3D) {
-                            $previewBox.html(`<model-viewer src="${displayVal}" auto-rotate camera-controls style="width:100%;height:100%;"></model-viewer>`);
-                        } else {
-                            $previewBox.html(`<img src="${displayVal}" style="width:100%;height:100%;object-fit:cover;">`);
-                        }
+                        $previewBox.html(`<img src="${displayVal}" style="width:100%;height:100%;object-fit:cover;">`);
                     } else {
                         $previewBox.html(`<span class="acc-preview-none">Ninguno</span>`);
                     }
