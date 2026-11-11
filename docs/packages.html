@@ -2048,11 +2048,8 @@
                         <div class="acc-multiface-slider" data-idx="0" style="position: relative; width: 100%; display: flex; align-items: center; justify-content: center;">
                             <img src="${parsedFaces[0].url}" alt="${escapeHtml(acc.name || 'Accesorio')}" class="sticker-visual-img acc-slider-img" style="${imgAspectStyle} max-height: 140px; object-fit: contain; transition: transform 0.25s ease;">
                             <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; padding: 4px; pointer-events: none; z-index: 5;">
-                                <button type="button" class="btn-acc-slide-prev" style="pointer-events: auto; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(0, 210, 255, 0.4); color: #fff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; cursor: pointer; backdrop-filter: blur(4px); transition: all 0.2s;"><i class="fas fa-chevron-left"></i></button>
-                                <button type="button" class="btn-acc-slide-next" style="pointer-events: auto; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(0, 210, 255, 0.4); color: #fff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; cursor: pointer; backdrop-filter: blur(4px); transition: all 0.2s;"><i class="fas fa-chevron-right"></i></button>
-                            </div>
-                            <div style="position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); background: rgba(5, 10, 20, 0.8); border: 1px solid rgba(0, 210, 255, 0.35); border-radius: 20px; padding: 1px 8px; font-size: 0.65rem; color: #00d2ff; font-weight: 800; pointer-events: none; z-index: 5; backdrop-filter: blur(4px);">
-                                <span class="acc-slider-label">${parsedFaces[0].label} (1/${parsedFaces.length})</span>
+                                <button type="button" class="btn-acc-slide-prev" style="pointer-events: auto; background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(0, 210, 255, 0.3); color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; cursor: pointer; backdrop-filter: blur(4px); opacity: 0.7; transition: opacity 0.2s;"><i class="fas fa-chevron-left"></i></button>
+                                <button type="button" class="btn-acc-slide-next" style="pointer-events: auto; background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(0, 210, 255, 0.3); color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; cursor: pointer; backdrop-filter: blur(4px); opacity: 0.7; transition: opacity 0.2s;"><i class="fas fa-chevron-right"></i></button>
                             </div>
                         </div>
                     `;
@@ -2167,20 +2164,17 @@
                     let curIdx = 0;
                     const $slider = $card.find('.acc-multiface-slider');
                     const $sliderImg = $slider.find('.acc-slider-img');
-                    const $sliderLabel = $slider.find('.acc-slider-label');
 
                     $slider.find('.btn-acc-slide-prev').click(function(e) {
                         e.stopPropagation();
                         curIdx = (curIdx - 1 + parsedFaces.length) % parsedFaces.length;
                         $sliderImg.attr('src', parsedFaces[curIdx].url);
-                        $sliderLabel.text(`${parsedFaces[curIdx].label} (${curIdx + 1}/${parsedFaces.length})`);
                     });
 
                     $slider.find('.btn-acc-slide-next').click(function(e) {
                         e.stopPropagation();
                         curIdx = (curIdx + 1) % parsedFaces.length;
                         $sliderImg.attr('src', parsedFaces[curIdx].url);
-                        $sliderLabel.text(`${parsedFaces[curIdx].label} (${curIdx + 1}/${parsedFaces.length})`);
                     });
                 }
 

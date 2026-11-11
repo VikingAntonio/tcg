@@ -1,15 +1,42 @@
 
-function getAccessoryDisplayUrl(rawUrl) {
-    if (!rawUrl) return '';
+function getAccessoryFaces(rawUrl) {
+    if (!rawUrl) return [];
+    if (typeof rawUrl === 'object') {
+        const parsed = rawUrl;
+        if (parsed.heads || parsed.tails) {
+            const list = [];
+            if (parsed.heads) list.push({ label: 'Cara', url: parsed.heads });
+            if (parsed.tails) list.push({ label: 'Cruz', url: parsed.tails });
+            return list;
+        }
+        const diceKeys = Object.keys(parsed).sort();
+        if (diceKeys.length > 0) {
+            return diceKeys.map(k => ({ label: `Cara ${k}`, url: parsed[k] }));
+        }
+    }
     if (typeof rawUrl === 'string' && rawUrl.trim().startsWith('{')) {
         try {
             const parsed = JSON.parse(rawUrl);
-            if (parsed.heads) return parsed.heads;
-            if (parsed.tails) return parsed.tails;
-            if (parsed['1']) return parsed['1'];
-            const keys = Object.keys(parsed).sort();
-            if (keys.length > 0 && parsed[keys[0]]) return parsed[keys[0]];
+            if (parsed.heads || parsed.tails) {
+                const list = [];
+                if (parsed.heads) list.push({ label: 'Cara', url: parsed.heads });
+                if (parsed.tails) list.push({ label: 'Cruz', url: parsed.tails });
+                return list;
+            }
+            const diceKeys = Object.keys(parsed).sort();
+            if (diceKeys.length > 0) {
+                return diceKeys.map(k => ({ label: `Cara ${k}`, url: parsed[k] }));
+            }
         } catch(e) {}
+    }
+    return [{ label: '', url: rawUrl }];
+}
+
+function getAccessoryDisplayUrl(rawUrl) {
+    if (!rawUrl) return '';
+    const faces = getAccessoryFaces(rawUrl);
+    if (faces && faces.length > 0 && faces[0].url) {
+        return faces[0].url;
     }
     return rawUrl;
 }
@@ -2006,7 +2033,14 @@ $(document).ready(async function() {
     // --- Accessories Modal Listeners ---
     $(document).on('click', '#btn-deck-accessories', function(e) {
         e.preventDefault();
+        if (!currentUser) {
+            const cached = localStorage.getItem('tcg_session');
+            if (cached) {
+                try { currentUser = JSON.parse(cached); } catch(_) {}
+            }
+        }
         $('#accessories-modal').addClass('active');
+        loadAndRenderAccessories();
         // Select the first tab on open
         $('.acc-tab-btn[data-tab="sleeves"]').click();
     });
@@ -2992,11 +3026,8 @@ function renderAccessoriesGrid(accessories) {
                     <div class="acc-multiface-slot" style="position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
                         <img src="${faces[0].url}" alt="${escapeHtml(acc.name)}" class="acc-slot-active-img" style="width: 100%; height: 100%; object-fit: contain;">
                         <div class="acc-slot-nav" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; padding: 2px; pointer-events: none; z-index: 5;">
-                            <button type="button" class="btn-acc-slot-prev" style="pointer-events: auto; background: rgba(0,0,0,0.65); border: 1px solid rgba(0,210,255,0.4); color: #fff; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; cursor: pointer;"><i class="fas fa-chevron-left"></i></button>
-                            <button type="button" class="btn-acc-slot-next" style="pointer-events: auto; background: rgba(0,0,0,0.65); border: 1px solid rgba(0,210,255,0.4); color: #fff; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; cursor: pointer;"><i class="fas fa-chevron-right"></i></button>
-                        </div>
-                        <div style="position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); border: 1px solid rgba(0,210,255,0.3); border-radius: 12px; padding: 1px 6px; font-size: 0.6rem; color: #00d2ff; font-weight: 700; pointer-events: none; z-index: 5;">
-                            <span class="acc-slot-label">${faces[0].label} (1/${faces.length})</span>
+                            <button type="button" class="btn-acc-slot-prev" style="pointer-events: auto; background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(0,210,255,0.3); color: #fff; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; cursor: pointer; opacity: 0.7; transition: opacity 0.2s;"><i class="fas fa-chevron-left"></i></button>
+                            <button type="button" class="btn-acc-slot-next" style="pointer-events: auto; background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(0,210,255,0.3); color: #fff; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; cursor: pointer; opacity: 0.7; transition: opacity 0.2s;"><i class="fas fa-chevron-right"></i></button>
                         </div>
                     </div>
                 `;
@@ -3020,20 +3051,17 @@ function renderAccessoriesGrid(accessories) {
             if (isMulti) {
                 let currentIdx = 0;
                 const $activeImg = $item.find('.acc-slot-active-img');
-                const $activeLabel = $item.find('.acc-slot-label');
 
                 $item.find('.btn-acc-slot-prev').on('click', function(e) {
                     e.stopPropagation();
                     currentIdx = (currentIdx - 1 + faces.length) % faces.length;
                     $activeImg.attr('src', faces[currentIdx].url);
-                    $activeLabel.text(`${faces[currentIdx].label} (${currentIdx + 1}/${faces.length})`);
                 });
 
                 $item.find('.btn-acc-slot-next').on('click', function(e) {
                     e.stopPropagation();
                     currentIdx = (currentIdx + 1) % faces.length;
                     $activeImg.attr('src', faces[currentIdx].url);
-                    $activeLabel.text(`${faces[currentIdx].label} (${currentIdx + 1}/${faces.length})`);
                 });
             }
 
