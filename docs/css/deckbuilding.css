@@ -674,16 +674,20 @@ body {
 .acc-preview-box img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
+    border-radius: 6px;
 }
 #preview-box-coin,
 #preview-box-counters,
-.acc-preview-box.is-circular {
-    border-radius: 50% !important;
+#preview-box-dice,
+.acc-preview-box {
+    border-radius: 8px !important;
 }
 #preview-box-coin img,
-#preview-box-counters img {
-    border-radius: 50% !important;
+#preview-box-counters img,
+#preview-box-dice img {
+    border-radius: 6px !important;
+    object-fit: contain;
 }
 .acc-preview-none {
     font-size: 8px;
@@ -812,7 +816,7 @@ body {
 }
 .accessory-item.type-coin {
     aspect-ratio: 1/1;
-    border-radius: 50%;
+    border-radius: 12px;
 }
 .accessory-item.type-dice {
     aspect-ratio: 1/1;
@@ -820,10 +824,12 @@ body {
 }
 .accessory-item.type-counters {
     aspect-ratio: 1/1;
-    border-radius: 50%;
+    border-radius: 12px;
 }
-.accessory-item.type-counters img {
-    border-radius: 50%;
+.accessory-item.type-counters img,
+.accessory-item.type-coin img,
+.accessory-item.type-dice img {
+    border-radius: 8px;
     object-fit: contain;
 }
 .accessory-item.type-mats {
@@ -833,7 +839,7 @@ body {
 .accessory-item img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
 }
 
 .accessory-item:hover {

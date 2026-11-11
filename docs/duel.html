@@ -1073,14 +1073,18 @@
         .ygo-placed-bead.has-custom-img {
             border: none !important;
             background-color: transparent !important;
-            box-shadow: 0 0 6px rgba(0,0,0,0.8);
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.85));
             font-size: 0.65rem;
             text-shadow: 0 0 4px #000, 0 0 6px #000, 1px 1px 2px #000, -1px -1px 2px #000;
         }
         .ygo-counter-badge.has-custom-img {
             border: none !important;
             background-color: transparent !important;
-            box-shadow: 0 0 8px rgba(0,0,0,0.85);
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            filter: drop-shadow(0 2px 6px rgba(0,0,0,0.9));
             font-size: 0.75rem;
             text-shadow: 0 0 4px #000, 0 0 6px #000, 1px 1px 2px #000, -1px -1px 2px #000;
         }
@@ -3787,11 +3791,11 @@
                 }
                 $coinBtn.html(`
                     <div class="coin-inner" style="width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s;">
-                        <div class="coin-front" style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 50%; overflow: hidden; background: #000; border: 2px solid #ffd700;">
-                            <img src="${headsImg}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;" onerror="this.src='https://via.placeholder.com/50?text=Coin'">
+                        <div class="coin-front" style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 50%; overflow: hidden; background: transparent; border: 2px solid #ffd700;">
+                            <img src="${headsImg}" style="width: 100%; height: 100%; object-fit: contain; display: block;" onerror="this.src='https://via.placeholder.com/50?text=Coin'">
                         </div>
-                        <div class="coin-back" style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; transform: rotateY(180deg); border-radius: 50%; overflow: hidden; background: #000; border: 2px solid #ffd700;">
-                            <img src="${tailsImg}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;" onerror="this.src='https://via.placeholder.com/50?text=Coin'">
+                        <div class="coin-back" style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; transform: rotateY(180deg); border-radius: 50%; overflow: hidden; background: transparent; border: 2px solid #ffd700;">
+                            <img src="${tailsImg}" style="width: 100%; height: 100%; object-fit: contain; display: block;" onerror="this.src='https://via.placeholder.com/50?text=Coin'">
                         </div>
                     </div>
                 `);
@@ -4002,10 +4006,10 @@
                     $stage.html(`
                         <div id="toss-coin-2d" class="tcg-coin" style="width: 140px; height: 140px; perspective: 1000px;">
                             <div class="coin-inner" style="width: 100%; height: 100%; position: relative; transform-style: preserve-3d; animation: coinFlipAnimation 1.2s infinite ease-in-out;">
-                                <div class="coin-front" style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 50%; overflow: hidden; border: 3px solid #ffd700; box-shadow: 0 0 25px rgba(255,215,0,0.6); background: rgba(0,0,0,0.5);">
+                                <div class="coin-front" style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 50%; overflow: hidden; border: 3px solid #ffd700; box-shadow: 0 0 25px rgba(255,215,0,0.6); background: transparent;">
                                     <img src="${headsImg}" style="width: 100%; height: 100%; object-fit: contain;">
                                 </div>
-                                <div class="coin-back" style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; transform: rotateY(180deg); border-radius: 50%; overflow: hidden; border: 3px solid #ffd700; box-shadow: 0 0 25px rgba(255,215,0,0.6); background: rgba(0,0,0,0.5);">
+                                <div class="coin-back" style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; transform: rotateY(180deg); border-radius: 50%; overflow: hidden; border: 3px solid #ffd700; box-shadow: 0 0 25px rgba(255,215,0,0.6); background: transparent;">
                                     <img src="${tailsImg}" style="width: 100%; height: 100%; object-fit: contain;">
                                 </div>
                             </div>
@@ -4701,7 +4705,7 @@
                             const cntPlayer = cnt.player || 'player1';
                             const cntDesign = cnt.design || (state.deckCounters && state.deckCounters[cntPlayer]) || null;
                             const customStyle = cntDesign
-                                ? `background-image: url('${cntDesign}'); background-size: contain; background-repeat: no-repeat; background-position: center; border-radius: 50%;`
+                                ? `background-image: url('${cntDesign}'); background-size: contain; background-repeat: no-repeat; background-position: center; border-radius: 0;`
                                 : '';
                             const hasCustomClass = cntDesign ? 'has-custom-img' : '';
 
@@ -4735,7 +4739,7 @@
                         if (groupKeys.length === 1) {
                             const g = groups[groupKeys[0]];
                             const customStyle = g.design
-                                ? `background-image: url('${g.design}'); background-size: contain; background-repeat: no-repeat; background-position: center; border-radius: 50%;`
+                                ? `background-image: url('${g.design}'); background-size: contain; background-repeat: no-repeat; background-position: center; border-radius: 0;`
                                 : '';
                             const hasCustomClass = g.design ? 'has-custom-img' : '';
                             $card.append(`

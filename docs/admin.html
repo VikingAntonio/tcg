@@ -2914,24 +2914,22 @@
 
         #preview-box-coin,
         #preview-box-counters,
-        .acc-preview-box.is-circular {
+        #preview-box-dice,
+        .acc-preview-box {
             width: 65px;
             height: 65px;
-            border-radius: 50% !important;
+            border-radius: 10px !important;
             aspect-ratio: 1 / 1 !important;
         }
 
         #preview-box-coin img,
         #preview-box-counters img,
-        .acc-preview-box.is-circular img {
-            border-radius: 50% !important;
-            object-fit: cover;
-        }
-
+        #preview-box-dice img,
         .acc-preview-box img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            border-radius: 8px !important;
+            object-fit: contain;
         }
 
         .acc-tabs-nav {
@@ -3023,7 +3021,7 @@
         }
         .accessory-item.type-coin {
             aspect-ratio: 1/1;
-            border-radius: 50%;
+            border-radius: 12px;
         }
         .accessory-item.type-dice {
             aspect-ratio: 1/1;
@@ -3031,10 +3029,12 @@
         }
         .accessory-item.type-counters {
             aspect-ratio: 1/1;
-            border-radius: 50%;
+            border-radius: 12px;
         }
-        .accessory-item.type-counters img {
-            border-radius: 50%;
+        .accessory-item.type-counters img,
+        .accessory-item.type-coin img,
+        .accessory-item.type-dice img {
+            border-radius: 8px;
             object-fit: contain;
         }
         .accessory-item.type-mats {
@@ -3195,7 +3195,7 @@
                 </div>
                 <div class="selected-acc-preview-card" data-target-tab="coin">
                     <span class="acc-preview-title">Coin</span>
-                    <div class="acc-preview-box is-circular" id="preview-box-coin">
+                    <div class="acc-preview-box" id="preview-box-coin">
                         <span class="acc-preview-none">Ninguno</span>
                     </div>
                     <span class="acc-preview-name" id="selected-coin-name">Ninguno</span>
@@ -3209,7 +3209,7 @@
                 </div>
                 <div class="selected-acc-preview-card" data-target-tab="counters">
                     <span class="acc-preview-title">Contadores</span>
-                    <div class="acc-preview-box is-circular" id="preview-box-counters">
+                    <div class="acc-preview-box" id="preview-box-counters">
                         <span class="acc-preview-none">Ninguno</span>
                     </div>
                     <span class="acc-preview-name" id="selected-counters-name">Ninguno</span>
