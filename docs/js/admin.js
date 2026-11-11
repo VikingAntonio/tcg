@@ -1276,9 +1276,11 @@ $(document).ready(async function() {
         const sleeves = window.selectedSleeves || null;
         const deckbox = window.selectedDeckbox || null;
         const coin = window.selectedCoin || null;
+        const dice = window.selectedDice || null;
+        const counters = window.selectedCounters || null;
         const mats = window.selectedMats || null;
 
-        let updateData = { name, is_public, format_tag, use_special_price, special_price, sleeves, deckbox, coin, mats };
+        let updateData = { name, is_public, format_tag, use_special_price, special_price, sleeves, deckbox, coin, dice, counters, mats };
 
         try {
             // 1. Save Deck Metadata & Cards in parallel if possible, but cards need deck to exist (it does)
@@ -2847,6 +2849,8 @@ async function editDeck(deck) {
     window.selectedSleeves = target.sleeves || null;
     window.selectedDeckbox = target.deckbox || null;
     window.selectedCoin = target.coin || null;
+    window.selectedDice = target.dice || null;
+    window.selectedCounters = target.counters || null;
     window.selectedMats = target.mats || null;
 
     loadAndRenderAccessories();
@@ -2907,6 +2911,8 @@ function renderAccessoriesGrid(accessories) {
         { key: 'sleeves', gridId: '#grid-sleeves', nameId: '#selected-sleeves-name', selectedVal: window.selectedSleeves, previewBoxId: '#preview-box-sleeves' },
         { key: 'deckbox', gridId: '#grid-deckbox', nameId: '#selected-deckbox-name', selectedVal: window.selectedDeckbox, previewBoxId: '#preview-box-deckbox' },
         { key: 'coin', gridId: '#grid-coin', nameId: '#selected-coin-name', selectedVal: window.selectedCoin, previewBoxId: '#preview-box-coin' },
+        { key: 'dice', gridId: '#grid-dice', nameId: '#selected-dice-name', selectedVal: window.selectedDice, previewBoxId: '#preview-box-dice' },
+        { key: 'counters', gridId: '#grid-counters', nameId: '#selected-counters-name', selectedVal: window.selectedCounters, previewBoxId: '#preview-box-counters' },
         { key: 'mats', gridId: '#grid-mats', nameId: '#selected-mats-name', selectedVal: window.selectedMats, previewBoxId: '#preview-box-mats' }
     ];
 
@@ -2951,6 +2957,8 @@ function renderAccessoriesGrid(accessories) {
             if (key === 'sleeves') typeLabel = 'Sleeves (Micas)';
             if (key === 'deckbox') typeLabel = 'Deckboxes';
             if (key === 'coin') typeLabel = 'Coins (Monedas)';
+            if (key === 'dice') typeLabel = 'Dados';
+            if (key === 'counters') typeLabel = 'Contadores';
             if (key === 'mats') typeLabel = 'Playmats (Tapetes)';
 
             const $msg = $(`
@@ -3007,7 +3015,7 @@ function renderAccessoriesGrid(accessories) {
                 e.stopPropagation();
                 Swal.fire({
                     title: acc.name,
-                    imageUrl: acc.image_url,
+                    imageUrl: getAccessoryDisplayUrl(acc.image_url),
                     imageAlt: acc.name,
                     showConfirmButton: false,
                     showCloseButton: true,
@@ -3025,7 +3033,7 @@ function renderAccessoriesGrid(accessories) {
                         await window.TCGPurchase.purchaseItemViaStripe('accessory', acc, {
                             onSuccess: () => {
                                 window.TCGPurchase.playAcquisitionAnimation({
-                                    imageUrl: acc.image_url,
+                                    imageUrl: getAccessoryDisplayUrl(acc.image_url),
                                     name: acc.name,
                                     category: key,
                                     targetElement: previewBoxId,
@@ -3044,6 +3052,8 @@ function renderAccessoriesGrid(accessories) {
                 if (key === 'sleeves') window.selectedSleeves = val;
                 else if (key === 'deckbox') window.selectedDeckbox = val;
                 else if (key === 'coin') window.selectedCoin = val;
+                else if (key === 'dice') window.selectedDice = val;
+                else if (key === 'counters') window.selectedCounters = val;
                 else if (key === 'mats') window.selectedMats = val;
 
                 $item.siblings().removeClass('selected');
@@ -3051,7 +3061,13 @@ function renderAccessoriesGrid(accessories) {
 
                 $(nameId).text(acc.name || 'Ninguno');
                 if (val) {
-                    $previewBox.html(`<img src="${val}" alt="${acc.name}" onerror="this.src='https://via.placeholder.com/150?text=Error'">`);
+                    const disp = getAccessoryDisplayUrl(val);
+                    const is3DVal = disp.toLowerCase().includes('.gltf') || disp.toLowerCase().includes('.glb');
+                    if (is3DVal) {
+                        $previewBox.html(`<model-viewer src="${disp}" auto-rotate camera-controls style="width:100%; height:100%; border-radius:8px;" shadow-intensity="1"></model-viewer>`);
+                    } else {
+                        $previewBox.html(`<img src="${disp}" alt="${acc.name}" onerror="this.src='https://via.placeholder.com/150?text=Error'">`);
+                    }
                 } else {
                     $previewBox.html(`<span class="acc-preview-none">Ninguno</span>`);
                 }
@@ -3070,7 +3086,7 @@ $(document).on('click', '.accessory-zoom-btn', function(e) {
     const name = $(this).closest('.accessory-item').attr('title') || 'Accesorio';
     Swal.fire({
         title: name,
-        imageUrl: url,
+        imageUrl: getAccessoryDisplayUrl(url),
         imageAlt: name,
         showConfirmButton: false,
         showCloseButton: true,
@@ -3090,6 +3106,8 @@ $(document).on('click', '.accessory-item', function() {
     const isSleeves = $item.hasClass('type-sleeves');
     const isDeckbox = $item.hasClass('type-deckbox');
     const isCoin = $item.hasClass('type-coin');
+    const isDice = $item.hasClass('type-dice');
+    const isCounters = $item.hasClass('type-counters');
     const isMats = $item.hasClass('type-mats');
 
     if (isSleeves) {
@@ -3098,6 +3116,10 @@ $(document).on('click', '.accessory-item', function() {
         window.selectedDeckbox = val;
     } else if (isCoin) {
         window.selectedCoin = val;
+    } else if (isDice) {
+        window.selectedDice = val;
+    } else if (isCounters) {
+        window.selectedCounters = val;
     } else if (isMats) {
         window.selectedMats = val;
     }
@@ -3112,12 +3134,20 @@ $(document).on('click', '.accessory-item', function() {
     if (isSleeves) key = 'sleeves';
     else if (isDeckbox) key = 'deckbox';
     else if (isCoin) key = 'coin';
+    else if (isDice) key = 'dice';
+    else if (isCounters) key = 'counters';
     else if (isMats) key = 'mats';
 
     $(`#selected-${key}-name`).text(headerName);
     const $previewBox = $(`#preview-box-${key}`);
     if (val) {
-        $previewBox.html(`<img src="${val}" alt="${headerName}" onerror="this.src='https://via.placeholder.com/150?text=Error'">`);
+        const disp = getAccessoryDisplayUrl(val);
+        const is3DVal = disp.toLowerCase().includes('.gltf') || disp.toLowerCase().includes('.glb');
+        if (is3DVal) {
+            $previewBox.html(`<model-viewer src="${disp}" auto-rotate camera-controls style="width:100%; height:100%; border-radius:8px;" shadow-intensity="1"></model-viewer>`);
+        } else {
+            $previewBox.html(`<img src="${disp}" alt="${headerName}" onerror="this.src='https://via.placeholder.com/150?text=Error'">`);
+        }
     } else {
         $previewBox.html(`<span class="acc-preview-none">Ninguno</span>`);
     }

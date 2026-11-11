@@ -1046,7 +1046,6 @@ async function saveDeck() {
     });
 
     const name = $('#deck-name-input').val().trim();
-    const is_public = $('#deck-public-checkbox').is(':checked');
 
     if (!name) {
         Swal.fire('Atención', 'El nombre del deck no puede estar vacío.', 'warning');
@@ -1059,15 +1058,12 @@ async function saveDeck() {
         // 1. Update deck metadata & accessories
         const deckUpdate = {
             name,
-            is_public,
             format_tag: formatTag,
             sleeves: selectedSleeves,
             deckbox: selectedDeckbox,
             coin: selectedCoin,
             dice: selectedDice,
             counters: selectedCounters,
-            calculator: selectedCalculator,
-            token: selectedToken,
             mats: selectedMats
         };
 

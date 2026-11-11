@@ -5645,14 +5645,40 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                         if (viewer) viewer.setAttribute("camera-orbit", diceAngles[rollResult] || "0deg 90deg 105%");
                     }, rollDuration);
                 } else if (customDice) {
+                    let diceFaceImg = customDice;
+                    let parsedDiceFaces = null;
+                    if (customDice.startsWith('{') && customDice.includes('}')) {
+                        try {
+                            parsedDiceFaces = JSON.parse(customDice);
+                            diceFaceImg = parsedDiceFaces[rollResult] || parsedDiceFaces['1'] || diceFaceImg;
+                        } catch (_) {}
+                    }
                     $stage.html(`
                         <div id="toss-dice-2d" style="width: 120px; height: 120px; border-radius: 16px; overflow: hidden; box-shadow: 0 0 25px rgba(0,210,255,0.6); display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); border: 2px solid #00d2ff; animation: diceRollAnimation 1.2s infinite ease-in-out;">
-                            <img src="${customDice}" style="width: 100%; height: 100%; object-fit: contain;">
+                            <img id="toss-dice-img" src="${diceFaceImg}" style="width: 100%; height: 100%; object-fit: contain;">
                         </div>
                     `);
-                    setTimeout(() => {
-                        $("#toss-dice-2d").css({ "animation": "none", "transform": "scale(1.08)" });
-                    }, rollDuration);
+                    if (parsedDiceFaces) {
+                        const diceKeys = Object.keys(parsedDiceFaces);
+                        let flipCount = 0;
+                        const diceCycleInterval = setInterval(() => {
+                            flipCount++;
+                            const randKey = diceKeys[flipCount % diceKeys.length];
+                            if (parsedDiceFaces[randKey]) {
+                                $("#toss-dice-img").attr("src", parsedDiceFaces[randKey]);
+                            }
+                        }, 120);
+                        setTimeout(() => {
+                            clearInterval(diceCycleInterval);
+                            const finalFace = parsedDiceFaces[rollResult] || diceFaceImg;
+                            $("#toss-dice-img").attr("src", finalFace);
+                            $("#toss-dice-2d").css({ "animation": "none", "transform": "scale(1.08)" });
+                        }, rollDuration);
+                    } else {
+                        setTimeout(() => {
+                            $("#toss-dice-2d").css({ "animation": "none", "transform": "scale(1.08)" });
+                        }, rollDuration);
+                    }
                 } else {
                     $stage.html(`
                         <div id="toss-dice-default" style="width: 100px; height: 100px; border-radius: 16px; background: radial-gradient(circle at center, rgba(0, 210, 255, 0.4) 0%, rgba(10, 15, 22, 0.95) 100%); border: 3px solid #00d2ff; display: flex; align-items: center; justify-content: center; font-family: 'Orbitron', sans-serif; font-size: 3rem; font-weight: 900; color: #00d2ff; box-shadow: 0 0 30px rgba(0,210,255,0.7); animation: diceRollAnimation 1.2s infinite ease-in-out;">
