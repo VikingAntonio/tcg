@@ -10,6 +10,30 @@ window.botConversationHistory = [];
 window.selectedChatImageBase64 = null;
 window.speechRecognitionInstance = null;
 
+// Helpers to get and set cached spirit instantly without delay
+function getCachedSpirit() {
+    try {
+        const cached = localStorage.getItem('viking_cached_spirit');
+        return cached ? JSON.parse(cached) : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function setCachedSpirit(spirit) {
+    if (!spirit) return;
+    try {
+        localStorage.setItem('viking_cached_spirit', JSON.stringify(spirit));
+    } catch (e) {}
+}
+
+if (!window.currentSpirit) {
+    const cached = getCachedSpirit();
+    if (cached && cached.gltf_url) {
+        window.currentSpirit = cached;
+    }
+}
+
 /**
  * Proactive AI Assistant System V1.0
  * Evaluates real-time user context with Gemini AI to trigger dynamic, relevant
@@ -325,7 +349,22 @@ async function initMichatbot(forceRefresh = false) {
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    background: transparent;
+                    background: transparent !important;
+                }
+
+                #michatbot-model-container {
+                    width: 100%;
+                    height: 100%;
+                    background: transparent !important;
+                }
+
+                #michatbot-model-container model-viewer,
+                #chat-gltf-viewer-wrapper model-viewer,
+                #michatbot-detail-viewer-container model-viewer {
+                    background-color: transparent !important;
+                    background: transparent !important;
+                    --poster-color: transparent !important;
+                    outline: none !important;
                 }
 
                 #michatbot-drag-handle {
@@ -974,6 +1013,14 @@ async function initMichatbot(forceRefresh = false) {
     setupImageUploadAndVoiceHandlers();
 
     if (forceRefresh || !window.currentSpirit) {
+        // First check fast local cache to avoid visual delay & flickering
+        if (!window.currentSpirit) {
+            const cached = getCachedSpirit();
+            if (cached && cached.gltf_url) {
+                window.currentSpirit = cached;
+            }
+        }
+
         if (typeof _supabase !== 'undefined') {
             try {
                 const isPublicSpace = window.location.pathname.includes('public.html') || !!window.currentStoreId;
@@ -982,7 +1029,10 @@ async function initMichatbot(forceRefresh = false) {
                     const { data: userRow } = await _supabase.from('usuarios').select('selected_spirit_id').eq('id', window.currentStoreId).maybeSingle();
                     if (userRow?.selected_spirit_id) {
                         const { data: spirit } = await _supabase.from('spirits').select('*').eq('id', userRow.selected_spirit_id).maybeSingle();
-                        if (spirit) window.currentSpirit = spirit;
+                        if (spirit) {
+                            window.currentSpirit = spirit;
+                            setCachedSpirit(spirit);
+                        }
                     }
                 } else {
                     let sessionUser = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : null;
@@ -991,17 +1041,25 @@ async function initMichatbot(forceRefresh = false) {
                         const { data: userRow } = await _supabase.from('usuarios').select('selected_spirit_id').eq('id', sessionUser.id).maybeSingle();
                         if (userRow?.selected_spirit_id) {
                             const { data: spirit } = await _supabase.from('spirits').select('*').eq('id', userRow.selected_spirit_id).maybeSingle();
-                            if (spirit) window.currentSpirit = spirit;
+                            if (spirit) {
+                                window.currentSpirit = spirit;
+                                setCachedSpirit(spirit);
+                            }
                         }
                     }
                 }
                 if (!window.currentSpirit) {
                     const { data } = await _supabase.from('spirits').select('*').eq('is_public', true).limit(1).maybeSingle();
-                    if (data) window.currentSpirit = data;
+                    if (data) {
+                        window.currentSpirit = data;
+                        setCachedSpirit(data);
+                    }
                 }
             } catch (e) {}
         }
         if (!window.currentSpirit) { setTimeout(() => initMichatbot(), 2000); return; }
+    } else {
+        setCachedSpirit(window.currentSpirit);
     }
 
     const gltfUrl = window.currentSpirit.gltf_url;
@@ -1027,7 +1085,11 @@ async function initMichatbot(forceRefresh = false) {
                 interpolation-decay="200"
                 auto-rotate-delay="0"
                 rotation-speed="0.5"
-                style="width: 100%; height: 100%; background-color: transparent;"
+                loading="eager"
+                reveal="auto"
+                power-preference="high-performance"
+                touch-action="pan-y"
+                style="width: 100%; height: 100%; background-color: transparent !important;"
                 oncontextmenu="return false;">
             </model-viewer>
         `);
@@ -1039,6 +1101,57 @@ async function initMichatbot(forceRefresh = false) {
         viewer.addEventListener('pointerdown', (e) => { touchStartTime = Date.now(); startX_click = e.clientX; startY_click = e.clientY; isInteractingWithModel = false; });
         viewer.addEventListener('pointermove', (e) => { if (startX_click === undefined) return; const dist = Math.sqrt(Math.pow(e.clientX - startX_click, 2) + Math.pow(e.clientY - startY_click, 2)); if (dist > 10) isInteractingWithModel = true; });
         viewer.addEventListener('click', (e) => { const touchDuration = Date.now() - touchStartTime; if (touchDuration < 300 && !isInteractingWithModel) { e.stopPropagation(); $('#michatbot-menu').fadeToggle(250); } });
+
+        // Handle WebGL context lost & restoration smoothly without leaving a white box or disappearing
+        if (!viewer._hasWebglRecoveryListeners) {
+            viewer._hasWebglRecoveryListeners = true;
+
+            const recoverModelViewer = (reason) => {
+                console.warn(`[Michatbot 3D] Recuperando visor 3D debido a: ${reason}`);
+                const currentSrc = viewer.getAttribute('src');
+                if (!currentSrc && window.currentSpirit?.gltf_url) {
+                    viewer.setAttribute('src', window.currentSpirit.gltf_url);
+                    return;
+                }
+                if (currentSrc) {
+                    // Soft reload by re-assigning src with requestAnimationFrame
+                    viewer.removeAttribute('src');
+                    requestAnimationFrame(() => {
+                        setTimeout(() => {
+                            if (viewer && window.currentSpirit?.gltf_url) {
+                                viewer.setAttribute('src', window.currentSpirit.gltf_url);
+                            }
+                        }, 100);
+                    });
+                }
+            };
+
+            viewer.addEventListener('error', (event) => {
+                console.warn('[Michatbot 3D] Error detectado en model-viewer:', event);
+                setTimeout(() => recoverModelViewer('error event'), 800);
+            });
+
+            // Listen directly on internal canvas if available
+            const attachCanvasListeners = () => {
+                const canvas = viewer.shadowRoot ? viewer.shadowRoot.querySelector('canvas') : viewer.querySelector('canvas');
+                if (canvas && !canvas._hasContextLostHandler) {
+                    canvas._hasContextLostHandler = true;
+                    canvas.addEventListener('webglcontextlost', (e) => {
+                        e.preventDefault();
+                        console.warn('[Michatbot 3D] webglcontextlost interceptado en canvas.');
+                    }, false);
+                    canvas.addEventListener('webglcontextrestored', () => {
+                        console.log('[Michatbot 3D] webglcontextrestored detectado en canvas.');
+                        recoverModelViewer('webglcontextrestored');
+                    }, false);
+                }
+            };
+
+            viewer.addEventListener('load', () => {
+                attachCanvasListeners();
+            });
+            attachCanvasListeners();
+        }
     }
 
     $(document).off('click.michatbot').on('click.michatbot', function(e) { if (!$(e.target).closest('#companion-wrapper').length) { $('#michatbot-menu').fadeOut(250); } });
@@ -1080,6 +1193,11 @@ async function initMichatbot(forceRefresh = false) {
 
     $('#michatbot-opt-detail').off('click').on('click', function(e) {
         e.stopPropagation();
+        // Pause main companion rotation while detail overlay is shown
+        const mainV = document.getElementById('michatbot-viewer');
+        if (mainV) {
+            mainV.removeAttribute('auto-rotate');
+        }
         $('#michatbot-detail-viewer-container').html(`
             <model-viewer
                 src="${window.currentSpirit.gltf_url}"
@@ -1099,7 +1217,9 @@ async function initMichatbot(forceRefresh = false) {
                 interpolation-decay="200"
                 auto-rotate-delay="0"
                 rotation-speed="0.5"
-                style="width: 100%; height: 100%; background-color: transparent;"
+                loading="eager"
+                power-preference="high-performance"
+                style="width: 100%; height: 100%; background-color: transparent !important;"
                 oncontextmenu="return false;">
             </model-viewer>
         `);
@@ -1126,7 +1246,22 @@ async function initMichatbot(forceRefresh = false) {
     $('#close-michatbot-detail').on('click touchend', function(e) {
         e.preventDefault();
         e.stopPropagation();
-        $('#michatbot-detail-overlay').fadeOut(400);
+        $('#michatbot-detail-overlay').fadeOut(300, function() {
+            // Free WebGL context immediately when detail modal is closed
+            const $detailContainer = $('#michatbot-detail-viewer-container');
+            const detViewer = $detailContainer.find('model-viewer')[0];
+            if (detViewer) {
+                try {
+                    detViewer.removeAttribute('src');
+                } catch (e) {}
+            }
+            $detailContainer.empty();
+            // Resume main companion auto-rotate if it was paused
+            const mainV = document.getElementById('michatbot-viewer');
+            if (mainV && !mainV.hasAttribute('auto-rotate')) {
+                mainV.setAttribute('auto-rotate', '');
+            }
+        });
     });
 
     setTimeout(checkAuctionStatusOnLoad, 3000);
@@ -1768,24 +1903,35 @@ function openMichatbotChat() {
     $container.css('display', 'flex').hide().fadeIn(300);
     $('#michatbot-menu').fadeOut(250);
 
+    // Pause the background companion viewer rotation while chat is open to save GPU
+    const mainV = document.getElementById('michatbot-viewer');
+    if (mainV) {
+        mainV.removeAttribute('auto-rotate');
+    }
+
     if (window.currentSpirit) {
         $('#michatbot-header-name').text(window.currentSpirit.name || "VikingTCG");
         if (window.currentSpirit.gltf_url) {
-            $('#chat-gltf-viewer-wrapper').html(`
-                <model-viewer
-                    src="${window.currentSpirit.gltf_url}"
-                    auto-rotate
-                    camera-controls
-                    shadow-intensity="1"
-                    exposure="1.2"
-                    environment-image="neutral"
-                    interaction-prompt="none"
-                    disable-zoom
-                    disable-pan
-                    camera-orbit="auto 75deg auto"
-                    style="width: 100%; height: 100%; background: transparent;">
-                </model-viewer>
-            `);
+            const $chatWrapper = $('#chat-gltf-viewer-wrapper');
+            if (!$chatWrapper.find('model-viewer').length) {
+                $chatWrapper.html(`
+                    <model-viewer
+                        src="${window.currentSpirit.gltf_url}"
+                        auto-rotate
+                        camera-controls
+                        shadow-intensity="1"
+                        exposure="1.2"
+                        environment-image="neutral"
+                        interaction-prompt="none"
+                        disable-zoom
+                        disable-pan
+                        camera-orbit="auto 75deg auto"
+                        style="width: 100%; height: 100%; background-color: transparent !important;"
+                        loading="eager"
+                        power-preference="high-performance">
+                    </model-viewer>
+                `);
+            }
         }
     }
 
@@ -1794,7 +1940,23 @@ function openMichatbotChat() {
 }
 
 function closeMichatbotChat() {
-    $('#michatbot-chat-container').fadeOut(250);
+    $('#michatbot-chat-container').fadeOut(250, function() {
+        // Free WebGL context immediately when chat modal is closed
+        const $chatViewerWrapper = $('#chat-gltf-viewer-wrapper');
+        const chatViewer = $chatViewerWrapper.find('model-viewer')[0];
+        if (chatViewer) {
+            try {
+                chatViewer.removeAttribute('src');
+            } catch (e) {}
+        }
+        $chatViewerWrapper.empty();
+
+        // Resume main companion auto-rotate
+        const mainV = document.getElementById('michatbot-viewer');
+        if (mainV && !mainV.hasAttribute('auto-rotate')) {
+            mainV.setAttribute('auto-rotate', '');
+        }
+    });
     if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
     }
@@ -2015,6 +2177,43 @@ function setupProactiveEventObservers() {
         }
     });
 }
+
+// Manage background visibility and pause rendering when tab is hidden to save GPU & battery
+document.addEventListener('visibilitychange', () => {
+    const mainViewer = document.getElementById('michatbot-viewer');
+    if (!mainViewer) return;
+    if (document.hidden) {
+        if (mainViewer.hasAttribute('auto-rotate')) {
+            mainViewer.dataset.wasAutoRotate = 'true';
+            mainViewer.removeAttribute('auto-rotate');
+        }
+    } else {
+        if (mainViewer.dataset.wasAutoRotate === 'true') {
+            mainViewer.setAttribute('auto-rotate', '');
+            delete mainViewer.dataset.wasAutoRotate;
+        }
+    }
+});
+
+// Clean up GPU memory & secondary WebGL contexts when navigating between HTML pages
+const cleanupOnPageExit = () => {
+    try {
+        const viewers = document.querySelectorAll('model-viewer');
+        viewers.forEach(v => {
+            try {
+                v.removeAttribute('auto-rotate');
+                // Remove secondary modal viewers completely to release WebGL contexts immediately
+                if (v.id !== 'michatbot-viewer') {
+                    v.removeAttribute('src');
+                    v.remove();
+                }
+            } catch (e) {}
+        });
+    } catch (e) {}
+};
+
+window.addEventListener('pagehide', cleanupOnPageExit);
+window.addEventListener('beforeunload', cleanupOnPageExit);
 
 $(document).ready(() => {
     initMichatbot();
