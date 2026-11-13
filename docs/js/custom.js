@@ -506,6 +506,8 @@ function bindSlotInteractions() {
     // Clicking slot selects it (showing 8 dots + 'Personalizar' button)
     $slots.off('click').on('click', function(e) {
         if ($(e.target).closest('.slot-resize-dot, .sticker-item').length > 0) return;
+        // Ignore the synthetic click that mobile browsers fire right after a long-press drag.
+        if (window.__suppressSlotClickUntil && Date.now() < window.__suppressSlotClickUntil) return;
 
         const slotId = $(this).data('slot-id');
 
@@ -521,7 +523,98 @@ function bindSlotInteractions() {
         $(this).addClass('slot-selected');
     });
 
+    bindTouchLongPressReorder();
     bind8ResizeDots();
+}
+
+// Long-press (touch) drag reorder for mobile: press & hold a slot, then slide
+// your finger across the grid to drop it wherever you want.
+function bindTouchLongPressReorder() {
+    const $container = $('#custom-grid-container');
+    const $slots = $container.children('.tile');
+
+    $slots.off('touchstart.customdrag');
+    $slots.off('touchmove.customdrag');
+    $slots.off('touchend.customdrag touchcancel.customdrag');
+
+    let longPressTimer = null;
+    let $dragEl = null;
+    let dragId = null;
+    let lastTargetId = null;
+    let startX = 0, startY = 0;
+    let activated = false;
+    let lastHoverEl = null;
+    const LONG_PRESS_MS = 220;
+    const MOVE_TOLERANCE = 12;
+
+    function cleanup() {
+        if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+        if ($dragEl) {
+            $dragEl.removeClass('is-dragging');
+        }
+        $('.custom-viewport-frame .tile').removeClass('drag-over');
+        if (activated && dragId) {
+            commitCurrentGridOrder();
+            // Suppress the synthetic click that follows a drag so the slot is not selected.
+            window.__suppressSlotClickUntil = Date.now() + 400;
+        }
+        $dragEl = null;
+        dragId = null;
+        lastTargetId = null;
+        activated = false;
+    }
+
+    $slots.on('touchstart.customdrag', function(e) {
+        if ($(e.target).closest('.slot-resize-dot, .sticker-item, .btn-floating-customize').length > 0) return;
+        if (e.originalEvent.touches.length !== 1) return;
+
+        $dragEl = $(this);
+        dragId = $dragEl.data('slot-id');
+        lastTargetId = null;
+        activated = false;
+
+        const t = e.originalEvent.touches[0];
+        startX = t.clientX;
+        startY = t.clientY;
+
+        longPressTimer = setTimeout(function() {
+            activated = true;
+            $dragEl.addClass('is-dragging');
+            if (navigator.vibrate) navigator.vibrate(15);
+        }, LONG_PRESS_MS);
+    });
+
+    $slots.on('touchmove.customdrag', function(e) {
+        if (!$dragEl || e.originalEvent.touches.length !== 1) return;
+        const t = e.originalEvent.touches[0];
+
+        if (!activated) {
+            // Cancel if the finger moved too much before the long press fired
+            if (Math.abs(t.clientX - startX) > MOVE_TOLERANCE || Math.abs(t.clientY - startY) > MOVE_TOLERANCE) {
+                cleanup();
+            }
+            return;
+        }
+
+        e.preventDefault();
+
+        const hoverEl = document.elementFromPoint(t.clientX, t.clientY);
+        const $target = hoverEl ? $(hoverEl).closest('.tile') : null;
+
+        if ($target && $target.length && $target[0] !== $dragEl[0]) {
+            $('.custom-viewport-frame .tile').removeClass('drag-over');
+            $target.addClass('drag-over');
+            const targetId = $target.data('slot-id');
+            if (targetId && targetId !== dragId && lastTargetId !== targetId) {
+                lastTargetId = targetId;
+                handleRealtimeReorder(dragId, targetId);
+            }
+        }
+    });
+
+    $slots.on('touchend.customdrag touchcancel.customdrag', function() {
+        cleanup();
+    });
 }
 
 function handleRealtimeReorder(fromId, toId) {
@@ -603,9 +696,18 @@ function bind8ResizeDots() {
         const startX = e.pageX !== undefined ? e.pageX : (e.originalEvent.touches ? e.originalEvent.touches[0].pageX : 0);
         const startY = e.pageY !== undefined ? e.pageY : (e.originalEvent.touches ? e.originalEvent.touches[0].pageY : 0);
 
-        // Precise drag sensitivity thresholds
-        const cellWidthStep = isMobile ? 130 : 180;
-        const cellHeightStep = 110;
+        // Mobile: measure the real rendered cell size so one cell of finger movement
+        // equals exactly one column/row of resize (intuitive on touch screens).
+        // PC keeps its original fixed thresholds.
+        let cellWidthStep, cellHeightStep;
+        if (isMobile) {
+            const slotRect = $slot[0].getBoundingClientRect();
+            cellWidthStep = Math.max(40, slotRect.width / initialCol);
+            cellHeightStep = Math.max(40, slotRect.height / initialRow);
+        } else {
+            cellWidthStep = 180;
+            cellHeightStep = 110;
+        }
 
         // Visual feedback during active resizing
         $slot.css('box-shadow', '0 0 0 2px #a29bfe, 0 10px 30px rgba(0,0,0,0.5)');
@@ -844,11 +946,6 @@ function toggleUnitCustomBar(slotId) {
     }
 
     state.selectedSlotId = slotId;
-
-    // Find slot title
-    const currentSlots = getUserAllowedSlots(state.currentTargetView);
-    const slotMeta = currentSlots.find(s => s.id === slotId);
-    $('#unit-modal-slot-title').text(slotMeta ? `Personalizar: ${slotMeta.title}` : 'Personalizar Slot');
 
     const slotConfig = state.slotsConfig[slotId] || {};
 
