@@ -296,6 +296,54 @@
             transform: translateY(-2px) !important;
             box-shadow: 0 10px 25px rgba(139, 92, 246, 0.5) !important;
         }
+
+        /* ===== Botones planos (sin iconos ni degradados) ===== */
+        .btn,
+        .btn-secondary,
+        .btn-sm,
+        .btn-back-to-binders-view,
+        #btn-save-slot,
+        .slot-tab-btn.active,
+        .wishlist-tab-btn.active {
+            background: #9333ea !important;
+            background-image: none !important;
+            color: #ffffff !important;
+            border: none !important;
+            box-shadow: none !important;
+            text-shadow: none !important;
+            filter: none !important;
+        }
+
+        .btn:hover,
+        .btn-secondary:hover,
+        .btn-sm:hover,
+        .btn-back-to-binders-view:hover,
+        #btn-save-slot:hover {
+            background: #a855f7 !important;
+            background-image: none !important;
+            filter: none !important;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        /* Botones de eliminar / rechazar: se mantienen rojos */
+        .btn-danger,
+        .btn-danger:hover,
+        .btn-reject-sale,
+        .btn-reject-sale:hover {
+            background: #ff4757 !important;
+            background-image: none !important;
+            color: #ffffff !important;
+            box-shadow: none !important;
+            filter: none !important;
+        }
+
+        /* Iconos fuera de los botones */
+        .btn i,
+        .btn-secondary i,
+        .btn-danger i {
+            display: none !important;
+        }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -319,6 +367,14 @@
                     <a href="admin.html" class="menu-item" id="menu-btn-home"><i class="fas fa-home"></i> Mi Panel</a>
                     <a href="play.html" class="menu-item"><i class="fas fa-gamepad"></i> Play!</a>
                     <a href="#" class="menu-item logout" id="menu-btn-logout" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+                    <div class="theme-menu-container">
+                        <span class="theme-menu-label">Tema</span>
+                        <div class="theme-switcher-inline">
+                            <button class="pill-icon theme-btn-small" data-theme="theme-light" title="Modo Claro"><i class="fas fa-sun"></i></button>
+                            <button class="pill-icon theme-btn-small" data-theme="theme-purple" title="Modo Morado"><i class="fas fa-magic"></i></button>
+                            <button class="pill-icon theme-btn-small" data-theme="theme-dark" title="Modo Oscuro"><i class="fas fa-moon"></i></button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -336,13 +392,13 @@
     <div id="authenticated-content" style="display: none; width: 100%; max-width: 98vw; margin: 0 auto; padding-top: 90px; padding-left: 20px; padding-right: 20px; box-sizing: border-box;">
         <div id="view-dashboard" class="admin-section">
             <div class="admin-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 25px;">
-                <button id="btn-back-to-web" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Volver a la Web</button>
+                <button id="btn-back-to-web" class="btn btn-secondary">Volver a la Web</button>
                 <h1 style="margin: 0; font-size: 2rem; font-weight: 900; background: linear-gradient(135deg, #00d2ff, #a259ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Mis Binders</h1>
                 <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                    <button id="btn-create-album" class="btn" style="background: linear-gradient(135deg, #8b5cf6, #d946ef); border: none; font-weight: 800; border-radius: 50px; padding: 10px 20px;"><i class="fas fa-plus"></i> Crear Nuevo Binder</button>
-                    <button id="btn-organize-albums" class="btn btn-secondary" style="border-radius: 50px; font-weight: 800; padding: 10px 20px;"><i class="fas fa-sort"></i> Organizar</button>
-                    <button id="btn-nav-inversiones" class="btn btn-secondary" style="border-radius: 50px; font-weight: 800; padding: 10px 20px; border-color: #f59e0b; color: #f59e0b;"><i class="fas fa-chart-line"></i> Inversiones</button>
-                    <button id="btn-nav-reportes" class="btn btn-secondary" style="border-radius: 50px; font-weight: 800; padding: 10px 20px; border-color: #00d2ff; color: #00d2ff;"><i class="fas fa-receipt"></i> Reportes</button>
+                    <button id="btn-create-album" class="btn" style="border: none; font-weight: 800; border-radius: 50px; padding: 10px 20px;">Crear Nuevo Binder</button>
+                    <button id="btn-organize-albums" class="btn btn-secondary" style="border-radius: 50px; font-weight: 800; padding: 10px 20px;">Organizar</button>
+                    <button id="btn-nav-inversiones" class="btn btn-secondary" style="border-radius: 50px; font-weight: 800; padding: 10px 20px;">Inversiones</button>
+                    <button id="btn-nav-reportes" class="btn btn-secondary" style="border-radius: 50px; font-weight: 800; padding: 10px 20px;">Reportes</button>
                 </div>
             </div>
             <div id="album-list" class="album-list" style="max-width: 1400px; margin: 0 auto;"></div>
@@ -353,7 +409,6 @@
             <div class="admin-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 25px;">
                 <div style="display: flex; align-items: center; gap: 12px;">
                     <button class="btn btn-back-to-binders-view" style="border-radius: 50px; font-weight: 700; background: #9333ea; color: #ffffff; border: none; padding: 10px 22px; cursor: pointer;">Volver a Binders</button>
-                    <h1 style="margin: 0; font-size: 1.8rem; font-weight: 900; color: #ffffff; letter-spacing: 0.5px;">Inversiones</h1>
                 </div>
                 <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                     <input type="text" id="inv-table-search" placeholder="Buscar por carta o binder..." style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.15); border-radius: 30px; padding: 8px 16px; color: #fff; font-size: 0.88rem; outline: none;">
@@ -393,11 +448,11 @@
         <div id="view-reportes" class="admin-section" style="display: none; width: 100%;">
             <div class="admin-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
                 <div style="display: flex; align-items: center; gap: 12px;">
-                    <button class="btn btn-secondary btn-back-to-binders-view" style="border-radius: 50px; font-weight: 800;"><i class="fas fa-arrow-left"></i> Volver a Binders</button>
-                    <h1 style="margin: 0; font-size: 1.8rem; font-weight: 900; color: #00d2ff;"><i class="fas fa-receipt"></i> Reportes de Ventas</h1>
+                    <button class="btn btn-secondary btn-back-to-binders-view" style="border-radius: 50px; font-weight: 800;">Volver a Binders</button>
+                    <h1 style="margin: 0; font-size: 1.8rem; font-weight: 900; color: #00d2ff;">Reportes de Ventas</h1>
                 </div>
                 <div style="display: flex; gap: 10px; align-items: center;">
-                    <button id="btn-refresh-reportes" class="btn btn-secondary" style="border-radius: 50px; font-weight: 800; padding: 8px 18px;"><i class="fas fa-sync-alt"></i> Actualizar</button>
+                    <button id="btn-refresh-reportes" class="btn btn-secondary" style="border-radius: 50px; font-weight: 800; padding: 8px 18px;">Actualizar</button>
                 </div>
             </div>
 
@@ -425,9 +480,9 @@
 
         <div id="view-editor" class="admin-section" style="display:none; max-width: 1200px; margin: 0 auto;">
             <div class="admin-header">
-                <button id="btn-back-to-albums" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Volver</button>
+                <button id="btn-back-to-albums" class="btn btn-secondary">Volver</button>
                 <h1 id="editor-title">Editar Álbum</h1>
-                <button id="btn-save-album-meta" class="btn"><i class="fas fa-save"></i> Guardar Cambios</button>
+                <button id="btn-save-album-meta" class="btn">Guardar Cambios</button>
             </div>
             <div class="album-card" style="max-width: 600px; margin: 0 auto 40px;">
                 <div class="form-group"><label>Título</label><input type="text" id="input-album-title"></div>
@@ -454,8 +509,8 @@
             <span id="close-slot-modal" class="close-btn">&times;</span>
 
             <div class="slot-modal-tabs">
-                <button class="slot-tab-btn active" data-tab="slot-tab-info"><i class="fas fa-info-circle"></i> Información General</button>
-                <button class="slot-tab-btn" data-tab="slot-tab-images"><i class="fas fa-images"></i> Galería</button>
+                <button class="slot-tab-btn active" data-tab="slot-tab-info">Información General</button>
+                <button class="slot-tab-btn" data-tab="slot-tab-images">Galería</button>
             </div>
 
             <div id="slot-tab-info" class="slot-tab-content active">
@@ -545,8 +600,8 @@
             </div>
 
             <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button id="btn-save-slot" class="btn" style="flex: 1;"><i class="fas fa-check-circle"></i> Guardar Carta</button>
-                <button id="btn-delete-slot" class="btn btn-danger" style="display: none; background: #ff4757; color: #fff; border: none; border-radius: 14px; font-weight: 800; padding: 14px 20px; cursor: pointer;"><i class="fas fa-trash-alt"></i> Vaciar Slot</button>
+                <button id="btn-save-slot" class="btn" style="flex: 1;">Guardar Carta</button>
+                <button id="btn-delete-slot" class="btn btn-danger" style="display: none; background: #ff4757; color: #fff; border: none; border-radius: 14px; font-weight: 800; padding: 14px 20px; cursor: pointer;">Vaciar Slot</button>
             </div>
         </div>
     </div>

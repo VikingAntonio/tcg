@@ -157,6 +157,14 @@
                     <a href="admin.html" class="menu-item" id="menu-btn-home"><i class="fas fa-home"></i> Mi Panel</a>
                     <a href="play.html" class="menu-item"><i class="fas fa-gamepad"></i> Play!</a>
                     <a href="#" class="menu-item logout" id="menu-btn-logout"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+                    <div class="theme-menu-container">
+                        <span class="theme-menu-label">Tema</span>
+                        <div class="theme-switcher-inline">
+                            <button class="pill-icon theme-btn-small" data-theme="theme-light" title="Modo Claro"><i class="fas fa-sun"></i></button>
+                            <button class="pill-icon theme-btn-small" data-theme="theme-purple" title="Modo Morado"><i class="fas fa-magic"></i></button>
+                            <button class="pill-icon theme-btn-small" data-theme="theme-dark" title="Modo Oscuro"><i class="fas fa-moon"></i></button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -445,6 +453,11 @@
     <script src="js/deseos.js"></script>
     <script src="js/michatbot.js"></script>
     <script>
+        // Theme switcher (pill + dropdown) — uses applyTheme() defined in deseos.js
+        $(document).on('click', '.theme-btn-small', function() {
+            applyTheme($(this).data('theme'));
+        });
+
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js')

@@ -3855,6 +3855,13 @@ body.theme-light .amazon-orig-strikethrough {
     gap: 15px;
 }
 
+.theme-menu-label {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-muted, #a4b0be);
+    letter-spacing: 0.4px;
+}
+
 .theme-switcher-inline {
     display: flex;
     gap: 5px;
@@ -3868,6 +3875,18 @@ body.theme-light .amazon-orig-strikethrough {
     width: 30px;
     height: 30px;
     font-size: 0.8rem;
+}
+
+/* Theme switcher inside the profile dropdown: hidden on PC (the pill already has it),
+   shown on mobile where the main pill group is hidden. */
+.user-dropdown-menu .theme-menu-container {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .user-dropdown-menu .theme-menu-container {
+        display: flex;
+    }
 }
 
 .menu-item.logout {

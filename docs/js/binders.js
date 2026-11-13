@@ -676,7 +676,7 @@ async function loadAlbums() {
                 <h3>${album.title}</h3>
                 <div style="display:flex; gap:10px; margin-top:10px;">
                     <button class="btn btn-edit-album" style="flex:1;">Editar</button>
-                    <button class="btn btn-secondary btn-share-album"><i class="fas fa-share-alt"></i></button>
+                    <button class="btn btn-share-album">Compartir</button>
                     <button class="btn btn-danger btn-delete-album">Eliminar</button>
                 </div>
             </div>
@@ -977,7 +977,7 @@ function renderInversionesSummary(binders, pages, slots) {
             <div style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 14px; padding: 18px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between;">
                 <div>
                     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 12px;">
-                        <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: #ffffff;">${b.title}</h3>
+                        <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: #ffffff !important;">${b.title || 'Binder'}</h3>
                         <span style="background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid #a855f7; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 800;">
                             ${binderPages.length} Hoja${binderPages.length !== 1 ? 's' : ''}
                         </span>
@@ -1207,10 +1207,10 @@ function renderReportesTable(sales) {
             actionButtons = `
                 <div style="display: flex; gap: 8px; justify-content: center;">
                     <button class="btn btn-confirm-sale" data-id="${sale.id}" style="background: #00ff88; color: #000; font-weight: 900; border: none; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; cursor: pointer;" title="Confirmar venta y descontar existencias">
-                        <i class="fas fa-check"></i> Sí (Efectuada)
+                        Sí (Efectuada)
                     </button>
                     <button class="btn btn-reject-sale" data-id="${sale.id}" style="background: #ff4757; color: #fff; font-weight: 800; border: none; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; cursor: pointer;" title="Rechazar o cancelar pedido">
-                        <i class="fas fa-times"></i> No
+                        No
                     </button>
                 </div>
             `;

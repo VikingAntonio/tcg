@@ -106,11 +106,6 @@
             border-bottom-color: #e2e8f0 !important;
         }
 
-        body.theme-light .unit-modal-header {
-            background: #f1f5f9 !important;
-            border-bottom-color: #e2e8f0 !important;
-        }
-
         body.theme-light .compact-select-input,
         body.theme-light .unit-bar-select {
             background: #ffffff !important;
@@ -474,6 +469,24 @@
         .slot-resize-dot.dot-sw { bottom: -6px; left: -6px; cursor: nesw-resize; }
         .slot-resize-dot.dot-se { bottom: -6px; right: -6px; cursor: nwse-resize; }
 
+        /* Bigger, easier to grab resize handles on touch/mobile screens */
+        @media (max-width: 768px) {
+            .slot-resize-dot {
+                width: 20px;
+                height: 20px;
+                border-width: 3px;
+                box-shadow: 0 0 8px rgba(0, 0, 0, 0.85);
+            }
+            .slot-resize-dot.dot-n  { top: -10px; }
+            .slot-resize-dot.dot-s  { bottom: -10px; }
+            .slot-resize-dot.dot-w  { left: -10px; }
+            .slot-resize-dot.dot-e  { right: -10px; }
+            .slot-resize-dot.dot-nw { top: -10px; left: -10px; }
+            .slot-resize-dot.dot-ne { top: -10px; right: -10px; }
+            .slot-resize-dot.dot-sw { bottom: -10px; left: -10px; }
+            .slot-resize-dot.dot-se { bottom: -10px; right: -10px; }
+        }
+
         /* Floating 'Personalizar' button attached to selected slot */
         .btn-floating-customize {
             position: absolute;
@@ -642,10 +655,8 @@
         .unit-modal-header {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 14px 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            background: rgba(255, 255, 255, 0.02);
+            justify-content: flex-end;
+            padding: 10px 14px 0;
         }
 
         .unit-modal-title {
@@ -752,6 +763,31 @@
             padding: 6px 2px;
             box-sizing: border-box;
             scrollbar-width: thin;
+        }
+
+        /* Stickers library background — adapts nicely to every theme (no plain white) */
+        .unit-modal-stickers-section {
+            background: linear-gradient(160deg, rgba(124, 58, 237, 0.16), rgba(0, 210, 255, 0.06));
+        }
+        body.theme-dark .unit-modal-stickers-section {
+            background: linear-gradient(160deg, #262042 0%, #17202e 100%) !important;
+        }
+        body.theme-purple .unit-modal-stickers-section {
+            background: linear-gradient(160deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05)) !important;
+        }
+        body.theme-light .unit-modal-stickers-section {
+            background: linear-gradient(160deg, #f1ecff 0%, #e8f3ff 100%) !important;
+        }
+
+        body.theme-dark .unit-custom-modal-card {
+            background: linear-gradient(160deg, #1c2530 0%, #141b24 100%) !important;
+        }
+        body.theme-purple .unit-custom-modal-card {
+            background: linear-gradient(160deg, #7d5fff 0%, #6a51d9 100%) !important;
+        }
+        body.theme-light .unit-custom-modal-card {
+            background: linear-gradient(160deg, #f6f3ff 0%, #eef4ff 100%) !important;
+            border-color: #d8d2f0 !important;
         }
 
         .picker-sticker-item {
@@ -943,16 +979,37 @@
                 width: 95vw !important;
                 border-radius: 18px !important;
             }
+            /* 4 controls (Fondo, Borde, Letra, Tipografía) in a single row, no overflow */
             .unit-modal-controls-row {
-                grid-template-columns: repeat(2, 1fr) !important;
-                gap: 10px !important;
-                padding: 12px 14px !important;
+                grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+                gap: 6px !important;
+                padding: 10px 12px !important;
+            }
+            .unit-bar-group {
+                gap: 4px !important;
+                min-width: 0 !important;
+                align-items: center !important;
+            }
+            .unit-bar-label {
+                font-size: 0.58rem !important;
+                letter-spacing: 0 !important;
+            }
+            .unit-bar-select {
+                padding: 6px 4px !important;
+                font-size: 0.62rem !important;
+                text-align: center !important;
+            }
+            .unit-bar-group .swatch-btn {
+                width: 26px !important;
+                height: 26px !important;
             }
             .unit-modal-stickers-section {
-                padding: 10px 14px 16px !important;
+                padding: 10px 12px 16px !important;
             }
             .stickers-picker-popup {
-                max-height: 180px !important;
+                max-height: 42vh !important;
+                grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)) !important;
+                gap: 8px !important;
             }
         }
 
@@ -990,6 +1047,14 @@
                     <a href="admin.html" class="menu-item" id="menu-btn-home"><i class="fas fa-home"></i> Mi Panel</a>
                     <a href="play.html" class="menu-item"><i class="fas fa-gamepad"></i> Play!</a>
                     <a href="#" class="menu-item logout" id="menu-btn-logout"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+                    <div class="theme-menu-container">
+                        <span class="theme-menu-label">Tema</span>
+                        <div class="theme-switcher-inline">
+                            <button class="pill-icon theme-btn-small" data-theme="theme-light" title="Modo Claro"><i class="fas fa-sun"></i></button>
+                            <button class="pill-icon theme-btn-small" data-theme="theme-purple" title="Modo Morado"><i class="fas fa-magic"></i></button>
+                            <button class="pill-icon theme-btn-small" data-theme="theme-dark" title="Modo Oscuro"><i class="fas fa-moon"></i></button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1073,13 +1138,9 @@
     <!-- Centered Unit Customization Modal & Backdrop -->
     <div class="custom-modal-backdrop" id="unit-custom-modal-backdrop">
         <div class="unit-custom-modal-card" id="unit-custom-modal-card">
-            <!-- Modal Header with Title, Restablecer and Close Button -->
+            <!-- Modal Header (solo boton de cierre, sin titulo ni restablecer) -->
             <div class="unit-modal-header">
-                <div class="unit-modal-title">
-                    <span id="unit-modal-slot-title">Personalizar Slot</span>
-                </div>
                 <div class="unit-modal-actions">
-                    <button class="unit-modal-btn-reset" id="btn-unit-reset" title="Restablecer este slot a los valores globales">Restablecer a Global</button>
                     <button class="unit-modal-btn-close" id="btn-close-unit-modal" aria-label="Cerrar">&times;</button>
                 </div>
             </div>
