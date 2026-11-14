@@ -37,3 +37,24 @@ No hay framework de tests. Se usa Playwright ad-hoc con el server local:
 ## Convenciones
 - No introducir build ni dependencias nuevas. Mantener funciones existentes al rediseñar UI.
 - Español en comentarios/UI. No dejar archivos temporales en el repo.
+
+## Regresión GLTF móvil (redimensionar el asistente) — causa y arreglo
+Síntoma: al cambiar el tamaño del asistente 3D en móvil, la pantalla parpadea en negro y el `model-viewer` queda en blanco; al recargar, el visor no renderiza.
+Causa real: `model-viewer` 3.3.x dimensiona su buffer WebGL según `devicePixelRatio` (×3 en iPhone). Un visor de 150px reservaba 450px. El slider disparaba `input` decenas de veces por segundo y cada cambio reasignaba el buffer → se agotaba la memoria de GPU y se perdía el contexto.
+Arreglo aplicado en `docs/js/michatbot.js` (commit 1bb16e5):
+- `devicePixelRatio` efectivo limitado a 1.5 en móviles (canvas 225 en vez de 450 en iPhone 12).
+- `setScale(scale, persist)`: agrupa los cambios en un `requestAnimationFrame` (un solo cambio de tamaño por frame) y persiste en `localStorage('michatbot_scale')`.
+- Al iniciar se restaura el tamaño guardado (evita volver a 150px y reasignar).
+- La recuperación de contexto ya NO recarga `src` en bucle; solo actúa ante un `error` real de carga, con backoff, y libera el contexto viejo con `WEBGL_lose_context` antes de reconstruir.
+- `visibilitychange` pausa la rotación de todos los visores cuando la pestaña queda oculta.
+Prueba de regresión: arrastrar el slider (40–50 ticks). Antes: canvas 1125px, reasignaciones constantes. Después: canvas 563px (DPR 1.5), 1 solo contexto, `loaded:true`. Script Playwright temporal; borrarlo al terminar.
+
+## Panel superior móvil (`.top-left-panel` / `.pill-panel`)
+- Orden visual (row-reverse): tema > carrito > avatar. Notificaciones las inyecta `js/notifications.js` (cargado por `js/utils.js`), insertándose antes de `.user-menu-container`.
+- En móvil `#header-theme-group` se oculta (queda en el menú de avatar); solo visibles carrito + avatar + notificaciones.
+- OJO con falsos positivos: al medir con Playwright, el ancho del panel puede dar 106 en vez de 150 si se mide antes de que `notifications.js` inyecte el icono (carga asíncrona). Esperar ~5-6s o esperar el nodo.
+- `index.html` y `packages.html` usan `css/style2.css` (sistema neumórfico con variables `--primary`, `--bg-main`), NO el sistema `--primary-color` de `style.css`. Por eso sus botones de tema son inertes a propósito: NO añadir el grupo de tema ahí sin migrar las variables. `public.html` usa el header de tienda (`.store-header`), intencional.
+- Tras cambios de assets, subir `STATIC_CACHE` en `docs/sw.js` (p. ej. v219 → v220) para invalidar la caché del service worker.
+
+## Carrito — detalles en etiquetas
+Los detalles del producto se muestran como chips (`.cart-tags`/`.cart-tag`) que se envuelven, en vez de una línea con ` | `. La fila de acciones (`.cart-item-foot`) hace `flex-wrap` en móvil. Verificar `overlap:false` y `scrollWidth === innerWidth`.
