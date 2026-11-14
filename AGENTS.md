@@ -58,3 +58,19 @@ Prueba de regresión: arrastrar el slider (40–50 ticks). Antes: canvas 1125px,
 
 ## Carrito — detalles en etiquetas
 Los detalles del producto se muestran como chips (`.cart-tags`/`.cart-tag`) que se envuelven, en vez de una línea con ` | `. La fila de acciones (`.cart-item-foot`) hace `flex-wrap` en móvil. Verificar `overlap:false` y `scrollWidth === innerWidth`.
+
+## Visor 3D móvil ligero (`docs/js/michatbot-mobile3d.js`)
+Sustituye a `model-viewer` **solo en móvil/GPU débil** (`useMobile3D()`), porque `model-viewer` 3.3.x crea un contexto WebGL pesado por cada visor y en el celular se agotan (cuadro blanco / pantalla negra).
+- API: `window.MichatbotMobile3D = { isSupported, isCreated, getViewer, create, moveTo, setAutoRotate, pause, resume, release, setModel }`.
+- Un **único** `<canvas class="michatbot-mobile-viewer">` reutilizado para home/chat/detalle mediante `moveTo(container)`; nunca se crea un 2º contexto.
+- Render bajo demanda (solo rota si hay auto-rotate o cambio), DPR limitado, y recuperación ante `webglcontextlost` (recrea el renderer en el mismo canvas).
+- Three.js se importa por `importmap` si la página ya lo declara (`carrito.html`, `public.html`) o por CDN `esm.sh/three@0.160.0` si no; así no se duplica la instancia de three.
+- `isSupported()` se prueba **una sola vez** y se cachea (no crear contextos de prueba repetidos).
+- Si el módulo no carga o falla `init()`, `create()` devuelve `null` y `michatbot.js` cae a `model-viewer` (`buildCornerModelViewer`). Por eso el chat/detalle usan `useMobileViewer()` (comprueba `isCreated()`) antes de `moveTo`.
+- Cargar el script **antes** de `michatbot.js` en cada vista (25 HTML). En escritorio el flujo con `model-viewer` queda intacto.
+
+## Rendimiento móvil — Service Worker (crítico)
+`docs/sw.js` no llegaba a **instalarse**: `URLS_TO_CACHE` incluía `./build.html`, que ya no existe, y `cache.addAll()` rechaza todo el install si **una** URL da 404 → el SW quedaba sin activar y **no se cacheaba nada**. Como el `.gltf` del asistente referencia un `.bin` de ~2.7 MB, se re-descargaba en cada navegación (lentísimo en móvil).
+- Install tolerante: se cachea cada URL por separado (`cache.add(url).catch(...)`) en vez de `addAll`.
+- `isModelAsset` incluye `bin|ktx2|basis|drc` además de `glb|gltf`, para cache-first de los buffers/texturas del modelo (antes caían al branch network-first de Supabase).
+- Al cambiar assets, subir `STATIC_CACHE` (ahora `viking-static-v221`).

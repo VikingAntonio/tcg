@@ -1,4 +1,4 @@
-const STATIC_CACHE = 'viking-static-v220';
+const STATIC_CACHE = 'viking-static-v221';
 const IMAGE_CACHE = 'viking-images-v1';
 const DATA_CACHE = 'viking-data-v1';
 
@@ -31,7 +31,7 @@ const URLS_TO_CACHE = [
   './clientes.html',
   './tracking.html',
   './toonstore.html',
-  './build.html',
+
   './adminClaim.html',
   './subastas.html',
   './users.html',
@@ -101,7 +101,12 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(STATIC_CACHE).then(cache => {
       console.log('[Service Worker] Caching all assets');
-      return cache.addAll(URLS_TO_CACHE);
+      // cache.addAll() rejects the whole install if ANY url 404s, which left the
+      // service worker permanently uninstalled (and therefore nothing cached).
+      // Add entries individually and tolerate the ones that fail.
+      return Promise.all(URLS_TO_CACHE.map(url =>
+        cache.add(url).catch(err => console.warn('[Service Worker] Skipped', url, err && err.message))
+      ));
     })
   );
   self.skipWaiting();
@@ -129,24 +134,30 @@ self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
   // 1. Strategy: Cache-First for Images & Models
+  // Includes the 3D model payloads: a .gltf references sibling .bin buffers and
+  // textures, and those used to fall through to Supabase's network-first branch,
+  // so the heavy assistant model re-downloaded on every navigation (very slow on
+  // mobile). Caching them here keeps the companion instant after first load.
+  const isModelAsset = /\.(jpg|jpeg|png|gif|webp|svg|glb|gltf|bin|ktx2|basis|drc)$/.test(url.pathname);
   if (
     url.hostname.includes('cloudinary.com') ||
     url.hostname.includes('tcgplayer-cdn.tcgplayer.com') ||
     url.hostname.includes('images.tcgplayer.com') ||
     url.hostname.includes('tcgdex.net') ||
     url.hostname.includes('github.io') ||
-    url.pathname.match(/\.(jpg|jpeg|png|gif|webp|svg|glb|gltf)$/)
+    isModelAsset
   ) {
     event.respondWith(
       caches.open(IMAGE_CACHE).then(cache => {
         return cache.match(event.request).then(response => {
-          return response || fetch(event.request).then(networkResponse => {
+          if (response) return response;
+          return fetch(event.request).then(networkResponse => {
             if (networkResponse.status === 200) {
               cache.put(event.request, networkResponse.clone());
             }
             return networkResponse;
           }).catch(() => {
-              // Fail silently for images
+              // Fail silently for images/models
           });
         });
       })
