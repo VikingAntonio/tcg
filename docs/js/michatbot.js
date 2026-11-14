@@ -95,6 +95,63 @@ function releaseModelViewerContext(el) {
 }
 window.releaseModelViewerContext = releaseModelViewerContext;
 
+// On phones the corner assistant uses the lightweight Three.js viewer
+// (js/michatbot-mobile3d.js) instead of model-viewer: a single, cheaper WebGL
+// context with on-demand rendering and DPR capping, which removes the white-box
+// / context-loss problem. Desktop keeps model-viewer untouched.
+function useMobile3D() {
+    return !!(window.MichatbotMobile3D && window.MichatbotMobile3D.isSupported() && isLowPowerDevice());
+}
+// True only once the mobile viewer actually exists. If its modules fail to load
+// we fall back to model-viewer, so chat/detail must not try to move a viewer
+// that was never created.
+function useMobileViewer() {
+    return useMobile3D() && window.MichatbotMobile3D.isCreated();
+}
+window.useMobile3D = useMobile3D;
+window.useMobileViewer = useMobileViewer;
+
+// Builds the corner assistant viewer with model-viewer (desktop, and the mobile
+// fallback when the lightweight Three.js viewer could not start).
+function buildCornerModelViewer(gltfUrl, forceRefresh) {
+    const $modelContainer = $('#michatbot-model-container');
+    const $viewer = $('#michatbot-viewer');
+    // If the primary viewer is currently on loan to the chat/detail overlay,
+    // never rebuild it (that would leave a duplicate #michatbot-viewer behind).
+    const viewerIsOnLoan = $viewer.length && !$modelContainer.find('#michatbot-viewer').length;
+    if (viewerIsOnLoan) {
+        if ($viewer.attr('src') !== gltfUrl) $viewer.attr('src', gltfUrl);
+    } else if (forceRefresh || !$viewer.length || $viewer.attr('src') !== gltfUrl) {
+        // Release the outgoing viewer's GPU context before dropping its markup,
+        // otherwise the discarded context lingers and phones run out of them.
+        if ($viewer.length) releaseModelViewerContext($viewer[0]);
+        $modelContainer.html(`
+            <model-viewer
+                id="michatbot-viewer"
+                src="${gltfUrl}"
+                auto-rotate
+                camera-controls
+                ${primaryViewerQualityAttrs()}
+                interaction-prompt="none"
+                camera-orbit="auto 75deg auto"
+                field-of-view="auto"
+                min-field-of-view="5deg"
+                max-field-of-view="45deg"
+                disable-zoom
+                disable-pan
+                bounds="tight"
+                auto-rotate-delay="0"
+                rotation-speed="0.5"
+                loading="eager"
+                reveal="auto"
+                touch-action="pan-y"
+                style="width: 100%; height: 100%; background-color: transparent !important;"
+                oncontextmenu="return false;">
+            </model-viewer>
+        `);
+    }
+}
+
 // Helpers to get and set cached spirit instantly without delay
 function getCachedSpirit() {
     try {
@@ -1160,40 +1217,28 @@ async function initMichatbot(forceRefresh = false) {
     }
 
     const gltfUrl = window.currentSpirit.gltf_url;
-    const $viewer = $('#michatbot-viewer');
-    // If the primary viewer is currently on loan to the chat/detail overlay,
-    // never rebuild it (that would leave a duplicate #michatbot-viewer behind).
-    const viewerIsOnLoan = $viewer.length && !$('#michatbot-model-container').find('#michatbot-viewer').length;
-    if (viewerIsOnLoan) {
-        if ($viewer.attr('src') !== gltfUrl) $viewer.attr('src', gltfUrl);
-    } else if (forceRefresh || !$viewer.length || $viewer.attr('src') !== gltfUrl) {
-        // Release the outgoing viewer's GPU context before dropping its markup,
-        // otherwise the discarded context lingers and phones run out of them.
-        if ($viewer.length) releaseModelViewerContext($viewer[0]);
-        $('#michatbot-model-container').html(`
-            <model-viewer
-                id="michatbot-viewer"
-                src="${gltfUrl}"
-                auto-rotate
-                camera-controls
-                ${primaryViewerQualityAttrs()}
-                interaction-prompt="none"
-                camera-orbit="auto 75deg auto"
-                field-of-view="auto"
-                min-field-of-view="5deg"
-                max-field-of-view="45deg"
-                disable-zoom
-                disable-pan
-                bounds="tight"
-                auto-rotate-delay="0"
-                rotation-speed="0.5"
-                loading="eager"
-                reveal="auto"
-                touch-action="pan-y"
-                style="width: 100%; height: 100%; background-color: transparent !important;"
-                oncontextmenu="return false;">
-            </model-viewer>
-        `);
+    const $modelContainer = $('#michatbot-model-container');
+    if (useMobile3D()) {
+        // Mobile: single lightweight Three.js viewer reused everywhere. If it
+        // cannot start, fall back to model-viewer so the assistant still shows.
+        if (!$modelContainer.find('.michatbot-mobile-viewer').length) $modelContainer.empty();
+        window.MichatbotMobile3D.create($modelContainer[0], { autoRotate: true })
+            .then((v) => {
+                if (v) v.setModel(gltfUrl);
+                else buildCornerModelViewer(gltfUrl, forceRefresh);
+            });
+    } else {
+        buildCornerModelViewer(gltfUrl, forceRefresh);
+    }
+
+    // The tap-to-open-menu gesture lives on the model container so it works for
+    // both model-viewer (desktop) and the Three.js canvas (mobile).
+    if ($modelContainer.length && !$modelContainer[0]._hasTapHandler) {
+        $modelContainer[0]._hasTapHandler = true;
+        let touchStartTime = 0, startX_click, startY_click, isInteractingWithModel = false;
+        $modelContainer[0].addEventListener('pointerdown', (e) => { touchStartTime = Date.now(); startX_click = e.clientX; startY_click = e.clientY; isInteractingWithModel = false; });
+        $modelContainer[0].addEventListener('pointermove', (e) => { if (startX_click === undefined) return; const dist = Math.sqrt(Math.pow(e.clientX - startX_click, 2) + Math.pow(e.clientY - startY_click, 2)); if (dist > 10) isInteractingWithModel = true; });
+        $modelContainer[0].addEventListener('click', (e) => { const touchDuration = Date.now() - touchStartTime; if (touchDuration < 300 && !isInteractingWithModel) { e.stopPropagation(); $('#michatbot-menu').fadeToggle(250); } });
     }
 
     const viewer = document.getElementById('michatbot-viewer');
@@ -1326,7 +1371,10 @@ async function initMichatbot(forceRefresh = false) {
         if (mainV) {
             mainV.removeAttribute('auto-rotate');
         }
-        if (isLowPowerDevice() && movePrimaryViewerTo('#michatbot-detail-viewer-container')) {
+        if (useMobileViewer() && window.MichatbotMobile3D.moveTo($('#michatbot-detail-viewer-container')[0])) {
+            window.MichatbotMobile3D.resume();
+            window.MichatbotMobile3D.setAutoRotate(true);
+        } else if (isLowPowerDevice() && movePrimaryViewerTo('#michatbot-detail-viewer-container')) {
             const mv = document.getElementById('michatbot-viewer');
             if (mv && !mv.hasAttribute('auto-rotate')) mv.setAttribute('auto-rotate', '');
         } else {
@@ -1387,9 +1435,11 @@ async function initMichatbot(forceRefresh = false) {
         e.stopPropagation();
         $('#michatbot-detail-overlay').fadeOut(300, function() {
             const $detailContainer = $('#michatbot-detail-viewer-container');
-            // On phones the corner viewer was moved here on loan; send it back
-            // instead of destroying its WebGL context.
-            if ($detailContainer.find('#michatbot-viewer').length) {
+            // On phones the single viewer was moved here; send it back instead of
+            // destroying its WebGL context (mobile Three.js or model-viewer).
+            if (useMobile3D()) {
+                window.MichatbotMobile3D.moveTo($('#michatbot-model-container')[0]);
+            } else if ($detailContainer.find('#michatbot-viewer').length) {
                 returnPrimaryViewerHome();
             } else {
                 // Free WebGL context immediately when detail modal is closed
@@ -2058,9 +2108,12 @@ function openMichatbotChat() {
         $('#michatbot-header-name').text(window.currentSpirit.name || "VikingTCG");
         if (window.currentSpirit.gltf_url) {
             const $chatWrapper = $('#chat-gltf-viewer-wrapper');
-            // Phones reuse the corner viewer (single WebGL context) instead of
+            // Phones reuse the single viewer (one WebGL context) instead of
             // creating a second one for the same model.
-            if (isLowPowerDevice() && movePrimaryViewerTo('#chat-gltf-viewer-wrapper')) {
+            if (useMobileViewer() && window.MichatbotMobile3D.moveTo($chatWrapper[0])) {
+                window.MichatbotMobile3D.resume();
+                window.MichatbotMobile3D.setAutoRotate(true);
+            } else if (isLowPowerDevice() && movePrimaryViewerTo('#chat-gltf-viewer-wrapper')) {
                 const mv = document.getElementById('michatbot-viewer');
                 if (mv && !mv.hasAttribute('auto-rotate')) mv.setAttribute('auto-rotate', '');
             } else if (!$chatWrapper.find('model-viewer').length) {
@@ -2090,9 +2143,11 @@ function openMichatbotChat() {
 function closeMichatbotChat() {
     $('#michatbot-chat-container').fadeOut(250, function() {
         const $chatViewerWrapper = $('#chat-gltf-viewer-wrapper');
-        // On phones the corner viewer was borrowed for the chat stage; return it
+        // On phones the single viewer was borrowed for the chat stage; return it
         // so its WebGL context survives (avoids a fresh load on every open).
-        if ($chatViewerWrapper.find('#michatbot-viewer').length) {
+        if (useMobile3D()) {
+            window.MichatbotMobile3D.moveTo($('#michatbot-model-container')[0]);
+        } else if ($chatViewerWrapper.find('#michatbot-viewer').length) {
             returnPrimaryViewerHome();
         } else {
             // Free WebGL context immediately when chat modal is closed
@@ -2336,6 +2391,11 @@ function setupProactiveEventObservers() {
 // background is a common cause of context loss on phones, because the GPU
 // reclaims contexts from background pages first.
 document.addEventListener('visibilitychange', () => {
+    // Pause/resume the mobile Three.js viewer too (it renders on demand).
+    if (useMobile3D()) {
+        if (document.hidden) window.MichatbotMobile3D.pause();
+        else window.MichatbotMobile3D.resume();
+    }
     const viewers = document.querySelectorAll('model-viewer');
     if (!viewers.length) return;
     viewers.forEach((viewer) => {
@@ -2356,6 +2416,7 @@ document.addEventListener('visibilitychange', () => {
 // Clean up GPU memory & secondary WebGL contexts when navigating between HTML pages
 const cleanupOnPageExit = () => {
     try {
+        if (window.MichatbotMobile3D) window.MichatbotMobile3D.release();
         const viewers = document.querySelectorAll('model-viewer');
         viewers.forEach(v => {
             try {

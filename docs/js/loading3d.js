@@ -5,11 +5,22 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 
 let scene, camera, renderer, character, clock;
 let isAnimating = false;
+let rafId = null;
 window.isAsh = false;
 let cherryTexture;
 let hideTimeout = null;
 const particles = [];
 let lastParticleTime = 0;
+
+// En móvil la pantalla de carga se renderiza más ligera: menos resolución y
+// menos partículas. Evita competir por la GPU con el asistente 3D.
+const IS_MOBILE = (() => {
+    try {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+            (window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
+    } catch (e) { return window.innerWidth <= 768; }
+})();
+const MAX_PARTICLES = IS_MOBILE ? 14 : 60;
 
 // --- [CONFIGURACIÓN DEL COMPAÑERO] ---
 // Modifica estos valores para ajustar el comportamiento de la carga 3D.
@@ -34,10 +45,10 @@ function init() {
     camera.position.set(0, 1, 8);
     camera.lookAt(0, 0, 0);
 
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer = new THREE.WebGLRenderer({ antialias: !IS_MOBILE, alpha: true });
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, IS_MOBILE ? 1.25 : 2));
     container.appendChild(renderer.domElement);
 
     // Lights
@@ -53,7 +64,7 @@ function init() {
     loadSpiritModel();
 
     window.addEventListener('resize', onWindowResize);
-    animate();
+    startLoop();
 }
 
 function loadSpiritModel() {
@@ -141,6 +152,7 @@ function onWindowResize() {
 
 function spawnParticle(pos) {
     if (!cherryTexture) return;
+    if (particles.length >= MAX_PARTICLES) return;
 
     const material = new THREE.SpriteMaterial({
         map: cherryTexture,
@@ -250,8 +262,19 @@ function updateParticles() {
     }
 }
 
+// Arranca el bucle solo si hay algo que animar y la pestaña está visible.
+function startLoop() {
+    if (rafId == null && isAnimating && !document.hidden) animate();
+}
+
 function animate() {
-    requestAnimationFrame(animate);
+    // Detener el bucle cuando la pantalla de carga está oculta: en móvil un
+    // render full-screen continuo es de lo que más batería/GPU consume.
+    if (!isAnimating || document.hidden) {
+        rafId = null;
+        return;
+    }
+    rafId = requestAnimationFrame(animate);
 
     if (isAnimating) {
         const time = clock.getElapsedTime();
@@ -362,6 +385,13 @@ window.addEventListener('show-loading', (e) => {
     isAnimating = true;
     updateLoadingScreen(true, e.detail ? e.detail.message : null);
     ensureSpiritAndInit();
+    startLoop();
+});
+
+// Reanudar/detener el bucle según la visibilidad de la pestaña.
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) return; // animate() se detiene solo al ver document.hidden
+    startLoop();
 });
 
 window.addEventListener('hide-loading', () => {
@@ -397,4 +427,5 @@ if (window.isLoading) {
     isAnimating = true;
     updateLoadingScreen(true, window.loadingMessage);
     ensureSpiritAndInit();
+    startLoop();
 }
