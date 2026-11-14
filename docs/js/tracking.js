@@ -1,6 +1,8 @@
 let currentUser = null;
 
 $(document).ready(async function() {
+    initTheme();
+
     await checkSession();
 
     // --- Navigation & UI ---
@@ -86,6 +88,21 @@ function getCarrierTrackingUrl(carrier, guia, customUrl) {
     }
     return `https://www.google.com/search?q=rastreo+${encodeURIComponent(carrier || '')}+${encodeURIComponent(guia)}`;
 }
+
+function initTheme() {
+    const savedTheme = localStorage.getItem('tcg_theme') || 'theme-dark';
+    $('body').removeClass('theme-light theme-medium theme-dark theme-purple').addClass(savedTheme);
+    $('.theme-btn-small').removeClass('active');
+    $(`.theme-btn-small[data-theme="${savedTheme}"]`).addClass('active');
+}
+
+$(document).on('click', '.theme-btn-small', function() {
+    const theme = $(this).data('theme');
+    $('body').removeClass('theme-light theme-medium theme-dark theme-purple').addClass(theme);
+    localStorage.setItem('tcg_theme', theme);
+    $('.theme-btn-small').removeClass('active');
+    $(this).addClass('active');
+});
 
 async function checkSession() {
     const { data: { session } } = await _supabase.auth.getSession();

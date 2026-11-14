@@ -380,6 +380,13 @@ h1, h2, h3, h4, .logo {
     }
 }
 
+@media (max-width: 640px) {
+    .top-left-panel {
+        top: 15px;
+        right: 15px;
+    }
+}
+
 /* Redesigned Floating Panel (Pill Style) */
 .pill-panel {
     display: flex;
