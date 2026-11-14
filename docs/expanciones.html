@@ -25,126 +25,6 @@
             min-height: 100vh;
         }
 
-        .user-dropdown-menu {
-            position: absolute;
-            top: 60px;
-            right: 0;
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 18px;
-            width: 240px;
-            display: none;
-            flex-direction: column;
-            padding: 12px 0;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
-            z-index: 10001;
-            overflow: hidden;
-            animation: slide-down 0.3s ease-out;
-        }
-
-        .user-dropdown-menu.active {
-            display: flex;
-        }
-
-        @keyframes slide-down {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .top-left-panel {
-            position: fixed;
-            top: 25px;
-            right: 25px;
-            z-index: 10000;
-            display: flex;
-            align-items: center;
-            flex-direction: row-reverse;
-            gap: 15px;
-        }
-
-        .pill-panel {
-            display: flex;
-            align-items: center;
-            background: var(--card-bg);
-            padding: 5px 20px;
-            border-radius: 50px;
-            box-shadow: var(--nm-shadow);
-            border: 1px solid var(--card-border);
-            gap: 15px;
-        }
-
-        .pill-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--icon-bg);
-            box-shadow: var(--nm-shadow);
-            cursor: pointer;
-            transition: all 0.3s;
-            color: var(--primary-color);
-            border: none;
-            font-size: 1.1rem;
-            text-decoration: none;
-        }
-
-        .pill-icon:hover {
-            transform: scale(1.1);
-        }
-
-        .user-menu-container {
-            position: relative;
-        }
-
-        .user-dropdown-info {
-            padding: 10px 20px 15px;
-            border-bottom: 1px solid #333;
-        }
-
-        .user-dropdown-name {
-            font-weight: 800;
-            color: var(--text-color);
-            font-size: 1.1rem;
-            margin-bottom: 2px;
-        }
-
-        .menu-item {
-            padding: 12px 20px;
-            color: #bbb;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            font-weight: 600;
-            font-size: 0.95rem;
-            transition: all 0.2s;
-        }
-
-        .menu-item:hover {
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--primary-color);
-            padding-left: 25px;
-        }
-
-        .menu-item i {
-            width: 20px;
-            text-align: center;
-            font-size: 1.1rem;
-        }
-
-        .menu-item.logout {
-            color: #ff4757;
-            margin-top: 5px;
-            border-top: 1px solid #333;
-            padding-top: 15px;
-        }
-
-        .menu-item.logout:hover {
-            background: rgba(255, 71, 87, 0.1);
-        }
-
         /* Form/Input alignment and improvements */
         .expansion-grid {
             display: grid;
@@ -243,11 +123,16 @@
     <!-- Floating User Panel -->
     <div class="top-left-panel" id="top-panel" style="display: none;">
         <div class="pill-panel">
-            <div class="pill-group" id="header-theme-group" style="display: flex; gap: 10px;">
+            <div class="pill-group" id="header-theme-group">
                 <button class="pill-icon theme-btn-small" data-theme="theme-light" title="Modo Claro"><i class="fas fa-sun"></i></button>
                 <button class="pill-icon theme-btn-small" data-theme="theme-purple" title="Modo Morado"><i class="fas fa-magic"></i></button>
                 <button class="pill-icon theme-btn-small" data-theme="theme-dark" title="Modo Oscuro"><i class="fas fa-moon"></i></button>
             </div>
+
+            <a href="carrito.html" id="cart-btn" class="pill-icon" title="Carrito">
+                <i class="fas fa-shopping-cart"></i>
+                <span id="cart-count">0</span>
+            </a>
 
             <div class="user-menu-container">
                 <button class="pill-icon" id="avatar-btn" title="Usuario">
@@ -345,6 +230,8 @@
     </div>
 
     <script src="js/supabase-config.js"></script>
+    <script src="js/cart.js"></script>
+    <script src="js/utils.js"></script>
     <script>
         // Standalone script for expanciones.html
         let currentUser = null;

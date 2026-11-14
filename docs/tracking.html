@@ -11,6 +11,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/utils.js"></script>
     <script src="js/supabase-config.js"></script>
+    <script src="js/cart.js"></script>
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
     <style>
         .tracking-table {
@@ -75,17 +76,38 @@
 </head>
 <body class="public-body">
     <div class="top-left-panel" id="top-panel" style="display: none;">
-        <div class="user-menu-container">
-            <button class="user-avatar-btn" id="avatar-btn">
-                <i class="fas fa-user"></i>
-            </button>
-            <div class="user-dropdown-menu" id="user-dropdown">
-                <div class="user-dropdown-info">
-                    <div class="user-dropdown-name" id="dropdown-user-name">Usuario</div>
+        <div class="pill-panel">
+            <div class="pill-group" id="header-theme-group">
+                <button class="pill-icon theme-btn-small" data-theme="theme-light" title="Modo Claro"><i class="fas fa-sun"></i></button>
+                <button class="pill-icon theme-btn-small" data-theme="theme-purple" title="Modo Morado"><i class="fas fa-magic"></i></button>
+                <button class="pill-icon theme-btn-small" data-theme="theme-dark" title="Modo Oscuro"><i class="fas fa-moon"></i></button>
+            </div>
+
+            <a href="carrito.html" id="cart-btn" class="pill-icon" title="Carrito">
+                <i class="fas fa-shopping-cart"></i>
+                <span id="cart-count">0</span>
+            </a>
+
+            <div class="user-menu-container">
+                <button class="pill-icon" id="avatar-btn" title="Usuario">
+                    <i class="fas fa-user"></i>
+                </button>
+                <div class="user-dropdown-menu" id="user-dropdown">
+                    <div class="user-dropdown-info">
+                        <div class="user-dropdown-name" id="dropdown-user-name">Usuario</div>
+                    </div>
+                    <a href="admin.html" class="menu-item" id="menu-btn-home"><i class="fas fa-home"></i> Mi Panel</a>
+                    <a href="play.html" class="menu-item"><i class="fas fa-gamepad"></i> Play!</a>
+                    <a href="#" class="menu-item logout" id="menu-btn-logout"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+                    <div class="theme-menu-container">
+                        <span class="theme-menu-label">Tema</span>
+                        <div class="theme-switcher-inline">
+                            <button class="pill-icon theme-btn-small" data-theme="theme-light" title="Modo Claro"><i class="fas fa-sun"></i></button>
+                            <button class="pill-icon theme-btn-small" data-theme="theme-purple" title="Modo Morado"><i class="fas fa-magic"></i></button>
+                            <button class="pill-icon theme-btn-small" data-theme="theme-dark" title="Modo Oscuro"><i class="fas fa-moon"></i></button>
+                        </div>
+                    </div>
                 </div>
-                <a href="admin.html" class="menu-item" id="menu-btn-home"><i class="fas fa-home"></i> Mi Panel</a>
-                <a href="play.html" class="menu-item"><i class="fas fa-gamepad"></i> Play!</a>
-                <a href="#" class="menu-item logout" id="menu-btn-logout"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
             </div>
         </div>
     </div>

@@ -355,11 +355,15 @@
 <body>
     <div class="top-left-panel" id="top-panel" style="display: none;">
         <div class="pill-panel">
-            <div class="pill-group">
+            <div class="pill-group" id="header-theme-group">
                 <button class="pill-icon theme-btn-small" data-theme="theme-light"><i class="fas fa-sun"></i></button>
                 <button class="pill-icon theme-btn-small" data-theme="theme-purple"><i class="fas fa-magic"></i></button>
                 <button class="pill-icon theme-btn-small" data-theme="theme-dark"><i class="fas fa-moon"></i></button>
             </div>
+                        <a href="carrito.html" id="cart-btn" class="pill-icon" title="Carrito">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span id="cart-count">0</span>
+                        </a>
             <div class="user-menu-container">
                 <button class="pill-icon" id="avatar-btn"><i class="fas fa-user"></i></button>
                 <div class="user-dropdown-menu" id="user-dropdown">
@@ -634,6 +638,7 @@
     <script src="js/cloudinary-upload.js"></script>
     <script src="js/viking-data.js"></script>
     <script src="js/supabase-config.js"></script>
+    <script src="js/cart.js"></script>
     <script src="js/michatbot.js"></script>
 
     <script src="js/utils.js"></script>

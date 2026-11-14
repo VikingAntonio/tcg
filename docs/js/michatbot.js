@@ -10,6 +10,57 @@ window.botConversationHistory = [];
 window.selectedChatImageBase64 = null;
 window.speechRecognitionInstance = null;
 
+// Mobile / low-power detection. Kept as a single source of truth so the 3D
+// viewers can pick conservative render settings on phones, which are prone to
+// WebGL context loss (the brief black frame + white box symptom).
+function isLowPowerDevice() {
+    try {
+        const ua = navigator.userAgent || '';
+        const uaMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+        const smallScreen = window.matchMedia ? window.matchMedia('(max-width: 768px)').matches : window.innerWidth <= 768;
+        // Only genuinely constrained RAM counts as low-power; core count is
+        // unreliable (desktops/VMs often report few cores) and would wrongly
+        // downgrade capable machines.
+        const veryLowMemory = typeof navigator.deviceMemory === 'number' && navigator.deviceMemory <= 2;
+        return uaMobile || smallScreen || veryLowMemory;
+    } catch (e) {
+        return window.innerWidth <= 768;
+    }
+}
+window.isLowPowerDevice = isLowPowerDevice;
+
+// Conservative attributes applied to the corner (primary) viewer on phones so the
+// GPU load stays low and the context is far less likely to be dropped.
+function primaryViewerQualityAttrs() {
+    if (!isLowPowerDevice()) {
+        return 'shadow-intensity="1" environment-image="neutral" exposure="1" power-preference="high-performance" interpolation-decay="200"';
+    }
+    return 'shadow-intensity="0" environment-image="neutral" exposure="1" interpolation-decay="250"';
+}
+window.primaryViewerQualityAttrs = primaryViewerQualityAttrs;
+
+// On phones the chat/detail overlays reuse the single corner viewer instead of
+// spawning a second WebGL context for the same model. Duplicate contexts are the
+// main cause of context loss (black flash + white box) on low-end devices.
+function movePrimaryViewerTo(targetSelector) {
+    const viewer = document.getElementById('michatbot-viewer');
+    const target = document.querySelector(targetSelector);
+    if (!viewer || !target) return false;
+    target.appendChild(viewer);
+    return true;
+}
+
+function returnPrimaryViewerHome() {
+    const viewer = document.getElementById('michatbot-viewer');
+    const home = document.getElementById('michatbot-model-container');
+    if (!viewer || !home) return false;
+    if (viewer.parentElement !== home) home.appendChild(viewer);
+    return true;
+}
+
+window.movePrimaryViewerTo = movePrimaryViewerTo;
+window.returnPrimaryViewerHome = returnPrimaryViewerHome;
+
 // Helpers to get and set cached spirit instantly without delay
 function getCachedSpirit() {
     try {
@@ -1064,16 +1115,19 @@ async function initMichatbot(forceRefresh = false) {
 
     const gltfUrl = window.currentSpirit.gltf_url;
     const $viewer = $('#michatbot-viewer');
-    if (forceRefresh || !$viewer.length || $viewer.attr('src') !== gltfUrl) {
+    // If the primary viewer is currently on loan to the chat/detail overlay,
+    // never rebuild it (that would leave a duplicate #michatbot-viewer behind).
+    const viewerIsOnLoan = $viewer.length && !$('#michatbot-model-container').find('#michatbot-viewer').length;
+    if (viewerIsOnLoan) {
+        if ($viewer.attr('src') !== gltfUrl) $viewer.attr('src', gltfUrl);
+    } else if (forceRefresh || !$viewer.length || $viewer.attr('src') !== gltfUrl) {
         $('#michatbot-model-container').html(`
             <model-viewer
                 id="michatbot-viewer"
                 src="${gltfUrl}"
                 auto-rotate
                 camera-controls
-                shadow-intensity="1"
-                environment-image="neutral"
-                exposure="1"
+                ${primaryViewerQualityAttrs()}
                 interaction-prompt="none"
                 camera-orbit="auto 75deg auto"
                 field-of-view="auto"
@@ -1082,12 +1136,10 @@ async function initMichatbot(forceRefresh = false) {
                 disable-zoom
                 disable-pan
                 bounds="tight"
-                interpolation-decay="200"
                 auto-rotate-delay="0"
                 rotation-speed="0.5"
                 loading="eager"
                 reveal="auto"
-                power-preference="high-performance"
                 touch-action="pan-y"
                 style="width: 100%; height: 100%; background-color: transparent !important;"
                 oncontextmenu="return false;">
@@ -1106,14 +1158,30 @@ async function initMichatbot(forceRefresh = false) {
         if (!viewer._hasWebglRecoveryListeners) {
             viewer._hasWebglRecoveryListeners = true;
 
+            // Last-resort recovery: tear the viewer down and rebuild it with a
+            // brand new WebGL context. This is what unsticks the "white box +
+            // empty viewer" state that a soft src reload cannot fix.
+            const hardRecoverModelViewer = () => {
+                try {
+                    const container = document.getElementById('michatbot-model-container');
+                    const current = document.getElementById('michatbot-viewer');
+                    // Only rebuild when the primary viewer lives in its home
+                    // slot, so we never wipe the viewer while it is on loan to
+                    // the chat/detail overlay.
+                    if (!container || !current || !container.contains(current)) return;
+                    console.warn('[Michatbot 3D] Reconstruyendo visor con un contexto WebGL nuevo.');
+                    try { current.removeAttribute('src'); } catch (e) {}
+                    container.innerHTML = '';
+                    setTimeout(() => initMichatbot(true), 80);
+                } catch (e) {}
+            };
+
             const recoverModelViewer = (reason) => {
                 console.warn(`[Michatbot 3D] Recuperando visor 3D debido a: ${reason}`);
                 const currentSrc = viewer.getAttribute('src');
                 if (!currentSrc && window.currentSpirit?.gltf_url) {
                     viewer.setAttribute('src', window.currentSpirit.gltf_url);
-                    return;
-                }
-                if (currentSrc) {
+                } else if (currentSrc) {
                     // Soft reload by re-assigning src with requestAnimationFrame
                     viewer.removeAttribute('src');
                     requestAnimationFrame(() => {
@@ -1124,6 +1192,13 @@ async function initMichatbot(forceRefresh = false) {
                         }, 100);
                     });
                 }
+
+                // Watchdog: if the soft reload did not bring the model back,
+                // fall back to a full rebuild so the user never sees a dead box.
+                setTimeout(() => {
+                    const v = document.getElementById('michatbot-viewer');
+                    if (v && v.loaded === false) hardRecoverModelViewer();
+                }, 3500);
             };
 
             viewer.addEventListener('error', (event) => {
@@ -1198,37 +1273,38 @@ async function initMichatbot(forceRefresh = false) {
         if (mainV) {
             mainV.removeAttribute('auto-rotate');
         }
-        $('#michatbot-detail-viewer-container').html(`
-            <model-viewer
-                src="${window.currentSpirit.gltf_url}"
-                camera-controls
-                auto-rotate
-                shadow-intensity="1"
-                environment-image="neutral"
-                exposure="1.2"
-                interaction-prompt="none"
-                camera-orbit="auto 75deg auto"
-                field-of-view="auto"
-                min-field-of-view="5deg"
-                max-field-of-view="45deg"
-                disable-zoom
-                disable-pan
-                bounds="tight"
-                interpolation-decay="200"
-                auto-rotate-delay="0"
-                rotation-speed="0.5"
-                loading="eager"
-                power-preference="high-performance"
-                style="width: 100%; height: 100%; background-color: transparent !important;"
-                oncontextmenu="return false;">
-            </model-viewer>
-        `);
+        if (isLowPowerDevice() && movePrimaryViewerTo('#michatbot-detail-viewer-container')) {
+            const mv = document.getElementById('michatbot-viewer');
+            if (mv && !mv.hasAttribute('auto-rotate')) mv.setAttribute('auto-rotate', '');
+        } else {
+            $('#michatbot-detail-viewer-container').html(`
+                <model-viewer
+                    src="${window.currentSpirit.gltf_url}"
+                    camera-controls
+                    auto-rotate
+                    ${primaryViewerQualityAttrs()}
+                    interaction-prompt="none"
+                    camera-orbit="auto 75deg auto"
+                    field-of-view="auto"
+                    min-field-of-view="5deg"
+                    max-field-of-view="45deg"
+                    disable-zoom
+                    disable-pan
+                    bounds="tight"
+                    auto-rotate-delay="0"
+                    rotation-speed="0.5"
+                    loading="eager"
+                    style="width: 100%; height: 100%; background-color: transparent !important;"
+                    oncontextmenu="return false;">
+                </model-viewer>
+            `);
+        }
         $('#michatbot-detail-name').text(window.currentSpirit.name);
         $('#michatbot-detail-overlay').css('display', 'flex').hide().fadeIn(400);
         $('#michatbot-menu').fadeOut(250);
     });
 
-    $('#michatbot-scale-slider').on('input', function() { window.botInstance.setScale($(this).val()); });
+    $('#michatbot-scale-slider').off('input').on('input', function() { window.botInstance.setScale($(this).val()); });
 
     $('#michatbot-chat-send').off('click').on('click', function() { handleSendAIChatMessage(); });
     $('#michatbot-chat-input').off('keydown input').on('keydown', function(e) {
@@ -1242,20 +1318,26 @@ async function initMichatbot(forceRefresh = false) {
         this.style.height = 'auto';
         this.style.height = Math.min(this.scrollHeight, 120) + 'px';
     });
-    $('#close-michatbot-chat').on('click', closeMichatbotChat);
-    $('#close-michatbot-detail').on('click touchend', function(e) {
+    $('#close-michatbot-chat').off('click').on('click', closeMichatbotChat);
+    $('#close-michatbot-detail').off('click touchend').on('click touchend', function(e) {
         e.preventDefault();
         e.stopPropagation();
         $('#michatbot-detail-overlay').fadeOut(300, function() {
-            // Free WebGL context immediately when detail modal is closed
             const $detailContainer = $('#michatbot-detail-viewer-container');
-            const detViewer = $detailContainer.find('model-viewer')[0];
-            if (detViewer) {
-                try {
-                    detViewer.removeAttribute('src');
-                } catch (e) {}
+            // On phones the corner viewer was moved here on loan; send it back
+            // instead of destroying its WebGL context.
+            if ($detailContainer.find('#michatbot-viewer').length) {
+                returnPrimaryViewerHome();
+            } else {
+                // Free WebGL context immediately when detail modal is closed
+                const detViewer = $detailContainer.find('model-viewer')[0];
+                if (detViewer) {
+                    try {
+                        detViewer.removeAttribute('src');
+                    } catch (e) {}
+                }
+                $detailContainer.empty();
             }
-            $detailContainer.empty();
             // Resume main companion auto-rotate if it was paused
             const mainV = document.getElementById('michatbot-viewer');
             if (mainV && !mainV.hasAttribute('auto-rotate')) {
@@ -1913,22 +1995,25 @@ function openMichatbotChat() {
         $('#michatbot-header-name').text(window.currentSpirit.name || "VikingTCG");
         if (window.currentSpirit.gltf_url) {
             const $chatWrapper = $('#chat-gltf-viewer-wrapper');
-            if (!$chatWrapper.find('model-viewer').length) {
+            // Phones reuse the corner viewer (single WebGL context) instead of
+            // creating a second one for the same model.
+            if (isLowPowerDevice() && movePrimaryViewerTo('#chat-gltf-viewer-wrapper')) {
+                const mv = document.getElementById('michatbot-viewer');
+                if (mv && !mv.hasAttribute('auto-rotate')) mv.setAttribute('auto-rotate', '');
+            } else if (!$chatWrapper.find('model-viewer').length) {
                 $chatWrapper.html(`
                     <model-viewer
                         src="${window.currentSpirit.gltf_url}"
                         auto-rotate
                         camera-controls
-                        shadow-intensity="1"
+                        ${primaryViewerQualityAttrs()}
                         exposure="1.2"
-                        environment-image="neutral"
                         interaction-prompt="none"
                         disable-zoom
                         disable-pan
                         camera-orbit="auto 75deg auto"
                         style="width: 100%; height: 100%; background-color: transparent !important;"
-                        loading="eager"
-                        power-preference="high-performance">
+                        loading="eager">
                     </model-viewer>
                 `);
             }
@@ -1941,15 +2026,21 @@ function openMichatbotChat() {
 
 function closeMichatbotChat() {
     $('#michatbot-chat-container').fadeOut(250, function() {
-        // Free WebGL context immediately when chat modal is closed
         const $chatViewerWrapper = $('#chat-gltf-viewer-wrapper');
-        const chatViewer = $chatViewerWrapper.find('model-viewer')[0];
-        if (chatViewer) {
-            try {
-                chatViewer.removeAttribute('src');
-            } catch (e) {}
+        // On phones the corner viewer was borrowed for the chat stage; return it
+        // so its WebGL context survives (avoids a fresh load on every open).
+        if ($chatViewerWrapper.find('#michatbot-viewer').length) {
+            returnPrimaryViewerHome();
+        } else {
+            // Free WebGL context immediately when chat modal is closed
+            const chatViewer = $chatViewerWrapper.find('model-viewer')[0];
+            if (chatViewer) {
+                try {
+                    chatViewer.removeAttribute('src');
+                } catch (e) {}
+            }
+            $chatViewerWrapper.empty();
         }
-        $chatViewerWrapper.empty();
 
         // Resume main companion auto-rotate
         const mainV = document.getElementById('michatbot-viewer');
