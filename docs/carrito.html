@@ -100,6 +100,24 @@
             color: var(--text-muted);
             overflow-wrap: anywhere;
         }
+        /* Etiquetas de detalle: se envuelven en vez de comprimirse en una línea */
+        .cart-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 8px 0 0;
+        }
+        .cart-tag {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 0.74rem;
+            line-height: 1.3;
+            color: var(--text-muted);
+            background: rgba(148, 163, 184, 0.14);
+            border: 1px solid var(--slot-border);
+            overflow-wrap: anywhere;
+        }
         .cart-price-sub {
             font-size: 0.8rem;
             color: var(--text-muted);
@@ -261,8 +279,9 @@
                 font-size: 1rem;
             }
             .cart-item-foot {
+                flex-wrap: wrap;
                 justify-content: space-between;
-                gap: 12px;
+                gap: 10px 12px;
                 padding-top: 12px;
                 margin-top: 4px;
                 border-top: 1px solid var(--slot-border);
@@ -272,7 +291,10 @@
             }
             .cart-item-price {
                 margin-left: auto;
-                font-size: 1.2rem;
+                font-size: 1.25rem;
+            }
+            .btn-remove {
+                padding: 10px 14px;
             }
             .cart-summary {
                 padding: 22px 18px;
@@ -548,7 +570,9 @@
                 if (item.tcg) detailParts.push(item.tcg.toUpperCase());
                 if (item.description && item.description !== '-') detailParts.push(item.description);
 
-                const detailsText = detailParts.length > 0 ? detailParts.join(' | ') : 'Producto';
+                const tagsHtml = (detailParts.length > 0 ? detailParts : ['Producto'])
+                    .map(part => `<span class="cart-tag">${part}</span>`)
+                    .join('');
 
                 let priceSubtext = `Precio unitario: $${unitPrice.toFixed(2)}`;
                 if (isPreorderDeposit) {
@@ -566,7 +590,7 @@
                         <img src="${item.image_url || 'https://via.placeholder.com/100x140?text=Producto'}" alt="${item.name}">
                         <div class="cart-item-info">
                             <h3>${item.name}</h3>
-                            <p>${detailsText}</p>
+                            <div class="cart-tags">${tagsHtml}</div>
                             <div class="cart-price-sub">${priceSubtext}</div>
                         </div>
                         <div class="cart-item-foot">

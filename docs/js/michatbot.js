@@ -29,6 +29,25 @@ function isLowPowerDevice() {
 }
 window.isLowPowerDevice = isLowPowerDevice;
 
+// model-viewer 3.3.x sizes its WebGL drawing buffer from window.devicePixelRatio
+// (x3 on most phones), so the 150px assistant really owns a 450px buffer and each
+// resize reallocates it. On constrained GPUs that churn is what drops the context
+// and leaves the white box. Capping the pixel ratio the library reads keeps the
+// buffer ~4x smaller; CSS layout and visual sharpness are unaffected because the
+// browser still rasterises at the real device ratio.
+(function capPixelRatioFor3D() {
+    try {
+        if (!isLowPowerDevice()) return;
+        const real = window.devicePixelRatio || 1;
+        const cap = 1.5;
+        if (real <= cap) return;
+        Object.defineProperty(window, 'devicePixelRatio', {
+            configurable: true,
+            get: () => cap
+        });
+    } catch (e) {}
+})();
+
 // Conservative attributes applied to the corner (primary) viewer on phones so the
 // GPU load stays low and the context is far less likely to be dropped.
 function primaryViewerQualityAttrs() {
@@ -60,6 +79,21 @@ function returnPrimaryViewerHome() {
 
 window.movePrimaryViewerTo = movePrimaryViewerTo;
 window.returnPrimaryViewerHome = returnPrimaryViewerHome;
+
+// Explicitly free a model-viewer's WebGL context. Detaching the element or
+// clearing its src is not enough: the context stays alive until the browser
+// reclaims it, and phones allow only a handful of live contexts before they
+// start dropping them (the white-box symptom).
+function releaseModelViewerContext(el) {
+    try {
+        if (!el || !el.shadowRoot) return;
+        const canvas = el.shadowRoot.querySelector('canvas');
+        const gl = canvas && (canvas.getContext('webgl2') || canvas.getContext('webgl'));
+        const ext = gl && gl.getExtension('WEBGL_lose_context');
+        if (ext) ext.loseContext();
+    } catch (e) {}
+}
+window.releaseModelViewerContext = releaseModelViewerContext;
 
 // Helpers to get and set cached spirit instantly without delay
 function getCachedSpirit() {
@@ -316,12 +350,24 @@ window.botInstance = {
             this.speak(text);
         }
     },
-    setScale: function(scale) {
-        const $wrapper = $('#companion-wrapper');
-        if ($wrapper.length) {
-            const size = 150 * scale;
-            $wrapper.css({ width: size + 'px', height: size + 'px' });
+    setScale: function(scale, persist) {
+        const value = Math.min(2.5, Math.max(0.5, parseFloat(scale) || 1));
+        this.scale = value;
+        if (persist !== false) {
+            try { localStorage.setItem('michatbot_scale', String(value)); } catch (e) {}
         }
+        // Coalesce to one size change per animation frame. A drag fires dozens of
+        // `input` events per second and each one makes model-viewer reallocate its
+        // WebGL drawing buffer, which is what exhausts GPU memory on phones.
+        if (this._scaleRaf) return;
+        this._scaleRaf = requestAnimationFrame(() => {
+            this._scaleRaf = null;
+            const $wrapper = $('#companion-wrapper');
+            if ($wrapper.length) {
+                const size = 150 * this.scale;
+                $wrapper.css({ width: size + 'px', height: size + 'px' });
+            }
+        });
     },
     toggleMute: function() {
         this.isMuted = !this.isMuted;
@@ -1121,6 +1167,9 @@ async function initMichatbot(forceRefresh = false) {
     if (viewerIsOnLoan) {
         if ($viewer.attr('src') !== gltfUrl) $viewer.attr('src', gltfUrl);
     } else if (forceRefresh || !$viewer.length || $viewer.attr('src') !== gltfUrl) {
+        // Release the outgoing viewer's GPU context before dropping its markup,
+        // otherwise the discarded context lingers and phones run out of them.
+        if ($viewer.length) releaseModelViewerContext($viewer[0]);
         $('#michatbot-model-container').html(`
             <model-viewer
                 id="michatbot-viewer"
@@ -1154,59 +1203,64 @@ async function initMichatbot(forceRefresh = false) {
         viewer.addEventListener('pointermove', (e) => { if (startX_click === undefined) return; const dist = Math.sqrt(Math.pow(e.clientX - startX_click, 2) + Math.pow(e.clientY - startY_click, 2)); if (dist > 10) isInteractingWithModel = true; });
         viewer.addEventListener('click', (e) => { const touchDuration = Date.now() - touchStartTime; if (touchDuration < 300 && !isInteractingWithModel) { e.stopPropagation(); $('#michatbot-menu').fadeToggle(250); } });
 
-        // Handle WebGL context lost & restoration smoothly without leaving a white box or disappearing
+        // WebGL context-loss handling.
+        //
+        // model-viewer already restores a lost context on its own, so we must NOT
+        // reload the src in response: doing that started a loop (reload -> error
+        // -> rebuild) that leaked one WebGL context per cycle until the browser
+        // stopped handing out new ones, which is exactly the white-box + empty
+        // viewer symptom. Instead we only intervene on a genuine load error and
+        // release the old context before any rebuild.
         if (!viewer._hasWebglRecoveryListeners) {
             viewer._hasWebglRecoveryListeners = true;
 
-            // Last-resort recovery: tear the viewer down and rebuild it with a
-            // brand new WebGL context. This is what unsticks the "white box +
-            // empty viewer" state that a soft src reload cannot fix.
-            const hardRecoverModelViewer = () => {
-                try {
-                    const container = document.getElementById('michatbot-model-container');
-                    const current = document.getElementById('michatbot-viewer');
-                    // Only rebuild when the primary viewer lives in its home
-                    // slot, so we never wipe the viewer while it is on loan to
-                    // the chat/detail overlay.
-                    if (!container || !current || !container.contains(current)) return;
-                    console.warn('[Michatbot 3D] Reconstruyendo visor con un contexto WebGL nuevo.');
-                    try { current.removeAttribute('src'); } catch (e) {}
-                    container.innerHTML = '';
-                    setTimeout(() => initMichatbot(true), 80);
-                } catch (e) {}
-            };
+            // Explicitly drop the GPU context of a viewer we are about to discard.
+            // Detaching the element is not enough: the context stays alive until
+            // the browser decides to reclaim it, and phones cap how many exist.
+            const releaseViewerContext = releaseModelViewerContext;
 
+            let lastRecovery = 0;
             const recoverModelViewer = (reason) => {
-                console.warn(`[Michatbot 3D] Recuperando visor 3D debido a: ${reason}`);
-                const currentSrc = viewer.getAttribute('src');
-                if (!currentSrc && window.currentSpirit?.gltf_url) {
-                    viewer.setAttribute('src', window.currentSpirit.gltf_url);
-                } else if (currentSrc) {
-                    // Soft reload by re-assigning src with requestAnimationFrame
-                    viewer.removeAttribute('src');
-                    requestAnimationFrame(() => {
-                        setTimeout(() => {
-                            if (viewer && window.currentSpirit?.gltf_url) {
-                                viewer.setAttribute('src', window.currentSpirit.gltf_url);
-                            }
-                        }, 100);
-                    });
+                const now = Date.now();
+                // Back off so a burst of error events cannot trigger a rebuild storm.
+                if (now - lastRecovery < 8000) return;
+                lastRecovery = now;
+
+                const container = document.getElementById('michatbot-model-container');
+                const current = document.getElementById('michatbot-viewer');
+                if (!container || !current) return;
+
+                // Never rebuild while the viewer is on loan to the chat/detail
+                // overlay: just re-assign the src so it reloads in place.
+                const src = window.currentSpirit?.gltf_url;
+                if (!container.contains(current)) {
+                    if (src && current.getAttribute('src') !== src) current.setAttribute('src', src);
+                    return;
                 }
 
-                // Watchdog: if the soft reload did not bring the model back,
-                // fall back to a full rebuild so the user never sees a dead box.
-                setTimeout(() => {
-                    const v = document.getElementById('michatbot-viewer');
-                    if (v && v.loaded === false) hardRecoverModelViewer();
-                }, 3500);
+                console.warn(`[Michatbot 3D] Reconstruyendo visor 3D (${reason}).`);
+                releaseViewerContext(current);
+                try { current.removeAttribute('src'); } catch (e) {}
+                container.innerHTML = '';
+                setTimeout(() => initMichatbot(true), 120);
             };
 
-            viewer.addEventListener('error', (event) => {
-                console.warn('[Michatbot 3D] Error detectado en model-viewer:', event);
-                setTimeout(() => recoverModelViewer('error event'), 800);
+            viewer.addEventListener('error', () => {
+                // model-viewer emits `error` on transient failures too; only the
+                // watchdog below decides whether a rebuild is actually needed.
+                console.warn('[Michatbot 3D] Error transitorio en model-viewer.');
+                setTimeout(() => {
+                    const v = document.getElementById('michatbot-viewer');
+                    if (v && v.loaded === false && !v._recovering) {
+                        v._recovering = true;
+                        recoverModelViewer('error event');
+                        setTimeout(() => { v._recovering = false; }, 10000);
+                    }
+                }, 4000);
             });
 
-            // Listen directly on internal canvas if available
+            // A restored context means the GPU recovered on its own; only nudge
+            // the viewer to repaint, never reload the model.
             const attachCanvasListeners = () => {
                 const canvas = viewer.shadowRoot ? viewer.shadowRoot.querySelector('canvas') : viewer.querySelector('canvas');
                 if (canvas && !canvas._hasContextLostHandler) {
@@ -1216,8 +1270,7 @@ async function initMichatbot(forceRefresh = false) {
                         console.warn('[Michatbot 3D] webglcontextlost interceptado en canvas.');
                     }, false);
                     canvas.addEventListener('webglcontextrestored', () => {
-                        console.log('[Michatbot 3D] webglcontextrestored detectado en canvas.');
-                        recoverModelViewer('webglcontextrestored');
+                        console.log('[Michatbot 3D] webglcontextrestored: repintando sin recargar.');
                     }, false);
                 }
             };
@@ -1303,6 +1356,16 @@ async function initMichatbot(forceRefresh = false) {
         $('#michatbot-detail-overlay').css('display', 'flex').hide().fadeIn(400);
         $('#michatbot-menu').fadeOut(250);
     });
+
+    // Restore the last chosen assistant size so it does not jump back to 150px
+    // (and reallocate the WebGL buffer) on every page load.
+    try {
+        const savedScale = parseFloat(localStorage.getItem('michatbot_scale'));
+        if (savedScale && savedScale >= 0.5 && savedScale <= 2.5) {
+            $('#michatbot-scale-slider').val(savedScale);
+            window.botInstance.setScale(savedScale, false);
+        }
+    } catch (e) {}
 
     $('#michatbot-scale-slider').off('input').on('input', function() { window.botInstance.setScale($(this).val()); });
 
@@ -2269,21 +2332,25 @@ function setupProactiveEventObservers() {
     });
 }
 
-// Manage background visibility and pause rendering when tab is hidden to save GPU & battery
+// Pause the 3D scene while the tab is hidden. Leaving it rendering in the
+// background is a common cause of context loss on phones, because the GPU
+// reclaims contexts from background pages first.
 document.addEventListener('visibilitychange', () => {
-    const mainViewer = document.getElementById('michatbot-viewer');
-    if (!mainViewer) return;
-    if (document.hidden) {
-        if (mainViewer.hasAttribute('auto-rotate')) {
-            mainViewer.dataset.wasAutoRotate = 'true';
-            mainViewer.removeAttribute('auto-rotate');
-        }
-    } else {
-        if (mainViewer.dataset.wasAutoRotate === 'true') {
-            mainViewer.setAttribute('auto-rotate', '');
-            delete mainViewer.dataset.wasAutoRotate;
-        }
-    }
+    const viewers = document.querySelectorAll('model-viewer');
+    if (!viewers.length) return;
+    viewers.forEach((viewer) => {
+        try {
+            if (document.hidden) {
+                if (viewer.hasAttribute('auto-rotate')) {
+                    viewer.dataset.wasAutoRotate = 'true';
+                    viewer.removeAttribute('auto-rotate');
+                }
+            } else if (viewer.dataset.wasAutoRotate === 'true') {
+                viewer.setAttribute('auto-rotate', '');
+                delete viewer.dataset.wasAutoRotate;
+            }
+        } catch (e) {}
+    });
 });
 
 // Clean up GPU memory & secondary WebGL contexts when navigating between HTML pages
