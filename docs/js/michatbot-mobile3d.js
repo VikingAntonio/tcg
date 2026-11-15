@@ -40,6 +40,15 @@
     const MAX_DPR = 1.5;
     const TARGET_FPS = 30;
 
+    // Rotación manual: el usuario arrastra para girar el modelo (como con
+    // camera-controls de model-viewer). El auto-rotado se pausa mientras
+    // arrastra y se reanuda tras unos segundos de inactividad.
+    const ROTATE_SPEED = 0.008;                       // radianes por píxel
+    const PHI_MIN = 20 * Math.PI / 180;               // límite superior (visto desde arriba)
+    const PHI_MAX = 120 * Math.PI / 180;              // límite inferior (visto desde abajo)
+    const IDLE_RESUME_MS = 4000;                      // inactividad antes de reanudar auto-rotado
+    const NO_INTERACTION = -1e9;                      // "nunca interactuó" -> auto-rotado desde el inicio
+
     // Vista de cámara: mismo encuadre que usa model-viewer en el asistente.
     const CAMERA_ORBIT = { theta: 0, phi: 75 * Math.PI / 180 };
     const FOV = 30;
@@ -98,10 +107,22 @@
             this._contextLost = false;
             this._restoreTimer = null;
             this._resizeObs = null;
+            // Rotación manual
+            this._theta = CAMERA_ORBIT.theta;
+            this._phi = CAMERA_ORBIT.phi;
+            this._dragging = false;
+            this._dragId = null;
+            this._lastPX = 0;
+            this._lastPY = 0;
+            this._lastInteract = NO_INTERACTION;
+            this._draggingBound = false;
             this._onLost = this._onLost.bind(this);
             this._onRestored = this._onRestored.bind(this);
             this._tick = this._tick.bind(this);
             this._applySize = this._applySize.bind(this);
+            this._onPointerDown = this._onPointerDown.bind(this);
+            this._onPointerMove = this._onPointerMove.bind(this);
+            this._onPointerUp = this._onPointerUp.bind(this);
         }
 
         async init() {
@@ -169,7 +190,67 @@
             this.renderer.setSize(w, h, false);
             this.camera.aspect = w / h;
             this.camera.updateProjectionMatrix();
+            // touch-action: none para que arrastrar sobre el visor rote el modelo
+            // sin que la página haga scroll. El scroll de la página/overlay sigue
+            // funcionando fuera del canvas.
+            this.domElement.style.touchAction = 'none';
+            this._bindDrag();
             this._dirty = true;
+        }
+
+        _bindDrag() {
+            if (this._draggingBound || this._destroyed) return;
+            const el = this.domElement;
+            if (!el || !el.addEventListener) return;
+            el.addEventListener('pointerdown', this._onPointerDown, { passive: true });
+            el.addEventListener('pointermove', this._onPointerMove, { passive: true });
+            el.addEventListener('pointerup', this._onPointerUp, { passive: true });
+            el.addEventListener('pointercancel', this._onPointerUp, { passive: true });
+            this._draggingBound = true;
+        }
+
+        _unbindDrag() {
+            if (!this._draggingBound) return;
+            const el = this.domElement;
+            if (el && el.removeEventListener) {
+                el.removeEventListener('pointerdown', this._onPointerDown);
+                el.removeEventListener('pointermove', this._onPointerMove);
+                el.removeEventListener('pointerup', this._onPointerUp);
+                el.removeEventListener('pointercancel', this._onPointerUp);
+            }
+            this._draggingBound = false;
+        }
+
+        _onPointerDown(e) {
+            if (this._paused) return;
+            if (this._dragId !== null) return; // ya hay un dedo rotando
+            this._dragging = true;
+            this._dragId = e.pointerId;
+            this._lastPX = e.clientX;
+            this._lastPY = e.clientY;
+            // Capturar el puntero hace que pointermove siga llegando aunque el
+            // dedo se salga del canvas (arrastre fluido sin cortes).
+            try { this.domElement.setPointerCapture(e.pointerId); } catch (err) {}
+        }
+
+        _onPointerMove(e) {
+            if (!this._dragging || e.pointerId !== this._dragId) return;
+            const dx = e.clientX - this._lastPX;
+            const dy = e.clientY - this._lastPY;
+            this._lastPX = e.clientX;
+            this._lastPY = e.clientY;
+            this._theta -= dx * ROTATE_SPEED;
+            this._phi = Math.min(PHI_MAX, Math.max(PHI_MIN, this._phi + dy * ROTATE_SPEED));
+            this._lastInteract = performance.now();
+            this._dirty = true;
+        }
+
+        _onPointerUp(e) {
+            if (e.pointerId !== this._dragId) return;
+            this._dragging = false;
+            this._dragId = null;
+            this._lastInteract = performance.now();
+            try { this.domElement.releasePointerCapture(e.pointerId); } catch (err) {}
         }
 
         async _loadCurrentModel() {
@@ -231,10 +312,10 @@
             this._updateCameraPosition(0);
         }
 
-        _updateCameraPosition(elapsed) {
+        _updateCameraPosition() {
             const r = this._orbitRadius || 3;
-            const theta = CAMERA_ORBIT.theta + (this.autoRotate ? (elapsed * AUTO_ROTATE_DPS * Math.PI / 180) : 0);
-            const phi = CAMERA_ORBIT.phi;
+            const theta = this._theta;
+            const phi = this._phi;
             const x = r * Math.sin(phi) * Math.sin(theta);
             const y = r * Math.cos(phi);
             const z = r * Math.sin(phi) * Math.cos(theta);
@@ -247,12 +328,17 @@
             this._raf = requestAnimationFrame(this._tick);
             if (this._paused || this._contextLost) return;
             if (now - this._lastDraw < 1000 / TARGET_FPS) return;
-            const rotating = this.autoRotate && this._model;
-            if (!this._dirty && !rotating) return;
+            const dt = Math.min((now - this._lastDraw) / 1000 || 0, 0.1);
+            // Auto-rotado: solo si está activo, no se está arrastrando y el
+            // usuario lleva un rato sin tocar (para no pelear con su rotación).
+            const idle = now - this._lastInteract > IDLE_RESUME_MS;
+            const autoRotating = this.autoRotate && this._model && !this._dragging && idle;
+            if (!this._dirty && !autoRotating) return;
             this._lastDraw = now;
             this._dirty = false;
+            if (autoRotating) this._theta += dt * AUTO_ROTATE_DPS * Math.PI / 180;
             try {
-                this._updateCameraPosition(now / 1000);
+                this._updateCameraPosition();
                 this.renderer.render(this.scene, this.camera);
             } catch (e) { /* contexto perdido en mitad del frame */ }
         }
@@ -338,6 +424,9 @@
                     gl.canvas.addEventListener('webglcontextrestored', this._onRestored, false);
                 }
                 this._contextLost = false;
+                this._draggingBound = false; // el canvas es nuevo: reenganchar el arrastre
+                this._dragging = false;
+                this._dragId = null;
                 this._applySize();
                 // Recrear los recursos GPU del modelo en el contexto nuevo.
                 if (this._modelUrl) this._loadCurrentModel();
@@ -352,6 +441,7 @@
             this._destroyed = true;
             if (this._restoreTimer) { clearTimeout(this._restoreTimer); this._restoreTimer = null; }
             if (this._raf) cancelAnimationFrame(this._raf);
+            this._unbindDrag();
             if (this._resizeObs) this._resizeObs.disconnect();
             else window.removeEventListener('resize', this._applySize);
             try {

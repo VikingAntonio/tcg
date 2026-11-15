@@ -63,7 +63,8 @@ Los detalles del producto se muestran como chips (`.cart-tags`/`.cart-tag`) que 
 Sustituye a `model-viewer` **solo en móvil/GPU débil** (`useMobile3D()`), porque `model-viewer` 3.3.x crea un contexto WebGL pesado por cada visor y en el celular se agotan (cuadro blanco / pantalla negra).
 - API: `window.MichatbotMobile3D = { isSupported, isCreated, getViewer, create, moveTo, setAutoRotate, pause, resume, release, setModel }`.
 - Un **único** `<canvas class="michatbot-mobile-viewer">` reutilizado para home/chat/detalle mediante `moveTo(container)`; nunca se crea un 2º contexto.
-- Render bajo demanda (solo rota si hay auto-rotate o cambio), DPR limitado, y recuperación ante `webglcontextlost` (recrea el renderer en el mismo canvas).
+- **Rotación manual**: arrastrar sobre el visor gira el modelo (`ROTATE_SPEED`, límites `PHI_MIN/PHI_MAX`). El auto-rotado se pausa al arrastrar y se reanuda tras `IDLE_RESUME_MS` de inactividad. El `touch-action:none` del canvas evita el scroll encima; el gesto de "tocar" (sin arrastre) sigue abriendo el menú (`michatbot.js`).
+- Render bajo demanda (solo rota si hay auto-rotate o cambio), DPR limitado, y recuperación ante `webglcontextlost` (reconstruye el renderer en un **canvas nuevo**, porque un canvas perdido siempre devuelve el mismo contexto muerto).
 - Three.js se importa por `importmap` si la página ya lo declara (`carrito.html`, `public.html`) o por CDN `esm.sh/three@0.160.0` si no; así no se duplica la instancia de three.
 - `isSupported()` se prueba **una sola vez** y se cachea (no crear contextos de prueba repetidos).
 - Si el módulo no carga o falla `init()`, `create()` devuelve `null` y `michatbot.js` cae a `model-viewer` (`buildCornerModelViewer`). Por eso el chat/detalle usan `useMobileViewer()` (comprueba `isCreated()`) antes de `moveTo`.
