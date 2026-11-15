@@ -240,7 +240,9 @@
             this._lastPX = e.clientX;
             this._lastPY = e.clientY;
             this._theta -= dx * ROTATE_SPEED;
-            this._phi = Math.min(PHI_MAX, Math.max(PHI_MIN, this._phi + dy * ROTATE_SPEED));
+            // El modelo sigue al dedo: arrastrar hacia abajo hace girar el
+            // modelo hacia abajo (se ve la parte de arriba), igual que model-viewer.
+            this._phi = Math.min(PHI_MAX, Math.max(PHI_MIN, this._phi - dy * ROTATE_SPEED));
             this._lastInteract = performance.now();
             this._dirty = true;
         }
