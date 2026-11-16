@@ -105,8 +105,18 @@ Sustituye a `model-viewer` **solo en móvil/GPU débil** (`useMobile3D()`), porq
 - **Migración SQL:** `docs/G_add_investment_position_and_price_history.sql` (idempotente) documenta `investment_cards.position` + índice y crea `investment_price_history` con RLS por dueño de la carta. Ambas ya existían en producción pero no había migración en el repo.
 - **Ledger por colección:** icono `fa-table` en cada tarjeta de colección (`.inv-ledger-open` y `.btn-ledger-inv-cat`) abre `openVaultLedger()`; la tabla ya traía 11 columnas y ahora incluye **"Margen vs mercado"** (importe + `%`), en filas y en el pie de totales (colspan vacío = 12).
 
+## Inversiones — precio de compra total por colección (lote)
+Caso real: se compran N cartas juntas por un solo precio (p.ej. 10 cartas por $1000) y no conviene repetir ese precio carta por carta.
+- Columna nueva `investment_categories.total_purchase_cost` (DECIMAL, nullable) → migración idempotente `docs/H_add_total_purchase_cost_to_investment_categories.sql`.
+- `catLotCost(cat)` devuelve el lote o `null`. `computeVaultTotals(cards, lotOverride)` y `computeCardMetrics(card, costOverride)` aceptan un costo que **sustituye** al `purchase_price`.
+- `allocateLotCost(cards, lot)` reparte el lote **proporcional al valor de compra** de cada carta (base = `purchase_price*qty`); si ninguna carta tiene precio, reparte **por cantidad**. La suma de asignaciones es exactamente el lote.
+- El lote es autoritativo: `computeVaultTotals` fuerza `totals.cost = lot` (no la suma redondeada) y expone `hasLotCost`/`lotCost`. Si el lote es `null` todo vuelve al cálculo por carta (sin regresión).
+- Se aplica en: tarjetas de colección, resumen de lista, métricas por carta del modo lista, pestaña RESUMEN (`#inv-detail-metrics`), pestaña RENTABILIDAD y el ledger (`openVaultLedger`, que además marca la columna "Costo unit." con `(lote)`).
+- Los modales CREAR/EDITAR VAULT (Swal) incluyen el input `#swal-inv-vault-lot`. Si la columna aún no existe en la BD, `saveInvestmentCategory`/`updateInvestmentCategory` reintentan sin `total_purchase_cost` (igual que ya hacían con `grid_layout`) para no romper la creación.
+- Helpers de conveniencia: `currentLotMap(cards)` y `currentCardCost(card, lotMap)` usan `currentInvestmentCategory`.
+
 ## Rendimiento móvil — Service Worker (crítico)
 `docs/sw.js` no llegaba a **instalarse**: `URLS_TO_CACHE` incluía `./build.html`, que ya no existe, y `cache.addAll()` rechaza todo el install si **una** URL da 404 → el SW quedaba sin activar y **no se cacheaba nada**. Como el `.gltf` del asistente referencia un `.bin` de ~2.7 MB, se re-descargaba en cada navegación (lentísimo en móvil).
 - Install tolerante: se cachea cada URL por separado (`cache.add(url).catch(...)`) en vez de `addAll`.
 - `isModelAsset` incluye `bin|ktx2|basis|drc` además de `glb|gltf`, para cache-first de los buffers/texturas del modelo (antes caían al branch network-first de Supabase).
-- Al cambiar assets, subir `STATIC_CACHE` (ahora `viking-static-v226`).
+- Al cambiar assets, subir `STATIC_CACHE` (ahora `viking-static-v227`).

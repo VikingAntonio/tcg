@@ -38,10 +38,13 @@ function fmtPct(v) {
     return (n >= 0 ? '+' : '') + n.toFixed(1) + '%';
 }
 
-// Profit/loss + margin calculations for a single card
-function computeCardMetrics(card) {
+// Profit/loss + margin calculations for a single card.
+// `costOverride` lets a collection lot price replace the card's own cost.
+function computeCardMetrics(card, costOverride) {
     const qty = parseInt(card.quantity) || 1;
-    const cost = invNum(card.purchase_price) * qty;
+    const cost = (costOverride !== undefined && costOverride !== null)
+        ? invNum(costOverride)
+        : invNum(card.purchase_price) * qty;
     const market = invNum(card.current_price) * qty;
     const saleTarget = invNum(card.sale_price) * qty;
     const isSold = card.is_sold === true;
@@ -65,17 +68,46 @@ function computeCardMetrics(card) {
     };
 }
 
-// Aggregated totals for a whole vault / collection
-function computeVaultTotals(cards) {
+// Distributes a collection lot price across its cards, proportionally to each
+// card's own purchase value (or by quantity when no prices were entered).
+// Returns a map of card id -> allocated cost.
+function allocateLotCost(cards, lot) {
+    const map = {};
+    if (lot === null || lot === undefined || lot === '' || isNaN(invNum(lot))) return map;
+    const total = invNum(lot);
+    const list = cards || [];
+    let basis = 0;
+    let units = 0;
+    list.forEach(c => {
+        const q = parseInt(c.quantity) || 1;
+        basis += invNum(c.purchase_price) * q;
+        units += q;
+    });
+    list.forEach(c => {
+        const q = parseInt(c.quantity) || 1;
+        const factor = basis > 0 ? (invNum(c.purchase_price) * q / basis) : (units > 0 ? q / units : 0);
+        map[c.id] = total * factor;
+    });
+    return map;
+}
+
+// Aggregated totals for a whole vault / collection.
+// `lotOverride` (collection lot price) replaces the sum of per-card purchase
+// prices and is distributed proportionally so per-card profit stays coherent.
+function computeVaultTotals(cards, lotOverride) {
+    const list = cards || [];
+    const hasLot = lotOverride !== null && lotOverride !== undefined && lotOverride !== '' && !isNaN(invNum(lotOverride));
+    const lotCosts = hasLot ? allocateLotCost(list, lotOverride) : {};
     const totals = {
         count: 0, units: 0,
         cost: 0, market: 0, saleTarget: 0,
         unrealized: 0, projected: 0, realized: 0,
-        soldCount: 0, soldUnits: 0, soldTotal: 0
+        soldCount: 0, soldUnits: 0, soldTotal: 0,
+        hasLotCost: hasLot, lotCost: hasLot ? invNum(lotOverride) : null
     };
 
-    (cards || []).forEach(card => {
-        const m = computeCardMetrics(card);
+    list.forEach(card => {
+        const m = computeCardMetrics(card, hasLot ? lotCosts[card.id] : undefined);
         totals.count++;
         totals.units += m.qty;
         totals.cost += m.cost;
@@ -92,6 +124,8 @@ function computeVaultTotals(cards) {
         }
     });
 
+    // The lot price is authoritative: show it exactly, not the rounded sum.
+    if (hasLot) totals.cost = invNum(lotOverride);
     totals.roi = totals.cost > 0 ? (totals.projected / totals.cost) * 100 : 0;
     totals.marginPct = totals.market > 0 ? ((totals.saleTarget - totals.market) / totals.market) * 100 : 0;
     totals.latentGain = totals.unrealized;
@@ -100,6 +134,28 @@ function computeVaultTotals(cards) {
 
 function invPlClass(v) {
     return invNum(v) >= 0 ? 'inv-pl-up' : 'inv-pl-down';
+}
+
+// Reads the optional lot price stored on a collection (null when unset).
+function catLotCost(cat) {
+    if (!cat) return null;
+    const v = cat.total_purchase_cost;
+    if (v === null || v === undefined || v === '') return null;
+    const n = invNum(v);
+    return isNaN(n) ? null : n;
+}
+
+// Per-card lot allocation for the currently open collection (id -> cost),
+// or null when the collection has no lot price.
+function currentLotMap(cards) {
+    const lot = catLotCost(currentInvestmentCategory);
+    if (lot === null) return null;
+    return allocateLotCost(cards || localInvestmentCards, lot);
+}
+
+// Cost to use for a single card in the currently open collection.
+function currentCardCost(card, lotMap) {
+    return lotMap && lotMap[card.id] !== undefined ? lotMap[card.id] : undefined;
 }
 
 // Writes the current array order back as `position` (0..n-1), only for cards
@@ -246,6 +302,11 @@ function initInvestmentListeners() {
                             <option value="1x1">1x1 (1 Carta)</option>
                         </select>
                     </div>
+                    <div>
+                        <label style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #333; display: block; margin-bottom: 5px;">Precio total de compra del lote <span style="color:#aaa; font-weight:600;">(opcional)</span></label>
+                        <input id="swal-inv-vault-lot" type="number" step="0.01" min="0" class="swal2-input" placeholder="Ej: 1000 (si compraste todo junto)" style="margin: 0; width: 100%; box-sizing: border-box;">
+                        <small style="display:block; color:#888; font-size:0.65rem; margin-top:4px;">Si lo defines, se usa este monto como costo total de la colección en vez de sumar el precio de cada carta.</small>
+                    </div>
                 </div>
             `,
             showCancelButton: true,
@@ -259,11 +320,12 @@ function initInvestmentListeners() {
             preConfirm: () => {
                 const name = $('#swal-inv-vault-name').val().trim();
                 const layout = $('#swal-inv-vault-layout').val() || '3x3';
+                const lotRaw = $('#swal-inv-vault-lot').val();
                 if (!name) {
                     Swal.showValidationMessage('Ingresa un nombre para la colección');
                     return false;
                 }
-                return { name: name.toUpperCase(), grid_layout: layout };
+                return { name: name.toUpperCase(), grid_layout: layout, total_purchase_cost: lotRaw === '' ? null : parseFloat(lotRaw) };
             }
         });
 
@@ -610,7 +672,7 @@ async function loadInvestmentCategories() {
 
     categories.forEach(cat => {
         const isPublic = cat.is_public !== false;
-        const t = computeVaultTotals(cardsByCategory[cat.id] || []);
+        const t = computeVaultTotals(cardsByCategory[cat.id] || [], catLotCost(cat));
         const $card = $(`
             <div class="inv-category-item" data-id="${cat.id}">
                 <div class="inv-category-preview">
@@ -625,7 +687,7 @@ async function loadInvestmentCategories() {
 
                     <div class="inv-cat-metrics">
                         <div class="inv-cat-metric">
-                            <span>Costo</span>
+                            <span>Costo${t.hasLotCost ? ' (lote)' : ''}</span>
                             <b>${fmtMoney(t.cost)}</b>
                         </div>
                         <div class="inv-cat-metric">
@@ -690,9 +752,12 @@ async function saveInvestmentCategory(data) {
         .from('investment_categories')
         .insert([{ ...data, user_id: currentUser.id }]);
 
-    if (error && (error.code === '42703' || (error.message && error.message.includes('grid_layout')))) {
+    // If an optional column is missing in the DB, retry without it so the
+    // vault is still created (the SQL migration can be run later).
+    if (error && (error.code === '42703' || (error.message && (error.message.includes('grid_layout') || error.message.includes('total_purchase_cost'))))) {
         const fallbackData = { ...data };
         delete fallbackData.grid_layout;
+        delete fallbackData.total_purchase_cost;
         const res = await _supabase
             .from('investment_categories')
             .insert([{ ...fallbackData, user_id: currentUser.id }]);
@@ -713,9 +778,10 @@ async function updateInvestmentCategory(id, data, refresh = false) {
         .update(data)
         .eq('id', id);
 
-    if (error && (error.code === '42703' || (error.message && error.message.includes('grid_layout')))) {
+    if (error && (error.code === '42703' || (error.message && (error.message.includes('grid_layout') || error.message.includes('total_purchase_cost'))))) {
         const fallbackData = { ...data };
         delete fallbackData.grid_layout;
+        delete fallbackData.total_purchase_cost;
         const res = await _supabase
             .from('investment_categories')
             .update(fallbackData)
@@ -745,6 +811,7 @@ async function updateInvestmentCategory(id, data, refresh = false) {
 
 async function editInvestmentCategory(cat) {
     const currentLayout = cat.grid_layout || '3x3';
+    const currentLot = (cat.total_purchase_cost !== null && cat.total_purchase_cost !== undefined) ? cat.total_purchase_cost : '';
     const { value: formValues } = await Swal.fire({
         title: 'EDITAR VAULT',
         html: `
@@ -763,6 +830,11 @@ async function editInvestmentCategory(cat) {
                         <option value="1x1" ${currentLayout === '1x1' ? 'selected' : ''}>1x1 (1 Carta)</option>
                     </select>
                 </div>
+                <div>
+                    <label style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #333; display: block; margin-bottom: 5px;">Precio total de compra del lote <span style="color:#aaa; font-weight:600;">(opcional)</span></label>
+                    <input id="swal-inv-vault-lot" type="number" step="0.01" min="0" class="swal2-input" value="${currentLot}" placeholder="Vacío = suma por carta" style="margin: 0; width: 100%; box-sizing: border-box;">
+                    <small style="display:block; color:#888; font-size:0.65rem; margin-top:4px;">Si lo defines, se usa este monto como costo total de la colección en vez de sumar el precio de cada carta. Déjalo vacío para volver al cálculo por carta.</small>
+                </div>
             </div>
         `,
         showCancelButton: true,
@@ -776,11 +848,12 @@ async function editInvestmentCategory(cat) {
         preConfirm: () => {
             const name = $('#swal-inv-vault-name').val().trim();
             const layout = $('#swal-inv-vault-layout').val() || '3x3';
+            const lotRaw = $('#swal-inv-vault-lot').val();
             if (!name) {
                 Swal.showValidationMessage('Ingresa un nombre para la colección');
                 return false;
             }
-            return { name: name.toUpperCase(), grid_layout: layout };
+            return { name: name.toUpperCase(), grid_layout: layout, total_purchase_cost: lotRaw === '' ? null : parseFloat(lotRaw) };
         }
     });
 
@@ -1177,10 +1250,10 @@ function renderListMode($container) {
     $container.addClass('investment-list-layout').removeClass('investment-slide-layout investment-album-layout');
 
     // Portfolio summary bar
-    const totals = computeVaultTotals(localInvestmentCards);
+    const totals = computeVaultTotals(localInvestmentCards, catLotCost(currentInvestmentCategory));
     const $summary = $(`
         <div class="inv-list-summary">
-            <div class="inv-list-summary-item"><span>Costo total</span><b>${fmtMoney(totals.cost)}</b></div>
+            <div class="inv-list-summary-item"><span>Costo total${totals.hasLotCost ? ' (lote)' : ''}</span><b>${fmtMoney(totals.cost)}</b></div>
             <div class="inv-list-summary-item"><span>Valor mercado</span><b>${fmtMoney(totals.market)}</b></div>
             <div class="inv-list-summary-item"><span>Valor venta</span><b>${fmtMoney(totals.saleTarget)}</b></div>
             <div class="inv-list-summary-item"><span>Ganancia latente</span><b class="${invPlClass(totals.unrealized)}">${fmtSignedMoney(totals.unrealized)}</b></div>
@@ -1191,8 +1264,9 @@ function renderListMode($container) {
 
     const $list = $('<div class="inv-list-container" style="margin: 20px 0;"></div>');
 
+    const listLotMap = currentLotMap(localInvestmentCards);
     localInvestmentCards.forEach(card => {
-        const m = computeCardMetrics(card);
+        const m = computeCardMetrics(card, currentCardCost(card, listLotMap));
         const trend = getTrendIcon(card.current_price, card.previous_price);
         const isPrivate = card.is_public === false;
         const isUnavailable = card.is_available === false;
@@ -1612,7 +1686,7 @@ function updateSummaryTab(card) {
     $('#inv-detail-trend').html(trendIcon);
 
     // Quick profitability strip
-    const m = computeCardMetrics(card);
+    const m = computeCardMetrics(card, currentCardCost(card, currentLotMap(localInvestmentCards)));
     $('#inv-detail-metrics').html(`
         <div class="inv-summary-metric">
             <span>Me costó</span>
@@ -1650,7 +1724,7 @@ function updateSummaryTab(card) {
 
 function renderProfitabilityTab(card) {
     if (!card) return;
-    const m = computeCardMetrics(card);
+    const m = computeCardMetrics(card, currentCardCost(card, currentLotMap(localInvestmentCards)));
 
     $('#inv-renta-name').text((card.card_name || '').toUpperCase());
     $('#inv-renta-set').text(`${(card.set_name || 'SIN SET').toUpperCase()} - ${(card.rarity || 'SIN RAREZA').toUpperCase()}`);
@@ -1919,7 +1993,9 @@ async function openVaultLedger(cat) {
     }
 
     const list = cards || [];
-    const t = computeVaultTotals(list);
+    const lot = catLotCost(cat);
+    const lotMap = lot !== null ? allocateLotCost(list, lot) : null;
+    const t = computeVaultTotals(list, lot);
 
     // Totals cards
     $('#ledger-totals').html(`
@@ -1940,7 +2016,7 @@ async function openVaultLedger(cat) {
     } else {
         const $tbody = $('#ledger-tbody').empty();
         list.forEach(card => {
-            const m = computeCardMetrics(card);
+            const m = computeCardMetrics(card, currentCardCost(card, lotMap));
             const statusPill = m.isSold
                 ? '<span class="inv-ledger-status sold">VENDIDA</span>'
                 : '<span class="inv-ledger-status open">EN CARTERA</span>';
@@ -1952,7 +2028,7 @@ async function openVaultLedger(cat) {
                     </td>
                     <td>${escapeHtml(card.set_name || '-')}<br><small>${escapeHtml(card.rarity || '-')}</small></td>
                     <td class="num">x${m.qty}</td>
-                    <td class="num">${fmtMoney(card.purchase_price)}</td>
+                    <td class="num">${lotMap ? fmtMoney(m.qty > 0 ? m.cost / m.qty : 0) : fmtMoney(card.purchase_price)}${lotMap ? '<br><small>(lote)</small>' : ''}</td>
                     <td class="num">${fmtMoney(m.cost)}</td>
                     <td class="num">${fmtMoney(m.market)}</td>
                     <td class="num">${fmtMoney(m.saleTarget)}</td>
