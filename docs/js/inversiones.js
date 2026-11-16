@@ -43,7 +43,7 @@ function fmtPct(v) {
 const INV_METRIC_HELP = {
     cost: {
         title: '¿Cuánto pagué en total?',
-        body: 'El precio total de compra de la colección. Si definiste un precio de lote, se usa ese monto; si no, es la suma del precio de compra de todas tus cartas.'
+        body: 'Si definiste un precio de lote, se usa ese monto como tu inversión total de la colección. Si no, es la suma del precio de compra que escribiste en cada carta.'
     },
     saleAll: {
         title: '¿En cuánto venderé todo?',
@@ -106,12 +106,11 @@ function invInfoIcon(key) {
 }
 
 // Profit/loss + margin calculations for a single card.
-// `costOverride` lets a collection lot price replace the card's own cost.
-function computeCardMetrics(card, costOverride) {
+// Always uses the values typed on the card itself: the collection lot price is
+// NEVER distributed across cards (it is only a general total).
+function computeCardMetrics(card) {
     const qty = parseInt(card.quantity) || 1;
-    const cost = (costOverride !== undefined && costOverride !== null)
-        ? invNum(costOverride)
-        : invNum(card.purchase_price) * qty;
+    const cost = invNum(card.purchase_price) * qty;
     const market = invNum(card.current_price) * qty;
     const saleTarget = invNum(card.sale_price) * qty;
     const isSold = card.is_sold === true;
@@ -139,42 +138,16 @@ function computeCardMetrics(card, costOverride) {
     };
 }
 
-// Distributes a collection lot price across its cards, proportionally to each
-// card's own purchase value (or by quantity when no prices were entered).
-// Returns a map of card id -> allocated cost.
-function allocateLotCost(cards, lot) {
-    const map = {};
-    if (lot === null || lot === undefined || lot === '' || isNaN(invNum(lot))) return map;
-    const total = invNum(lot);
-    const list = cards || [];
-    let basis = 0;
-    let units = 0;
-    list.forEach(c => {
-        const q = parseInt(c.quantity) || 1;
-        basis += invNum(c.purchase_price) * q;
-        units += q;
-    });
-    list.forEach(c => {
-        const q = parseInt(c.quantity) || 1;
-        const factor = basis > 0 ? (invNum(c.purchase_price) * q / basis) : (units > 0 ? q / units : 0);
-        map[c.id] = total * factor;
-    });
-    return map;
-}
-
 // Aggregated totals for a whole vault / collection.
-// `lotOverride` (collection lot price) replaces the sum of per-card purchase
-// prices. "cost" is the GENERAL purchase figure: the lot when set, otherwise
-// the sum of every card's purchase price (so the lot is never diluted by
-// spreading it across available cards only). Sale / market figures are offered
-// both for the whole collection and for the available cards only.
+// Every per-card figure comes from the values typed on each card; nothing is
+// invented or distributed. `lotOverride` (collection lot price) is used ONLY as
+// the general purchase figure when defined.
 function computeVaultTotals(cards, lotOverride) {
     const list = cards || [];
     const hasLot = lotOverride !== null && lotOverride !== undefined && lotOverride !== '' && !isNaN(invNum(lotOverride));
-    const lotCosts = hasLot ? allocateLotCost(list, lotOverride) : {};
     const totals = {
         count: 0, units: 0,
-        sumCardCost: 0,       // purchase price of every card, ignoring the lot
+        sumCardCost: 0,       // purchase price of every card, as typed
         cost: 0,              // general purchase (lot, or sum of all cards)
         market: 0,            // market value of every card
         marketActive: 0,      // market value of the available cards
@@ -188,10 +161,10 @@ function computeVaultTotals(cards, lotOverride) {
     };
 
     list.forEach(card => {
-        const m = computeCardMetrics(card, hasLot ? lotCosts[card.id] : undefined);
+        const m = computeCardMetrics(card);
         totals.count++;
         totals.units += m.qty;
-        totals.sumCardCost += hasLot ? 0 : m.cost;
+        totals.sumCardCost += m.cost;
         totals.market += m.market;
         totals.saleAll += m.saleTarget;
         if (m.isActive) {
@@ -231,19 +204,6 @@ function catLotCost(cat) {
     if (v === null || v === undefined || v === '') return null;
     const n = invNum(v);
     return isNaN(n) ? null : n;
-}
-
-// Per-card lot allocation for the currently open collection (id -> cost),
-// or null when the collection has no lot price.
-function currentLotMap(cards) {
-    const lot = catLotCost(currentInvestmentCategory);
-    if (lot === null) return null;
-    return allocateLotCost(cards || localInvestmentCards, lot);
-}
-
-// Cost to use for a single card in the currently open collection.
-function currentCardCost(card, lotMap) {
-    return lotMap && lotMap[card.id] !== undefined ? lotMap[card.id] : undefined;
 }
 
 // Shows the collection lot price (or the per-card mode) in the vault header.
@@ -1457,9 +1417,8 @@ function renderListMode($container) {
 
     const $list = $('<div class="inv-list-container" style="margin: 20px 0;"></div>');
 
-    const listLotMap = currentLotMap(localInvestmentCards);
     localInvestmentCards.forEach(card => {
-        const m = computeCardMetrics(card, currentCardCost(card, listLotMap));
+        const m = computeCardMetrics(card);
         const trend = getTrendIcon(card.current_price, card.previous_price);
         const isPrivate = card.is_public === false;
         const isUnavailable = card.is_available === false;
@@ -1529,7 +1488,8 @@ function renderListMode($container) {
 
 let currentEditingInvCardId = null;
 
-// Shows the lot allocation hint under the card purchase price field.
+// Shows the collection lot price under the card purchase price field. The lot
+// is a general total; it is NOT split across cards, so this is only a note.
 function updateCardLotHint(card) {
     const $hint = $('#inv-card-lot-hint');
     const lot = catLotCost(currentInvestmentCategory);
@@ -1537,12 +1497,7 @@ function updateCardLotHint(card) {
         $hint.hide().text('');
         return;
     }
-    let assigned = '';
-    if (card && card.id) {
-        const map = currentLotMap(localInvestmentCards);
-        if (map && map[card.id] !== undefined) assigned = ` · Esta carta: ${fmtMoney(map[card.id])}`;
-    }
-    $hint.text(`Lote de la colección: ${fmtMoney(lot)}${assigned}`).show();
+    $hint.text(`Lote de la colección: ${fmtMoney(lot)} (total general, no se reparte por carta)`).show();
 }
 
 function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
@@ -1899,7 +1854,7 @@ function updateSummaryTab(card) {
     $('#inv-detail-trend').html(trendIcon);
 
     // Quick profitability strip
-    const m = computeCardMetrics(card, currentCardCost(card, currentLotMap(localInvestmentCards)));
+    const m = computeCardMetrics(card);
     $('#inv-detail-metrics').html(`
         <div class="inv-summary-metric">
             <span>Lo que pagué${invInfoIcon('cost')}</span>
@@ -1937,7 +1892,7 @@ function updateSummaryTab(card) {
 
 function renderProfitabilityTab(card) {
     if (!card) return;
-    const m = computeCardMetrics(card, currentCardCost(card, currentLotMap(localInvestmentCards)));
+    const m = computeCardMetrics(card);
 
     $('#inv-renta-name').text((card.card_name || '').toUpperCase());
     $('#inv-renta-set').text(`${(card.set_name || 'SIN SET').toUpperCase()} - ${(card.rarity || 'SIN RAREZA').toUpperCase()}`);
@@ -2209,7 +2164,6 @@ async function openVaultLedger(cat) {
 
     const list = cards || [];
     const lot = catLotCost(cat);
-    const lotMap = lot !== null ? allocateLotCost(list, lot) : null;
     const t = computeVaultTotals(list, lot);
 
     // Totals cards (general report)
@@ -2231,7 +2185,7 @@ async function openVaultLedger(cat) {
     } else {
         const $tbody = $('#ledger-tbody').empty();
         list.forEach(card => {
-            const m = computeCardMetrics(card, currentCardCost(card, lotMap));
+            const m = computeCardMetrics(card);
             const statusPill = m.isSold
                 ? '<span class="inv-ledger-status sold">VENDIDA</span>'
                 : (m.isActive
@@ -2245,7 +2199,7 @@ async function openVaultLedger(cat) {
                     </td>
                     <td>${escapeHtml(card.set_name || '-')}<br><small>${escapeHtml(card.rarity || '-')}</small></td>
                     <td class="num">x${m.qty}</td>
-                    <td class="num">${lotMap ? fmtMoney(m.qty > 0 ? m.cost / m.qty : 0) : fmtMoney(card.purchase_price)}${lotMap ? '<br><small>(lote)</small>' : ''}</td>
+                    <td class="num">${fmtMoney(card.purchase_price)}</td>
                     <td class="num">${fmtMoney(m.cost)}</td>
                     <td class="num">${fmtMoney(m.market)}</td>
                     <td class="num">${fmtMoney(m.saleTarget)}</td>
