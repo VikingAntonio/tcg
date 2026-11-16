@@ -158,6 +158,15 @@ function currentCardCost(card, lotMap) {
     return lotMap && lotMap[card.id] !== undefined ? lotMap[card.id] : undefined;
 }
 
+// Shows the collection lot price (or the per-card mode) in the vault header.
+function updateVaultLotIndicators() {
+    const lot = catLotCost(currentInvestmentCategory);
+    const text = lot !== null
+        ? `Lote: ${fmtMoney(lot)} (costo total de la colección)`
+        : 'Costo por carta (sin lote definido)';
+    $('#inv-desktop-lot-cost, #inv-mobile-lot-cost').text(text);
+}
+
 // Writes the current array order back as `position` (0..n-1), only for cards
 // whose stored position actually changed.
 async function persistInvestmentPositions() {
@@ -276,6 +285,12 @@ function initInvestmentListeners() {
     // Mobile Side Panel Toggle
     $(document).on('click', '#inv-side-panel-tab', function() {
         $('#inv-mobile-side-panel, #inv-side-panel-overlay').toggleClass('active');
+    });
+
+    // Lot price editor (desktop header, mobile panel and card form shortcut)
+    $(document).on('click', '#btn-edit-vault-lot, #btn-edit-vault-lot-mobile, #btn-inv-lot-from-card', function(e) {
+        e.preventDefault();
+        editVaultLotCost();
     });
 
     $(document).on('click', '#inv-side-panel-overlay', function() {
@@ -862,6 +877,39 @@ async function editInvestmentCategory(cat) {
     }
 }
 
+// Quick editor for the collection lot price, reachable from inside the binder.
+async function editVaultLotCost() {
+    if (!currentInvestmentCategory) return;
+    const cat = currentInvestmentCategory;
+    const currentLot = (cat.total_purchase_cost !== null && cat.total_purchase_cost !== undefined) ? cat.total_purchase_cost : '';
+    const { value: lotRaw } = await Swal.fire({
+        title: 'PRECIO DEL LOTE',
+        html: `
+            <div style="text-align: left; padding-top: 10px;">
+                <label style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #333; display: block; margin-bottom: 5px;">Precio total de compra de la colección</label>
+                <input id="swal-inv-lot-only" type="number" step="0.01" min="0" class="swal2-input" value="${currentLot}" placeholder="Ej: 1000" style="margin: 0; width: 100%; box-sizing: border-box;">
+                <small style="display:block; color:#888; font-size:0.65rem; margin-top:6px;">Si compraste todas las cartas juntas por un solo precio, escríbelo aquí. Se usará como costo total de la colección. Déjalo vacío para volver a sumar el precio de cada carta.</small>
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'GUARDAR',
+        cancelButtonText: 'CANCELAR',
+        customClass: {
+            popup: 'inv-swal-popup',
+            confirmButton: 'btn-inv-main',
+            cancelButton: 'btn-inv-outline'
+        },
+        preConfirm: () => {
+            const raw = $('#swal-inv-lot-only').val();
+            return { total_purchase_cost: raw === '' ? null : parseFloat(raw) };
+        }
+    });
+
+    if (lotRaw) {
+        await updateInvestmentCategory(cat.id, lotRaw, true);
+    }
+}
+
 async function deleteInvestmentCategory(id) {
     const { isConfirmed } = await Swal.fire({
         title: 'DESTROY VAULT?',
@@ -920,6 +968,8 @@ async function loadInvestmentCards() {
             $('#inv-category-title-mobile').text(upperName);
         }
     }
+
+    updateVaultLotIndicators();
 
     const { data: cards, error } = await _supabase
         .from('investment_cards')
@@ -1336,6 +1386,22 @@ function renderListMode($container) {
 
 let currentEditingInvCardId = null;
 
+// Shows the lot allocation hint under the card purchase price field.
+function updateCardLotHint(card) {
+    const $hint = $('#inv-card-lot-hint');
+    const lot = catLotCost(currentInvestmentCategory);
+    if (lot === null) {
+        $hint.hide().text('');
+        return;
+    }
+    let assigned = '';
+    if (card && card.id) {
+        const map = currentLotMap(localInvestmentCards);
+        if (map && map[card.id] !== undefined) assigned = ` · Esta carta: ${fmtMoney(map[card.id])}`;
+    }
+    $hint.text(`Lote de la colección: ${fmtMoney(lot)}${assigned}`).show();
+}
+
 function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
     if (window.sharedCard3D) window.sharedCard3D.stop();
 
@@ -1384,6 +1450,8 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
         // Cleanup search
         $('#inv-card-search-results').empty().hide();
         $('#inv-card-search-input').val('');
+
+        updateCardLotHint(null);
     } else {
         // Edit / View Mode: Show all tabs
         $('#inv-card-modal-title').text(card.card_name.toUpperCase());
@@ -1424,6 +1492,8 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
         if (defaultTab === 'inv-tab-rentabilidad') {
             renderProfitabilityTab(card);
         }
+
+        updateCardLotHint(card);
     }
 
     renderInvExtraImagesPreview();
