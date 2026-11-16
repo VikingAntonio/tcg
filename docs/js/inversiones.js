@@ -12,6 +12,11 @@ let invPriceChart = null;
 let invDetailChart = null;
 let currentInvExtraImages = [];
 let currentLedgerCategory = null;
+// Global slot index chosen by the user when adding an asset from an empty
+// binder slot (null = append at the end).
+let pendingSlotIndex = null;
+// Timestamp of the last finished slot drag, to swallow the follow-up click.
+let invDragJustEnded = 0;
 
 // --- UTILS ---
 function invNum(v) {
@@ -97,6 +102,60 @@ function invPlClass(v) {
     return invNum(v) >= 0 ? 'inv-pl-up' : 'inv-pl-down';
 }
 
+// Writes the current array order back as `position` (0..n-1), only for cards
+// whose stored position actually changed.
+async function persistInvestmentPositions() {
+    const updates = [];
+    localInvestmentCards.forEach((card, idx) => {
+        if (invNum(card.position) !== idx) {
+            card.position = idx;
+            updates.push(
+                _supabase.from('investment_cards').update({ position: idx }).eq('id', card.id)
+            );
+        }
+    });
+    if (!updates.length) return;
+    const results = await Promise.all(updates);
+    const failed = results.find(r => r && r.error);
+    if (failed) console.warn('No se pudo guardar el orden:', failed.error);
+}
+
+// Moves the card at `fromIdx` so it lands on `toIdx` (used by drag & drop).
+function moveInvestmentCard(fromIdx, toIdx) {
+    if (fromIdx === toIdx || fromIdx < 0 || fromIdx >= localInvestmentCards.length) return false;
+    const [card] = localInvestmentCards.splice(fromIdx, 1);
+    const clamped = Math.max(0, Math.min(toIdx, localInvestmentCards.length));
+    localInvestmentCards.splice(clamped, 0, card);
+    return true;
+}
+
+// Wires drag & drop reordering onto a binder slot. turn.js is paused while
+// dragging so it does not page-turn under the pointer.
+function bindInvSlotDrop($slot, $album) {
+    $slot.on('dragover', function(e) {
+        if (!$('.inv-slot-dragging').length) return;
+        e.preventDefault();
+        e.originalEvent.dataTransfer.dropEffect = 'move';
+        $(this).addClass('inv-slot-drop-target');
+    });
+    $slot.on('dragleave', function() {
+        $(this).removeClass('inv-slot-drop-target');
+    });
+    $slot.on('drop', function(e) {
+        e.preventDefault();
+        $(this).removeClass('inv-slot-drop-target');
+        invDragJustEnded = Date.now();
+        if ($album.turn('is')) $album.turn('disable', false);
+        const fromIdx = parseInt(e.originalEvent.dataTransfer.getData('text/plain'), 10);
+        const toIdx = parseInt($(this).attr('data-slot-index'), 10);
+        if (isNaN(fromIdx) || isNaN(toIdx)) return;
+        if (moveInvestmentCard(fromIdx, toIdx)) {
+            renderInvestmentCards(currentInvestmentViewMode);
+            persistInvestmentPositions();
+        }
+    });
+}
+
 // Best-effort ledger entry (never blocks the main flow if the table is absent)
 async function logInvestmentTransaction(entry) {
     try {
@@ -122,6 +181,24 @@ function escapeHtml(text) {
 $(document).ready(function() {
     initInvestmentListeners();
 });
+
+// Updates the DATOS tab mini preview ("VISTA PREVIA"). Module scope so the
+// inversiones.html override can wrap it (the old nested copy was unreachable).
+function syncAddPreview() {
+    const url = $('#inv-card-image-url').val();
+    const $img = $('#inv-add-preview-image');
+    const $placeholder = $('#inv-add-preview-placeholder');
+
+    if (url) {
+        $img.attr('src', url).one('load', function() {
+            $placeholder.hide();
+            $(this).css('opacity', '1');
+        });
+    } else {
+        $img.attr('src', '').css('opacity', '0');
+        $placeholder.show();
+    }
+}
 
 function initInvestmentListeners() {
     // Navigation to Investments (Removido para redirección nativa)
@@ -222,6 +299,7 @@ function initInvestmentListeners() {
 
     // Add Card to Investment
     $(document).on('click', '#btn-add-investment-card, #btn-add-investment-card-mobile', function() {
+        pendingSlotIndex = null;
         openInvestmentCardModal(null, 'inv-tab-datos');
         // Close side panel on mobile
         $('#inv-mobile-side-panel, #inv-side-panel-overlay').removeClass('active');
@@ -356,23 +434,6 @@ function initInvestmentListeners() {
     $(document).on('click', '#vault-ledger-modal', function(e) {
         if (e.target === this) $(this).removeClass('active');
     });
-
-    function syncAddPreview() {
-        const url = $('#inv-card-image-url').val();
-        const $img = $('#inv-add-preview-image');
-        const $placeholder = $('#inv-add-preview-placeholder');
-
-        if (url) {
-            $img.attr('src', url).one('load', function() {
-                $placeholder.hide();
-                $(this).css('opacity', '1');
-            });
-        } else {
-            $img.attr('src', '').css('opacity', '0');
-            $placeholder.show();
-        }
-    }
-
 
     $('#btn-inv-add-price').click(async function() {
         if (!currentEditingInvCardId) return;
@@ -554,7 +615,7 @@ async function loadInvestmentCategories() {
             <div class="inv-category-item" data-id="${cat.id}">
                 <div class="inv-category-preview">
                     <img src="https://images.unsplash.com/photo-1613771404721-1f92d799e49f?q=80&w=800&auto=format&fit=crop" alt="preview">
-                    <button class="inv-ledger-open" data-id="${cat.id}" title="Hoja de cálculo de la colección"><i class="fas fa-file-invoice-dollar"></i></button>
+                    <button class="inv-ledger-open" data-id="${cat.id}" title="Hoja de cálculo de la colección"><i class="fas fa-table"></i></button>
                 </div>
                 <div class="inv-category-info">
                     <div>
@@ -591,7 +652,7 @@ async function loadInvestmentCategories() {
 
                     <div style="display: flex; gap: 8px; margin-top: 15px;">
                         <button class="btn-inv-main btn-view-inv-cat" style="flex: 1;">GESTIONAR</button>
-                        <button class="btn-inv-outline btn-ledger-inv-cat" title="Hoja de cálculo"><i class="fas fa-file-invoice-dollar"></i></button>
+                        <button class="btn-inv-outline btn-ledger-inv-cat" title="Hoja de cálculo"><i class="fas fa-table"></i></button>
                         <button class="btn-inv-outline btn-edit-inv-cat"><i class="fas fa-pen"></i></button>
                         <button class="btn-inv-danger btn-delete-inv-cat"><i class="fas fa-trash"></i></button>
                     </div>
@@ -874,6 +935,7 @@ function renderAlbumMode($container) {
             const cardIdx = pageIdx * numSlots + slotIdx;
             const card = localInvestmentCards[cardIdx];
             const $slot = $('<div class="inv-card-slot card-slot" style="position: relative;"></div>');
+            $slot.attr('data-slot-index', cardIdx);
 
             if (card) {
                 const trend = getTrendIcon(card.current_price, card.previous_price);
@@ -900,7 +962,23 @@ function renderAlbumMode($container) {
                     e.stopImmediatePropagation();
                 });
 
+                $slot.attr('draggable', 'true');
+                $slot.on('dragstart', function(e) {
+                    invDragJustEnded = 0;
+                    e.originalEvent.dataTransfer.setData('text/plain', String(cardIdx));
+                    e.originalEvent.dataTransfer.effectAllowed = 'move';
+                    $(this).addClass('inv-slot-dragging');
+                    if ($album.turn('is')) $album.turn('disable', true);
+                });
+                $slot.on('dragend', function() {
+                    invDragJustEnded = Date.now();
+                    $(this).removeClass('inv-slot-dragging');
+                    $('.inv-slot-drop-target').removeClass('inv-slot-drop-target');
+                    if ($album.turn('is')) $album.turn('disable', false);
+                });
+
                 $slot.click(function(e) {
+                    if (Date.now() - invDragJustEnded < 400) return;
                     const isMobile = window.innerWidth <= 768;
                     const isZoomBtn = $(e.target).closest('.zoom-btn').length > 0;
 
@@ -936,9 +1014,12 @@ function renderAlbumMode($container) {
                 $slot.click(function(e) {
                     e.preventDefault();
                     e.stopPropagation();
+                    pendingSlotIndex = cardIdx;
                     openInvestmentCardModal(null, 'inv-tab-datos');
                 });
             }
+
+            bindInvSlotDrop($slot, $album);
 
             $grid.append($slot);
         }
@@ -957,11 +1038,15 @@ function renderAlbumMode($container) {
                 <i class="fas fa-plus" style="color: #888; font-size: 1rem; margin-bottom: 3px;"></i>
                 <span style="font-size: 0.6rem; color: #888; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">AÑADIR</span>
             `);
+            // Filler slots sit past the last card: they only append.
+            $slot.attr('data-slot-index', localInvestmentCards.length);
             $slot.click(function(e) {
                 e.preventDefault();
                 e.stopPropagation();
+                pendingSlotIndex = localInvestmentCards.length;
                 openInvestmentCardModal(null, 'inv-tab-datos');
             });
+            bindInvSlotDrop($slot, $album);
             $grid.append($slot);
         }
         $fillerPage.append($grid);
@@ -1180,6 +1265,9 @@ let currentEditingInvCardId = null;
 function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
     if (window.sharedCard3D) window.sharedCard3D.stop();
 
+    // Opening an existing asset never uses the "chosen slot" of a new one.
+    if (card) pendingSlotIndex = null;
+
     currentEditingInvCardId = card ? card.id : null;
     currentInvExtraImages = card ? (card.extra_images || []) : [];
 
@@ -1271,6 +1359,8 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
 
 $('#close-investment-card-modal').click(() => {
     $('#investment-card-modal').removeClass('active');
+    pendingSlotIndex = null;
+    if (invPriceChart) { invPriceChart.destroy(); invPriceChart = null; }
     if (window.sharedCard3D) window.sharedCard3D.stop();
     $('#companion-wrapper').show();
 });
@@ -1387,7 +1477,11 @@ $('#btn-save-investment-card').click(async function() {
                 });
             }
         } else {
-            cardData.position = localInvestmentCards.length;
+            // Insert at the slot the user picked (empty slot click); otherwise append.
+            const insertAt = (pendingSlotIndex !== null && pendingSlotIndex >= 0 && pendingSlotIndex <= localInvestmentCards.length)
+                ? pendingSlotIndex
+                : localInvestmentCards.length;
+            cardData.position = insertAt;
             const { data: newCards, error: err } = await _supabase
                 .from('investment_cards')
                 .insert([cardData])
@@ -1431,9 +1525,14 @@ $('#btn-save-investment-card').click(async function() {
         const idx = localInvestmentCards.findIndex(c => c.id === finalCardId);
         if (idx !== -1) {
             localInvestmentCards[idx] = updatedCard;
+        } else if (pendingSlotIndex !== null && pendingSlotIndex >= 0 && pendingSlotIndex <= localInvestmentCards.length) {
+            // Land the new asset on the slot the user chose, not always at the end.
+            localInvestmentCards.splice(pendingSlotIndex, 0, updatedCard);
+            await persistInvestmentPositions();
         } else {
             localInvestmentCards.push(updatedCard);
         }
+        pendingSlotIndex = null;
 
         renderInvestmentCards(currentInvestmentViewMode);
 
@@ -1836,7 +1935,7 @@ async function openVaultLedger(cat) {
 
     // Rows
     if (list.length === 0) {
-        $('#ledger-tbody').html('<tr><td colspan="11" style="text-align:center; padding: 30px; color:#888;">Sin activos en esta colección.</td></tr>');
+        $('#ledger-tbody').html('<tr><td colspan="12" style="text-align:center; padding: 30px; color:#888;">Sin activos en esta colección.</td></tr>');
         $('#ledger-tfoot').empty();
     } else {
         const $tbody = $('#ledger-tbody').empty();
@@ -1859,6 +1958,7 @@ async function openVaultLedger(cat) {
                     <td class="num">${fmtMoney(m.saleTarget)}</td>
                     <td class="num ${invPlClass(m.unrealized)}">${fmtSignedMoney(m.unrealized)}</td>
                     <td class="num ${invPlClass(m.projected)}">${fmtSignedMoney(m.projected)}</td>
+                    <td class="num ${invPlClass(m.marginVsMarket)}">${fmtSignedMoney(m.marginVsMarket)}<br><small>${fmtPct(m.marginPct)}</small></td>
                     <td class="num ${invPlClass(m.roi)}">${fmtPct(m.roi)}</td>
                     <td>${statusPill}</td>
                 </tr>
@@ -1875,6 +1975,7 @@ async function openVaultLedger(cat) {
                 <td class="num">${fmtMoney(t.saleTarget)}</td>
                 <td class="num ${invPlClass(t.unrealized)}">${fmtSignedMoney(t.unrealized)}</td>
                 <td class="num ${invPlClass(t.projected)}">${fmtSignedMoney(t.projected)}</td>
+                <td class="num ${invPlClass(t.marginPct)}">${fmtSignedMoney(t.saleTarget - t.market)}<br><small>${fmtPct(t.marginPct)}</small></td>
                 <td class="num ${invPlClass(t.roi)}">${fmtPct(t.roi)}</td>
                 <td></td>
             </tr>
