@@ -380,8 +380,8 @@ function initInvestmentListeners() {
                         </select>
                     </div>
                     <div>
-                        <label style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #333; display: block; margin-bottom: 5px;">Precio total de compra del lote <span style="color:#aaa; font-weight:600;">(opcional)</span></label>
-                        <input id="swal-inv-vault-lot" type="number" step="0.01" min="0" class="swal2-input" placeholder="Ej: 1000 (si compraste todo junto)" style="margin: 0; width: 100%; box-sizing: border-box;">
+                        <label style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #333; display: block; margin-bottom: 5px;">Precio total de compra del lote</label>
+                        <input id="swal-inv-vault-lot" type="number" step="0.01" min="0" class="swal2-input" placeholder="Ej: 1000" style="margin: 0; width: 100%; box-sizing: border-box;">
                         <small style="display:block; color:#888; font-size:0.65rem; margin-top:4px;">Si lo defines, se usa este monto como costo total de la colección en vez de sumar el precio de cada carta.</small>
                     </div>
                 </div>
@@ -489,7 +489,7 @@ function initInvestmentListeners() {
             html: `
                 <div style="text-align: left; display: flex; flex-direction: column; gap: 15px; padding-top: 10px;">
                     <div>
-                        <label style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #333; display: block; margin-bottom: 5px;">Precio de venta real (unitario)</label>
+                        <label style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #333; display: block; margin-bottom: 5px;">Precio de venta real</label>
                         <input id="swal-inv-sold-price" type="number" step="0.01" class="swal2-input" value="${suggested}" style="margin: 0; width: 100%; box-sizing: border-box;">
                     </div>
                     <div>
@@ -764,19 +764,19 @@ async function loadInvestmentCategories() {
 
                     <div class="inv-cat-metrics">
                         <div class="inv-cat-metric">
-                            <span>Lo que pagué${t.hasLotCost ? ' (lote)' : ''}</span>
+                            <span>Lo que pagué${invInfoIcon('cost')}</span>
                             <b>${fmtMoney(t.cost)}</b>
                         </div>
                         <div class="inv-cat-metric">
-                            <span>Valor de mercado</span>
+                            <span>Valor de mercado${invInfoIcon('market')}</span>
                             <b>${fmtMoney(t.market)}</b>
                         </div>
                         <div class="inv-cat-metric">
-                            <span>Precio de venta (todo)</span>
+                            <span>Precio de venta total${invInfoIcon('saleAll')}</span>
                             <b>${fmtMoney(t.saleAll)}</b>
                         </div>
                         <div class="inv-cat-metric">
-                            <span>Ganancia si vendo todo</span>
+                            <span>Ganancia si vendo todo${invInfoIcon('gainSaleAll')}</span>
                             <b class="${invPlClass(t.saleAll - t.cost)}">${fmtSignedMoney(t.saleAll - t.cost)}</b>
                         </div>
                     </div>
@@ -908,7 +908,7 @@ async function editInvestmentCategory(cat) {
                     </select>
                 </div>
                 <div>
-                    <label style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #333; display: block; margin-bottom: 5px;">Precio total de compra del lote <span style="color:#aaa; font-weight:600;">(opcional)</span></label>
+                    <label style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #333; display: block; margin-bottom: 5px;">Precio total de compra del lote</label>
                     <input id="swal-inv-vault-lot" type="number" step="0.01" min="0" class="swal2-input" value="${currentLot}" placeholder="Vacío = suma por carta" style="margin: 0; width: 100%; box-sizing: border-box;">
                     <small style="display:block; color:#888; font-size:0.65rem; margin-top:4px;">Si lo defines, se usa este monto como costo total de la colección en vez de sumar el precio de cada carta. Déjalo vacío para volver al cálculo por carta.</small>
                 </div>
@@ -1386,13 +1386,13 @@ function renderCalcSheet(totals) {
 
             <div class="inv-calc-section-title">Inversión y valores</div>
             <div class="inv-calc-grid">
-                ${card('cost', 'LO QUE PAGUÉ (TOTAL)', fmtMoney(totals.cost))}
+                ${card('cost', 'LO QUE PAGUÉ', fmtMoney(totals.cost))}
                 ${card('market', 'VALOR DE MERCADO', fmtMoney(totals.market))}
-                ${card('saleAll', 'PRECIO DE VENTA (TODO)', fmtMoney(totals.saleAll))}
-                ${card('saleActive', 'PRECIO DE VENTA (DISPONIBLE)', fmtMoney(totals.saleActive))}
+                ${card('saleAll', 'PRECIO DE VENTA TOTAL', fmtMoney(totals.saleAll))}
+                ${card('saleActive', 'PRECIO DE VENTA DISPONIBLE', fmtMoney(totals.saleActive))}
             </div>
 
-            <div class="inv-calc-section-title">Ganancia (venta − compra)</div>
+            <div class="inv-calc-section-title">Ganancia</div>
             <div class="inv-calc-grid">
                 ${card('gainSaleAll', 'GANANCIA SI VENDO TODO', fmtSignedMoney(gainAll), invPlClass(gainAll))}
                 ${card('gainSaleActive', 'GANANCIA SI VENDO LO DISPONIBLE', fmtSignedMoney(gainActive), invPlClass(gainActive))}
@@ -1401,8 +1401,8 @@ function renderCalcSheet(totals) {
             </div>
 
             <div class="inv-calc-sold">
-                <div class="inv-calc-sold-item"><span>Ganancia ya realizada (ventas)${invInfoIcon('realized')}</span><b class="${invPlClass(totals.realized)}">${fmtSignedMoney(totals.realized)}</b></div>
-                <div class="inv-calc-sold-item"><span>Vendidas / no disponibles${invInfoIcon('sold')}</span><b>${totals.soldCount}</b></div>
+                <div class="inv-calc-sold-item"><span>Ganancia ya realizada${invInfoIcon('realized')}</span><b class="${invPlClass(totals.realized)}">${fmtSignedMoney(totals.realized)}</b></div>
+                <div class="inv-calc-sold-item"><span>Fuera de cartera${invInfoIcon('sold')}</span><b>${totals.soldCount}</b></div>
             </div>
         </div>
     `;
@@ -1439,28 +1439,28 @@ function renderListMode($container) {
                 </div>
                 <div class="inv-list-metrics">
                     <div class="inv-metric-cell">
-                        <span>Lo que pagué</span>
+                        <span>Lo que pagué${invInfoIcon('cost')}</span>
                         <b>${fmtMoney(m.cost)}</b>
                     </div>
                     <div class="inv-metric-cell">
-                        <span>Vale hoy (mercado)</span>
+                        <span>Vale hoy${invInfoIcon('market')}</span>
                         <b>${fmtMoney(m.market)} ${trend}</b>
                     </div>
                     <div class="inv-metric-cell">
-                        <span>Lo venderé en</span>
+                        <span>Lo venderé en${invInfoIcon('saleTarget')}</span>
                         <b>${fmtMoney(m.saleTarget)}</b>
                     </div>
                     <div class="inv-metric-cell">
-                        <span>Ganancia a mercado</span>
+                        <span>Ganancia a mercado${invInfoIcon('unrealized')}</span>
                         <b class="${invPlClass(m.unrealized)}">${fmtSignedMoney(m.unrealized)}</b>
                     </div>
                     <div class="inv-metric-cell">
-                        <span>Ganancia a mi precio</span>
+                        <span>Ganancia a mi precio${invInfoIcon('projected')}</span>
                         <b class="${invPlClass(m.projected)}">${fmtSignedMoney(m.projected)}</b>
                     </div>
                     <div class="inv-metric-cell">
-                        <span>Margen vs mercado</span>
-                        <b class="${invPlClass(m.marginVsMarket)}">${fmtSignedMoney(m.marginVsMarket)} (${fmtPct(m.marginPct)})</b>
+                        <span>Margen vs mercado${invInfoIcon('margin')}</span>
+                        <b class="${invPlClass(m.marginVsMarket)}">${fmtSignedMoney(m.marginVsMarket)} · ${fmtPct(m.marginPct)}</b>
                     </div>
                 </div>
                 <div class="inv-list-actions" style="display: flex; gap: 8px; flex-direction: column;">
@@ -1861,7 +1861,7 @@ function updateSummaryTab(card) {
             <b>${fmtMoney(m.cost)}</b>
         </div>
         <div class="inv-summary-metric">
-            <span>Vale hoy (mercado)${invInfoIcon('market')}</span>
+            <span>Vale hoy${invInfoIcon('market')}</span>
             <b>${fmtMoney(m.market)}</b>
         </div>
         <div class="inv-summary-metric">
@@ -1916,14 +1916,14 @@ function renderProfitabilityTab(card) {
     let gridHtml = '';
     gridHtml += `<div class="inv-renta-block">
         <div class="inv-renta-block-title">INVERSIÓN</div>
-        ${row('Precio de compra (unitario)', fmtMoney(card.purchase_price))}
+        ${row('Precio de compra', fmtMoney(card.purchase_price))}
         ${row('Cantidad', 'x' + m.qty)}
         ${row('Costo total', fmtMoney(m.cost))}
     </div>`;
 
     gridHtml += `<div class="inv-renta-block">
         <div class="inv-renta-block-title">VALORACIÓN ACTUAL</div>
-        ${row('Precio de mercado (unitario)', fmtMoney(card.current_price))}
+        ${row('Precio de mercado', fmtMoney(card.current_price))}
         ${row('Valor de mercado total', fmtMoney(m.market))}
         ${row('Ganancia / pérdida latente', fmtSignedMoney(m.unrealized), invPlClass(m.unrealized), 'Diferencia entre valor de mercado y costo')}
         ${row('Variación sobre costo', fmtPct(pctOfCost), invPlClass(pctOfCost))}
@@ -2168,14 +2168,14 @@ async function openVaultLedger(cat) {
 
     // Totals cards (general report)
     $('#ledger-totals').html(`
-        <div class="inv-ledger-total"><span>Lo que pagué (total)</span><b>${fmtMoney(t.cost)}</b></div>
-        <div class="inv-ledger-total"><span>Valor de mercado</span><b>${fmtMoney(t.market)}</b></div>
-        <div class="inv-ledger-total"><span>Precio de venta (todo)</span><b>${fmtMoney(t.saleAll)}</b></div>
-        <div class="inv-ledger-total"><span>Precio de venta (disponible)</span><b>${fmtMoney(t.saleActive)}</b></div>
-        <div class="inv-ledger-total"><span>Ganancia si vendo todo</span><b class="${invPlClass(t.saleAll - t.cost)}">${fmtSignedMoney(t.saleAll - t.cost)}</b></div>
-        <div class="inv-ledger-total"><span>Ganancia si vendo lo disponible</span><b class="${invPlClass(t.saleActive - t.cost)}">${fmtSignedMoney(t.saleActive - t.cost)}</b></div>
-        <div class="inv-ledger-total"><span>Rendimiento sobre lo invertido</span><b class="${invPlClass(t.roi)}">${fmtPct(t.roi)}</b></div>
-        <div class="inv-ledger-total"><span>Ganancia ya realizada (ventas)</span><b class="${invPlClass(t.realized)}">${fmtSignedMoney(t.realized)}</b></div>
+        <div class="inv-ledger-total"><span>Lo que pagué${invInfoIcon('cost')}</span><b>${fmtMoney(t.cost)}</b></div>
+        <div class="inv-ledger-total"><span>Valor de mercado${invInfoIcon('market')}</span><b>${fmtMoney(t.market)}</b></div>
+        <div class="inv-ledger-total"><span>Precio de venta total${invInfoIcon('saleAll')}</span><b>${fmtMoney(t.saleAll)}</b></div>
+        <div class="inv-ledger-total"><span>Precio de venta disponible${invInfoIcon('saleActive')}</span><b>${fmtMoney(t.saleActive)}</b></div>
+        <div class="inv-ledger-total"><span>Ganancia si vendo todo${invInfoIcon('gainSaleAll')}</span><b class="${invPlClass(t.saleAll - t.cost)}">${fmtSignedMoney(t.saleAll - t.cost)}</b></div>
+        <div class="inv-ledger-total"><span>Ganancia si vendo lo disponible${invInfoIcon('gainSaleActive')}</span><b class="${invPlClass(t.saleActive - t.cost)}">${fmtSignedMoney(t.saleActive - t.cost)}</b></div>
+        <div class="inv-ledger-total"><span>Rendimiento sobre lo invertido${invInfoIcon('roi')}</span><b class="${invPlClass(t.roi)}">${fmtPct(t.roi)}</b></div>
+        <div class="inv-ledger-total"><span>Ganancia ya realizada${invInfoIcon('realized')}</span><b class="${invPlClass(t.realized)}">${fmtSignedMoney(t.realized)}</b></div>
     `);
 
     // Rows
