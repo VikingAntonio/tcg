@@ -42,32 +42,36 @@ function fmtPct(v) {
 // same id used by invInfoIcon(), so tapping the ⓘ opens the right help text.
 const INV_METRIC_HELP = {
     cost: {
-        title: '¿Cuánto me costó?',
-        body: 'Lo que pagaste por estas cartas que aún tienes disponibles. Es la suma de tu precio de compra (o el precio del lote si definiste uno para la colección).'
+        title: '¿Cuánto pagué en total?',
+        body: 'El precio total de compra de la colección. Si definiste un precio de lote, se usa ese monto; si no, es la suma del precio de compra de todas tus cartas.'
+    },
+    saleAll: {
+        title: '¿En cuánto venderé todo?',
+        body: 'Suma del precio de venta de TODAS las cartas de la colección, incluyendo las vendidas y las marcadas como no disponibles.'
+    },
+    saleActive: {
+        title: '¿En cuánto venderé lo disponible?',
+        body: 'Suma del precio de venta solo de las cartas disponibles (sin las vendidas ni las no disponibles).'
     },
     market: {
         title: '¿Cuánto valen hoy en el mercado?',
-        body: 'El valor actual de las cartas disponibles según el precio de mercado que registraste. Es lo que recibirías si las vendieras hoy a ese precio.'
+        body: 'Valor de mercado total de las cartas según el precio de mercado que registraste.'
     },
-    saleTarget: {
-        title: '¿En cuánto las quiero vender?',
-        body: 'El valor total al precio de venta que tú fijaste para cada carta disponible. Es tu objetivo de venta.'
+    gainSaleAll: {
+        title: 'Ganancia si vendo todo',
+        body: 'Precio de venta de todas las cartas menos lo que pagué. Es la ganancia que tendría al vender todo al precio fijado.'
     },
-    unrealized: {
+    gainSaleActive: {
+        title: 'Ganancia si vendo lo disponible',
+        body: 'Precio de venta de las cartas disponibles menos lo que pagué. Es lo que sacaría vendiendo lo que aún tengo.'
+    },
+    gainMarket: {
         title: 'Ganancia al precio de mercado',
-        body: 'Si vendieras hoy al precio de mercado: valor de mercado menos lo que te costó. Es ganancia "en papel", todavía no realizada.'
-    },
-    projected: {
-        title: 'Ganancia al precio de venta',
-        body: 'Si vendieras al precio de venta que fijaste: valor de venta menos lo que te costó. Es tu ganancia esperada.'
-    },
-    margin: {
-        title: 'Margen sobre el mercado',
-        body: 'Cuánto más caro estás vendiendo respecto al precio de mercado: valor de venta menos valor de mercado. Te dice si tu precio está por encima o por debajo del mercado.'
+        body: 'Valor de mercado menos lo que pagué. Es la ganancia "en papel" si vendiera hoy al precio de mercado.'
     },
     roi: {
         title: 'Rendimiento sobre lo invertido',
-        body: 'La ganancia esperada (al precio de venta) como porcentaje de lo que te costó. Ejemplo: invertiste $500 y esperas ganar $100 → 20%.'
+        body: 'La ganancia de venta como porcentaje de lo que pagué. Ejemplo: pagué $500 y espero ganar $100 → 20%.'
     },
     realized: {
         title: 'Ganancia ya realizada (ventas)',
@@ -75,7 +79,24 @@ const INV_METRIC_HELP = {
     },
     sold: {
         title: 'Cartas fuera de cartera',
-        body: 'Cartas que ya no cuentan como disponibles: las que marcaste como VENDIDAS o como no disponibles. No entran en los cálculos generales de arriba.'
+        body: 'Cartas que ya no cuentan como disponibles: las que marcaste como VENDIDAS o como no disponibles.'
+    },
+    // Per-card figures (used in the card RESUMEN and list)
+    saleTarget: {
+        title: '¿En cuánto la quiero vender?',
+        body: 'El valor al precio de venta que tú fijaste para esta carta.'
+    },
+    unrealized: {
+        title: 'Ganancia al precio de mercado',
+        body: 'Si vendieras hoy al precio de mercado: valor de mercado menos lo que te costó.'
+    },
+    projected: {
+        title: 'Ganancia al precio de venta',
+        body: 'Si vendieras al precio de venta que fijaste: valor de venta menos lo que te costó.'
+    },
+    margin: {
+        title: 'Margen sobre el mercado',
+        body: 'Cuánto más caro estás vendiendo respecto al precio de mercado: valor de venta menos valor de mercado.'
     }
 };
 
@@ -143,20 +164,26 @@ function allocateLotCost(cards, lot) {
 
 // Aggregated totals for a whole vault / collection.
 // `lotOverride` (collection lot price) replaces the sum of per-card purchase
-// prices and is distributed proportionally so per-card profit stays coherent.
-// The "general" figures (cost, market, saleTarget, unrealized, projected, roi)
-// cover ONLY the available cards; sold / unavailable ones are reported apart.
+// prices. "cost" is the GENERAL purchase figure: the lot when set, otherwise
+// the sum of every card's purchase price (so the lot is never diluted by
+// spreading it across available cards only). Sale / market figures are offered
+// both for the whole collection and for the available cards only.
 function computeVaultTotals(cards, lotOverride) {
     const list = cards || [];
     const hasLot = lotOverride !== null && lotOverride !== undefined && lotOverride !== '' && !isNaN(invNum(lotOverride));
     const lotCosts = hasLot ? allocateLotCost(list, lotOverride) : {};
     const totals = {
         count: 0, units: 0,
-        cost: 0, market: 0, saleTarget: 0,
+        sumCardCost: 0,       // purchase price of every card, ignoring the lot
+        cost: 0,              // general purchase (lot, or sum of all cards)
+        market: 0,            // market value of every card
+        marketActive: 0,      // market value of the available cards
+        saleTarget: 0,        // sale target of every card (alias of saleAll)
+        saleAll: 0,           // sale target including sold / unavailable cards
+        saleActive: 0,        // sale target of the available cards only
         unrealized: 0, projected: 0, realized: 0,
-        activeCount: 0, activeUnits: 0,
-        soldCount: 0, soldUnits: 0, soldTotal: 0,
-        soldCost: 0,
+        activeCount: 0, activeUnits: 0, activeCost: 0,
+        soldCount: 0, soldUnits: 0, soldTotal: 0, soldCost: 0,
         hasLotCost: hasLot, lotCost: hasLot ? invNum(lotOverride) : null
     };
 
@@ -164,14 +191,15 @@ function computeVaultTotals(cards, lotOverride) {
         const m = computeCardMetrics(card, hasLot ? lotCosts[card.id] : undefined);
         totals.count++;
         totals.units += m.qty;
+        totals.sumCardCost += hasLot ? 0 : m.cost;
+        totals.market += m.market;
+        totals.saleAll += m.saleTarget;
         if (m.isActive) {
             totals.activeCount++;
             totals.activeUnits += m.qty;
-            totals.cost += m.cost;
-            totals.market += m.market;
-            totals.saleTarget += m.saleTarget;
-            totals.unrealized += m.unrealized;
-            totals.projected += m.projected;
+            totals.activeCost += m.cost;
+            totals.marketActive += m.market;
+            totals.saleActive += m.saleTarget;
         } else {
             totals.soldCount++;
             totals.soldUnits += m.isSold ? m.soldQty : m.qty;
@@ -181,8 +209,13 @@ function computeVaultTotals(cards, lotOverride) {
         }
     });
 
+    totals.saleTarget = totals.saleAll;
+    // General purchase figure: the lot when defined, otherwise every card's cost.
+    totals.cost = hasLot ? invNum(lotOverride) : totals.sumCardCost;
+    totals.unrealized = totals.market - totals.cost;
+    totals.projected = totals.saleAll - totals.cost;
     totals.roi = totals.cost > 0 ? (totals.projected / totals.cost) * 100 : 0;
-    totals.marginPct = totals.market > 0 ? ((totals.saleTarget - totals.market) / totals.market) * 100 : 0;
+    totals.marginPct = totals.market > 0 ? ((totals.saleAll - totals.market) / totals.market) * 100 : 0;
     totals.latentGain = totals.unrealized;
     return totals;
 }
@@ -775,16 +808,16 @@ async function loadInvestmentCategories() {
                             <b>${fmtMoney(t.cost)}</b>
                         </div>
                         <div class="inv-cat-metric">
-                            <span>Vale hoy</span>
+                            <span>Valor de mercado</span>
                             <b>${fmtMoney(t.market)}</b>
                         </div>
                         <div class="inv-cat-metric">
-                            <span>Lo venderé en</span>
-                            <b>${fmtMoney(t.saleTarget)}</b>
+                            <span>Precio de venta (todo)</span>
+                            <b>${fmtMoney(t.saleAll)}</b>
                         </div>
                         <div class="inv-cat-metric">
-                            <span>Ganancia a mi precio</span>
-                            <b class="${invPlClass(t.projected)}">${fmtSignedMoney(t.projected)}</b>
+                            <span>Ganancia si vendo todo</span>
+                            <b class="${invPlClass(t.saleAll - t.cost)}">${fmtSignedMoney(t.saleAll - t.cost)}</b>
                         </div>
                     </div>
 
@@ -1365,42 +1398,51 @@ function renderSlideMode($container) {
     });
 }
 
-// "Hoja de cálculos": a clear, spreadsheet-like panel shown above the card
-// list. Every figure refers ONLY to the available cards; sold / unavailable
-// ones are summarised apart so the general numbers are always understandable.
+// "Reporte general": a clean, spreadsheet-like panel shown above the card
+// list. It shows the general investment numbers of the whole collection.
 function renderCalcSheet(totals) {
-    const none = totals.activeCount === 0;
     const card = (key, label, value, cls = '') => `
         <div class="inv-calc-card">
             <div class="inv-calc-card-label">${label}${invInfoIcon(key)}</div>
             <div class="inv-calc-card-value ${cls}">${value}</div>
         </div>`;
 
+    const gainAll = totals.saleAll - totals.cost;
+    const gainActive = totals.saleActive - totals.cost;
+    const gainMarket = totals.market - totals.cost;
+
     return `
         <div class="inv-calc-sheet">
             <div class="inv-calc-head">
                 <div>
-                    <div class="inv-calc-eyebrow"><i class="fas fa-table"></i> HOJA DE CÁLCULOS</div>
-                    <div class="inv-calc-title">Resumen de tus cartas disponibles</div>
+                    <div class="inv-calc-eyebrow"><i class="fas fa-table"></i> REPORTE GENERAL</div>
+                    <div class="inv-calc-title">Inversión total de la colección</div>
                 </div>
                 <div class="inv-calc-chips">
-                    <span class="inv-calc-chip"><i class="fas fa-layer-group"></i> ${totals.activeCount} disponible${totals.activeCount === 1 ? '' : 's'} · ${totals.activeUnits} u.</span>
+                    <span class="inv-calc-chip"><i class="fas fa-layer-group"></i> ${totals.count} carta${totals.count === 1 ? '' : 's'} · ${totals.units} u.</span>
                     ${totals.soldCount > 0 ? `<span class="inv-calc-chip inv-calc-chip-muted"><i class="fas fa-box-archive"></i> ${totals.soldCount} fuera de cartera${invInfoIcon('sold')}</span>` : ''}
                 </div>
             </div>
-            ${none ? '<div class="inv-calc-empty">Todavía no tienes cartas disponibles en esta colección. Las vendidas o no disponibles no entran en estos cálculos.</div>' : `
+
+            <div class="inv-calc-section-title">Inversión y valores</div>
             <div class="inv-calc-grid">
-                ${card('cost', 'LO QUE PAGUÉ', fmtMoney(totals.cost))}
-                ${card('market', 'VALE HOY EN EL MERCADO', fmtMoney(totals.market))}
-                ${card('saleTarget', 'LO VENDERÉ EN', fmtMoney(totals.saleTarget))}
-                ${card('unrealized', 'GANANCIA AL PRECIO DE MERCADO', fmtSignedMoney(totals.unrealized), invPlClass(totals.unrealized))}
-                ${card('projected', 'GANANCIA AL PRECIO DE VENTA', fmtSignedMoney(totals.projected), invPlClass(totals.projected))}
-                ${card('margin', 'MARGEN SOBRE EL MERCADO', `${fmtSignedMoney(totals.saleTarget - totals.market)} (${fmtPct(totals.marginPct)})`, invPlClass(totals.saleTarget - totals.market))}
+                ${card('cost', 'LO QUE PAGUÉ (TOTAL)', fmtMoney(totals.cost))}
+                ${card('market', 'VALOR DE MERCADO', fmtMoney(totals.market))}
+                ${card('saleAll', 'PRECIO DE VENTA (TODO)', fmtMoney(totals.saleAll))}
+                ${card('saleActive', 'PRECIO DE VENTA (DISPONIBLE)', fmtMoney(totals.saleActive))}
+            </div>
+
+            <div class="inv-calc-section-title">Ganancia (venta − compra)</div>
+            <div class="inv-calc-grid">
+                ${card('gainSaleAll', 'GANANCIA SI VENDO TODO', fmtSignedMoney(gainAll), invPlClass(gainAll))}
+                ${card('gainSaleActive', 'GANANCIA SI VENDO LO DISPONIBLE', fmtSignedMoney(gainActive), invPlClass(gainActive))}
+                ${card('gainMarket', 'GANANCIA A PRECIO DE MERCADO', fmtSignedMoney(gainMarket), invPlClass(gainMarket))}
                 ${card('roi', 'RENDIMIENTO SOBRE LO INVERTIDO', fmtPct(totals.roi), invPlClass(totals.roi))}
-            </div>`}
+            </div>
+
             <div class="inv-calc-sold">
                 <div class="inv-calc-sold-item"><span>Ganancia ya realizada (ventas)${invInfoIcon('realized')}</span><b class="${invPlClass(totals.realized)}">${fmtSignedMoney(totals.realized)}</b></div>
-                <div class="inv-calc-sold-item"><span>Vendidas / fuera de cartera</span><b>${totals.soldCount}</b></div>
+                <div class="inv-calc-sold-item"><span>Vendidas / no disponibles${invInfoIcon('sold')}</span><b>${totals.soldCount}</b></div>
             </div>
         </div>
     `;
@@ -2170,16 +2212,16 @@ async function openVaultLedger(cat) {
     const lotMap = lot !== null ? allocateLotCost(list, lot) : null;
     const t = computeVaultTotals(list, lot);
 
-    // Totals cards (general figures = available cards only)
+    // Totals cards (general report)
     $('#ledger-totals').html(`
-        <div class="inv-ledger-total"><span>Lo que pagué (disponibles)</span><b>${fmtMoney(t.cost)}</b></div>
-        <div class="inv-ledger-total"><span>Vale hoy (disponibles)</span><b>${fmtMoney(t.market)}</b></div>
-        <div class="inv-ledger-total"><span>Lo venderé en (disponibles)</span><b>${fmtMoney(t.saleTarget)}</b></div>
-        <div class="inv-ledger-total"><span>Ganancia a mercado</span><b class="${invPlClass(t.unrealized)}">${fmtSignedMoney(t.unrealized)}</b></div>
-        <div class="inv-ledger-total"><span>Ganancia a mi precio</span><b class="${invPlClass(t.projected)}">${fmtSignedMoney(t.projected)}</b></div>
+        <div class="inv-ledger-total"><span>Lo que pagué (total)</span><b>${fmtMoney(t.cost)}</b></div>
+        <div class="inv-ledger-total"><span>Valor de mercado</span><b>${fmtMoney(t.market)}</b></div>
+        <div class="inv-ledger-total"><span>Precio de venta (todo)</span><b>${fmtMoney(t.saleAll)}</b></div>
+        <div class="inv-ledger-total"><span>Precio de venta (disponible)</span><b>${fmtMoney(t.saleActive)}</b></div>
+        <div class="inv-ledger-total"><span>Ganancia si vendo todo</span><b class="${invPlClass(t.saleAll - t.cost)}">${fmtSignedMoney(t.saleAll - t.cost)}</b></div>
+        <div class="inv-ledger-total"><span>Ganancia si vendo lo disponible</span><b class="${invPlClass(t.saleActive - t.cost)}">${fmtSignedMoney(t.saleActive - t.cost)}</b></div>
         <div class="inv-ledger-total"><span>Rendimiento sobre lo invertido</span><b class="${invPlClass(t.roi)}">${fmtPct(t.roi)}</b></div>
         <div class="inv-ledger-total"><span>Ganancia ya realizada (ventas)</span><b class="${invPlClass(t.realized)}">${fmtSignedMoney(t.realized)}</b></div>
-        <div class="inv-ledger-total"><span>Disponibles / fuera de cartera</span><b>${t.activeCount} / ${t.soldCount}</b></div>
     `);
 
     // Rows
@@ -2218,15 +2260,15 @@ async function openVaultLedger(cat) {
 
         $('#ledger-tfoot').html(`
             <tr>
-                <td colspan="2">TOTALES (solo disponibles)</td>
-                <td class="num">x${t.activeUnits}</td>
+                <td colspan="2">TOTALES</td>
+                <td class="num">x${t.units}</td>
                 <td class="num">—</td>
                 <td class="num">${fmtMoney(t.cost)}</td>
                 <td class="num">${fmtMoney(t.market)}</td>
-                <td class="num">${fmtMoney(t.saleTarget)}</td>
-                <td class="num ${invPlClass(t.unrealized)}">${fmtSignedMoney(t.unrealized)}</td>
-                <td class="num ${invPlClass(t.projected)}">${fmtSignedMoney(t.projected)}</td>
-                <td class="num ${invPlClass(t.marginPct)}">${fmtSignedMoney(t.saleTarget - t.market)}<br><small>${fmtPct(t.marginPct)}</small></td>
+                <td class="num">${fmtMoney(t.saleAll)}</td>
+                <td class="num ${invPlClass(t.market - t.cost)}">${fmtSignedMoney(t.market - t.cost)}</td>
+                <td class="num ${invPlClass(t.saleAll - t.cost)}">${fmtSignedMoney(t.saleAll - t.cost)}</td>
+                <td class="num ${invPlClass(t.saleAll - t.market)}">${fmtSignedMoney(t.saleAll - t.market)}<br><small>${fmtPct(t.marginPct)}</small></td>
                 <td class="num ${invPlClass(t.roi)}">${fmtPct(t.roi)}</td>
                 <td></td>
             </tr>
