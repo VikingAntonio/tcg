@@ -11,8 +11,101 @@ let localInvestmentCards = [];
 let invPriceChart = null;
 let invDetailChart = null;
 let currentInvExtraImages = [];
+let currentLedgerCategory = null;
 
 // --- UTILS ---
+function invNum(v) {
+    const n = parseFloat(v);
+    return isNaN(n) ? 0 : n;
+}
+
+function fmtMoney(v) {
+    return '$' + invNum(v).toFixed(2);
+}
+
+function fmtSignedMoney(v) {
+    const n = invNum(v);
+    return (n >= 0 ? '+' : '-') + '$' + Math.abs(n).toFixed(2);
+}
+
+function fmtPct(v) {
+    const n = invNum(v);
+    return (n >= 0 ? '+' : '') + n.toFixed(1) + '%';
+}
+
+// Profit/loss + margin calculations for a single card
+function computeCardMetrics(card) {
+    const qty = parseInt(card.quantity) || 1;
+    const cost = invNum(card.purchase_price) * qty;
+    const market = invNum(card.current_price) * qty;
+    const saleTarget = invNum(card.sale_price) * qty;
+    const isSold = card.is_sold === true;
+    const soldQty = parseInt(card.sold_quantity) || qty;
+    const soldTotal = invNum(card.sold_price) * soldQty;
+
+    return {
+        qty,
+        cost,
+        market,
+        saleTarget,
+        unrealized: market - cost,            // Ganancia/pérdida si vendo al precio de mercado
+        projected: saleTarget - cost,         // Ganancia/pérdida si vendo al precio de venta fijado
+        marginVsMarket: saleTarget - market,  // Diferencia entre precio de venta y mercado
+        roi: cost > 0 ? ((saleTarget - cost) / cost) * 100 : 0,
+        marginPct: market > 0 ? ((saleTarget - market) / market) * 100 : 0,
+        isSold,
+        soldQty,
+        soldTotal,
+        realized: isSold ? soldTotal - cost : 0
+    };
+}
+
+// Aggregated totals for a whole vault / collection
+function computeVaultTotals(cards) {
+    const totals = {
+        count: 0, units: 0,
+        cost: 0, market: 0, saleTarget: 0,
+        unrealized: 0, projected: 0, realized: 0,
+        soldCount: 0, soldUnits: 0, soldTotal: 0
+    };
+
+    (cards || []).forEach(card => {
+        const m = computeCardMetrics(card);
+        totals.count++;
+        totals.units += m.qty;
+        totals.cost += m.cost;
+        totals.market += m.market;
+        totals.saleTarget += m.saleTarget;
+        if (m.isSold) {
+            totals.soldCount++;
+            totals.soldUnits += m.soldQty;
+            totals.soldTotal += m.soldTotal;
+            totals.realized += m.realized;
+        } else {
+            totals.unrealized += m.unrealized;
+            totals.projected += m.projected;
+        }
+    });
+
+    totals.roi = totals.cost > 0 ? (totals.projected / totals.cost) * 100 : 0;
+    totals.marginPct = totals.market > 0 ? ((totals.saleTarget - totals.market) / totals.market) * 100 : 0;
+    totals.latentGain = totals.unrealized;
+    return totals;
+}
+
+function invPlClass(v) {
+    return invNum(v) >= 0 ? 'inv-pl-up' : 'inv-pl-down';
+}
+
+// Best-effort ledger entry (never blocks the main flow if the table is absent)
+async function logInvestmentTransaction(entry) {
+    try {
+        await _supabase.from('investment_transactions').insert([entry]);
+    } catch (e) {
+        console.warn('No se pudo registrar el movimiento:', e);
+    }
+}
+
 function escapeHtml(text) {
     if (text === null || text === undefined) return '';
     const map = {
@@ -156,9 +249,112 @@ function initInvestmentListeners() {
             const card = localInvestmentCards.find(c => c.id === currentEditingInvCardId);
             if (card) updateSummaryTab(card);
         }
+        if (tabId === 'inv-tab-rentabilidad' && currentEditingInvCardId) {
+            const card = localInvestmentCards.find(c => c.id === currentEditingInvCardId);
+            if (card) renderProfitabilityTab(card);
+        }
         if (tabId === 'inv-tab-datos') {
             syncAddPreview();
         }
+    });
+
+    // Mark card as sold (register the real sale)
+    $(document).on('click', '#btn-inv-sell-card', async function() {
+        const card = localInvestmentCards.find(c => c.id === currentEditingInvCardId);
+        if (!card) return;
+
+        const suggested = card.sale_price !== null && card.sale_price !== undefined && card.sale_price !== ''
+            ? card.sale_price
+            : (card.current_price || 0);
+
+        const { value: formValues } = await Swal.fire({
+            title: 'REGISTRAR VENTA',
+            html: `
+                <div style="text-align: left; display: flex; flex-direction: column; gap: 15px; padding-top: 10px;">
+                    <div>
+                        <label style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #333; display: block; margin-bottom: 5px;">Precio de venta real (unitario)</label>
+                        <input id="swal-inv-sold-price" type="number" step="0.01" class="swal2-input" value="${suggested}" style="margin: 0; width: 100%; box-sizing: border-box;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #333; display: block; margin-bottom: 5px;">Cantidad vendida</label>
+                        <input id="swal-inv-sold-qty" type="number" min="1" class="swal2-input" value="${parseInt(card.quantity) || 1}" style="margin: 0; width: 100%; box-sizing: border-box;">
+                    </div>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'CONFIRMAR VENTA',
+            cancelButtonText: 'CANCELAR',
+            customClass: {
+                popup: 'inv-swal-popup',
+                confirmButton: 'btn-inv-main',
+                cancelButton: 'btn-inv-outline'
+            },
+            preConfirm: () => {
+                const price = parseFloat($('#swal-inv-sold-price').val());
+                const qty = parseInt($('#swal-inv-sold-qty').val());
+                if (isNaN(price) || price < 0) {
+                    Swal.showValidationMessage('Ingresa un precio de venta válido');
+                    return false;
+                }
+                if (isNaN(qty) || qty < 1) {
+                    Swal.showValidationMessage('Ingresa una cantidad válida');
+                    return false;
+                }
+                return { price, qty };
+            }
+        });
+
+        if (formValues) {
+            await registerCardSale(card, formValues.price, formValues.qty);
+        }
+    });
+
+    // Undo a sale
+    $(document).on('click', '#btn-inv-undo-sale', async function() {
+        const card = localInvestmentCards.find(c => c.id === currentEditingInvCardId);
+        if (!card) return;
+
+        const { isConfirmed } = await Swal.fire({
+            title: '¿REVERTIR VENTA?',
+            text: 'La carta volverá a contar como activo en cartera.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'REVERTIR',
+            cancelButtonText: 'CANCELAR',
+            customClass: {
+                popup: 'inv-swal-popup',
+                confirmButton: 'btn-inv-main',
+                cancelButton: 'btn-inv-outline'
+            }
+        });
+
+        if (!isConfirmed) return;
+
+        const { error } = await _supabase
+            .from('investment_cards')
+            .update({ is_sold: false, sold_price: null, sold_quantity: null, sold_at: null })
+            .eq('id', card.id);
+
+        if (error) {
+            Swal.fire('Error', 'No se pudo revertir la venta', 'error');
+            return;
+        }
+
+        const { data: updatedCard } = await _supabase.from('investment_cards').select('*').eq('id', card.id).single();
+        const idx = localInvestmentCards.findIndex(c => c.id === card.id);
+        if (idx !== -1) localInvestmentCards[idx] = updatedCard;
+
+        renderInvestmentCards(currentInvestmentViewMode);
+        renderProfitabilityTab(updatedCard);
+        Swal.fire({ icon: 'success', title: 'Venta revertida', timer: 1200, showConfirmButton: false, customClass: { popup: 'inv-swal-popup' } });
+    });
+
+    // Vault Ledger modal
+    $(document).on('click', '#close-vault-ledger', function() {
+        $('#vault-ledger-modal').removeClass('active');
+    });
+    $(document).on('click', '#vault-ledger-modal', function(e) {
+        if (e.target === this) $(this).removeClass('active');
     });
 
     function syncAddPreview() {
@@ -337,20 +533,52 @@ async function loadInvestmentCategories() {
         return;
     }
 
+    // Load all cards for this user once so we can compute per-vault totals
+    const { data: allCards } = await _supabase
+        .from('investment_cards')
+        .select('*')
+        .eq('user_id', currentUser.id);
+
+    const cardsByCategory = {};
+    (allCards || []).forEach(c => {
+        (cardsByCategory[c.category_id] = cardsByCategory[c.category_id] || []).push(c);
+    });
+
     const $container = $('#investment-category-list');
     $container.empty();
 
     categories.forEach(cat => {
         const isPublic = cat.is_public !== false;
+        const t = computeVaultTotals(cardsByCategory[cat.id] || []);
         const $card = $(`
             <div class="inv-category-item" data-id="${cat.id}">
                 <div class="inv-category-preview">
                     <img src="https://images.unsplash.com/photo-1613771404721-1f92d799e49f?q=80&w=800&auto=format&fit=crop" alt="preview">
+                    <button class="inv-ledger-open" data-id="${cat.id}" title="Hoja de cálculo de la colección"><i class="fas fa-file-invoice-dollar"></i></button>
                 </div>
                 <div class="inv-category-info">
                     <div>
                         <h3>${escapeHtml(cat.name)}</h3>
-                        <div class="inv-category-meta">Colección de Activos TCG</div>
+                        <div class="inv-category-meta">${t.count} activo${t.count === 1 ? '' : 's'} · ${t.units} unidad${t.units === 1 ? '' : 'es'}</div>
+                    </div>
+
+                    <div class="inv-cat-metrics">
+                        <div class="inv-cat-metric">
+                            <span>Costo</span>
+                            <b>${fmtMoney(t.cost)}</b>
+                        </div>
+                        <div class="inv-cat-metric">
+                            <span>Mercado</span>
+                            <b>${fmtMoney(t.market)}</b>
+                        </div>
+                        <div class="inv-cat-metric">
+                            <span>Venta</span>
+                            <b>${fmtMoney(t.saleTarget)}</b>
+                        </div>
+                        <div class="inv-cat-metric">
+                            <span>Ganancia est.</span>
+                            <b class="${invPlClass(t.projected)}">${fmtSignedMoney(t.projected)}</b>
+                        </div>
                     </div>
 
                     <div class="inv-category-public-toggle">
@@ -363,6 +591,7 @@ async function loadInvestmentCategories() {
 
                     <div style="display: flex; gap: 8px; margin-top: 15px;">
                         <button class="btn-inv-main btn-view-inv-cat" style="flex: 1;">GESTIONAR</button>
+                        <button class="btn-inv-outline btn-ledger-inv-cat" title="Hoja de cálculo"><i class="fas fa-file-invoice-dollar"></i></button>
                         <button class="btn-inv-outline btn-edit-inv-cat"><i class="fas fa-pen"></i></button>
                         <button class="btn-inv-danger btn-delete-inv-cat"><i class="fas fa-trash"></i></button>
                     </div>
@@ -373,6 +602,10 @@ async function loadInvestmentCategories() {
         $card.find('.btn-view-inv-cat').click(() => openInvestmentCategory(cat));
         $card.find('.btn-edit-inv-cat').click(() => editInvestmentCategory(cat));
         $card.find('.btn-delete-inv-cat').click(() => deleteInvestmentCategory(cat.id));
+        $card.find('.btn-ledger-inv-cat, .inv-ledger-open').click((e) => {
+            e.stopPropagation();
+            openVaultLedger(cat);
+        });
         $card.find('.toggle-inv-cat-public').change(function() {
             updateInvestmentCategory(cat.id, { is_public: $(this).is(':checked') });
         });
@@ -857,16 +1090,30 @@ function renderSlideMode($container) {
 
 function renderListMode($container) {
     $container.addClass('investment-list-layout').removeClass('investment-slide-layout investment-album-layout');
+
+    // Portfolio summary bar
+    const totals = computeVaultTotals(localInvestmentCards);
+    const $summary = $(`
+        <div class="inv-list-summary">
+            <div class="inv-list-summary-item"><span>Costo total</span><b>${fmtMoney(totals.cost)}</b></div>
+            <div class="inv-list-summary-item"><span>Valor mercado</span><b>${fmtMoney(totals.market)}</b></div>
+            <div class="inv-list-summary-item"><span>Valor venta</span><b>${fmtMoney(totals.saleTarget)}</b></div>
+            <div class="inv-list-summary-item"><span>Ganancia latente</span><b class="${invPlClass(totals.unrealized)}">${fmtSignedMoney(totals.unrealized)}</b></div>
+            <div class="inv-list-summary-item"><span>Ganancia est.</span><b class="${invPlClass(totals.projected)}">${fmtSignedMoney(totals.projected)}</b></div>
+            <div class="inv-list-summary-item"><span>ROI</span><b class="${invPlClass(totals.roi)}">${fmtPct(totals.roi)}</b></div>
+        </div>
+    `);
+
     const $list = $('<div class="inv-list-container" style="margin: 20px 0;"></div>');
 
     localInvestmentCards.forEach(card => {
-        const diff = (card.current_price || 0) - (card.purchase_price || 0);
-        const diffClass = diff >= 0 ? 'price-up' : 'price-down';
+        const m = computeCardMetrics(card);
         const trend = getTrendIcon(card.current_price, card.previous_price);
         const isPrivate = card.is_public === false;
         const isUnavailable = card.is_available === false;
         const privateBadge = isPrivate ? `<span style="background: rgba(255, 71, 87, 0.1); color: #ff4757; border: 1px solid #ff4757; padding: 2px 6px; border-radius: 3px; font-size: 0.65rem; font-weight: 800; margin-left: 8px;"><i class="fas fa-lock"></i> PRIVADO</span>` : '';
         const unavailableBadge = isUnavailable ? `<span style="background: rgba(0, 0, 0, 0.85); color: #ff3344; border: 1px solid #ff3344; padding: 2px 6px; border-radius: 3px; font-size: 0.65rem; font-weight: 800; margin-left: 8px;"><i class="fas fa-ban"></i> NO DISPONIBLE</span>` : '';
+        const soldBadge = m.isSold ? `<span class="inv-sold-badge"><i class="fas fa-check-circle"></i> VENDIDA</span>` : '';
         const stampOverlay = isUnavailable ? `<div class="inv-stamp-unavailable" style="font-size: 0.65rem; padding: 2px 6px;">NO DISPONIBLE</div>` : '';
 
         const $item = $(`
@@ -875,15 +1122,37 @@ function renderListMode($container) {
                     <img src="${card.image_url}" class="inv-list-thumb" style="width: 100%; height: 100%; object-fit: contain; border: 1px solid #000; border-radius: 2px; position: relative; z-index: 1;">
                     ${stampOverlay}
                 </div>
-                <div class="inv-list-details" style="flex: 1;">
-                    <div class="inv-list-name" style="font-weight: 800; text-transform: uppercase; font-size: 0.9rem; color: #000; display: flex; align-items: center; flex-wrap: wrap;">${escapeHtml(card.card_name)} ${privateBadge} ${unavailableBadge}</div>
-                    <div class="inv-list-set" style="font-size: 0.7rem; color: #666; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name)} - ${escapeHtml(card.rarity)}</div>
+                <div class="inv-list-details" style="flex: 1; min-width: 0;">
+                    <div class="inv-list-name" style="font-weight: 800; text-transform: uppercase; font-size: 0.9rem; color: #000; display: flex; align-items: center; flex-wrap: wrap;">${escapeHtml(card.card_name)} ${privateBadge} ${unavailableBadge} ${soldBadge}</div>
+                    <div class="inv-list-set" style="font-size: 0.7rem; color: #666; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name)} - ${escapeHtml(card.rarity)} · x${m.qty}</div>
                 </div>
-                <div class="inv-list-prices" style="display: flex; gap: 30px; text-align: right;">
-                    <div class="inv-price-row" style="display: flex; flex-direction: column;"><span style="font-size: 0.6rem; text-transform: uppercase; color: #999;">Purchase</span> <b style="color: #000;">$${parseFloat(card.purchase_price || 0).toFixed(2)}</b></div>
-                    <div class="inv-price-row" style="display: flex; flex-direction: column;"><span style="font-size: 0.6rem; text-transform: uppercase; color: #999;">Market</span> <b class="${diffClass}" style="color: #000;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</b></div>
+                <div class="inv-list-metrics">
+                    <div class="inv-metric-cell">
+                        <span>Me costó</span>
+                        <b>${fmtMoney(m.cost)}</b>
+                    </div>
+                    <div class="inv-metric-cell">
+                        <span>Mercado</span>
+                        <b>${fmtMoney(m.market)} ${trend}</b>
+                    </div>
+                    <div class="inv-metric-cell">
+                        <span>Vendo en</span>
+                        <b>${fmtMoney(m.saleTarget)}</b>
+                    </div>
+                    <div class="inv-metric-cell">
+                        <span>Ganancia lat.</span>
+                        <b class="${invPlClass(m.unrealized)}">${fmtSignedMoney(m.unrealized)}</b>
+                    </div>
+                    <div class="inv-metric-cell">
+                        <span>Ganancia est.</span>
+                        <b class="${invPlClass(m.projected)}">${fmtSignedMoney(m.projected)}</b>
+                    </div>
+                    <div class="inv-metric-cell">
+                        <span>Margen vs mercado</span>
+                        <b class="${invPlClass(m.marginVsMarket)}">${fmtSignedMoney(m.marginVsMarket)} (${fmtPct(m.marginPct)})</b>
+                    </div>
                 </div>
-                <div style="display: flex; gap: 8px;">
+                <div class="inv-list-actions" style="display: flex; gap: 8px; flex-direction: column;">
                     <button class="btn-inv-outline btn-edit-inv-card" data-id="${card.id}" style="padding: 8px 12px;"><i class="fas fa-pen"></i></button>
                     <button class="btn-inv-danger btn-delete-inv-card" data-id="${card.id}" style="padding: 8px 12px;"><i class="fas fa-trash"></i></button>
                 </div>
@@ -896,10 +1165,11 @@ function renderListMode($container) {
             e.stopPropagation();
             openInvestmentCardModal(card);
         });
-        $item.find('.btn-edit-inv-card').click(() => openInvestmentCardModal(card));
-        $item.find('.btn-delete-inv-card').click(() => deleteInvestmentCard(card.id));
+        $item.find('.btn-edit-inv-card').click((e) => { e.stopPropagation(); openInvestmentCardModal(card); });
+        $item.find('.btn-delete-inv-card').click((e) => { e.stopPropagation(); deleteInvestmentCard(card.id); });
         $list.append($item);
     });
+    $container.append($summary);
     $container.append($list);
 }
 
@@ -918,9 +1188,10 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
     $('#investment-card-modal .slot-tab-content').removeClass('active');
 
     if (!card) {
-        // New Card Mode: Hide RESUMEN and MOVIMIENTOS tabs until created
+        // New Card Mode: Hide RESUMEN, RENTABILIDAD and MOVIMIENTOS tabs until created
         $('#inv-card-modal-title').text('AÑADIR NUEVO ACTIVO');
         $('#investment-card-modal .inv-tab-link[data-tab="inv-tab-resumen"]').hide();
+        $('#investment-card-modal .inv-tab-link[data-tab="inv-tab-rentabilidad"]').hide();
         $('#investment-card-modal .inv-tab-link[data-tab="inv-tab-movimientos"]').hide();
         $('#inv-card-search-container').show();
 
@@ -936,6 +1207,7 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
         $('#inv-card-name').val('').prop('readonly', false);
         $('#inv-card-purchase-price').val('');
         $('#inv-card-current-price').val('');
+        $('#inv-card-sale-price').val('');
         $('#inv-card-quantity').val(1);
         $('#inv-card-rarity-input').val('');
         $('#inv-card-notes').val('');
@@ -965,6 +1237,7 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
         $('#inv-card-name').val(card.card_name ? card.card_name.toUpperCase() : '');
         $('#inv-card-purchase-price').val(card.purchase_price !== null && card.purchase_price !== undefined ? card.purchase_price : '');
         $('#inv-card-current-price').val(card.current_price !== null && card.current_price !== undefined ? card.current_price : '');
+        $('#inv-card-sale-price').val(card.sale_price !== null && card.sale_price !== undefined ? card.sale_price : '');
         $('#inv-card-quantity').val(card.quantity || 1);
         $('#inv-card-rarity-input').val(card.rarity || '');
         $('#inv-card-notes').val(card.notes || '');
@@ -985,6 +1258,9 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
 
         if (defaultTab === 'inv-tab-resumen') {
             updateSummaryTab(card);
+        }
+        if (defaultTab === 'inv-tab-rentabilidad') {
+            renderProfitabilityTab(card);
         }
     }
 
@@ -1032,8 +1308,10 @@ $('#btn-inv-card-search').click(async function() {
 $('#btn-save-investment-card').click(async function() {
     const purchaseVal = $('#inv-card-purchase-price').val();
     const currentVal = $('#inv-card-current-price').val();
+    const saleVal = $('#inv-card-sale-price').val();
     const newPrice = currentVal !== '' ? parseFloat(currentVal) : 0;
     const purchasePrice = purchaseVal !== '' ? parseFloat(purchaseVal) : 0;
+    const salePrice = saleVal !== '' ? parseFloat(saleVal) : null;
 
     const cardData = {
         category_id: currentInvestmentCategoryId,
@@ -1047,6 +1325,7 @@ $('#btn-save-investment-card').click(async function() {
         set_number: $('#inv-card-set-number').val(),
         purchase_price: purchasePrice,
         current_price: newPrice,
+        sale_price: salePrice,
         quantity: parseInt($('#inv-card-quantity').val()) || 1,
         show_foil: false,
         notes: $('#inv-card-notes').val(),
@@ -1094,6 +1373,19 @@ $('#btn-save-investment-card').click(async function() {
                 .update(cardData)
                 .eq('id', currentEditingInvCardId);
             error = err;
+            if (!error) {
+                logInvestmentTransaction({
+                    user_id: currentUser.id,
+                    category_id: currentInvestmentCategoryId,
+                    card_id: currentEditingInvCardId,
+                    card_name: cardData.card_name,
+                    type: 'price_update',
+                    quantity: cardData.quantity,
+                    unit_price: newPrice,
+                    total: newPrice * cardData.quantity,
+                    note: 'Actualización de datos del activo'
+                });
+            }
         } else {
             cardData.position = localInvestmentCards.length;
             const { data: newCards, error: err } = await _supabase
@@ -1109,6 +1401,18 @@ $('#btn-save-investment-card').click(async function() {
                     card_id: finalCardId,
                     price: newPrice
                 }]);
+                // Log the purchase movement
+                logInvestmentTransaction({
+                    user_id: currentUser.id,
+                    category_id: currentInvestmentCategoryId,
+                    card_id: finalCardId,
+                    card_name: cardData.card_name,
+                    type: 'purchase',
+                    quantity: cardData.quantity,
+                    unit_price: purchasePrice,
+                    total: purchasePrice * cardData.quantity,
+                    note: 'Compra inicial del activo'
+                });
             }
         }
 
@@ -1208,12 +1512,117 @@ function updateSummaryTab(card) {
     const trendIcon = getTrendIcon(card.current_price, card.previous_price, true);
     $('#inv-detail-trend').html(trendIcon);
 
+    // Quick profitability strip
+    const m = computeCardMetrics(card);
+    $('#inv-detail-metrics').html(`
+        <div class="inv-summary-metric">
+            <span>Me costó</span>
+            <b>${fmtMoney(m.cost)}</b>
+        </div>
+        <div class="inv-summary-metric">
+            <span>Mercado</span>
+            <b>${fmtMoney(m.market)}</b>
+        </div>
+        <div class="inv-summary-metric">
+            <span>Vendo en</span>
+            <b>${fmtMoney(m.saleTarget)}</b>
+        </div>
+        <div class="inv-summary-metric">
+            <span>Ganancia latente</span>
+            <b class="${invPlClass(m.unrealized)}">${fmtSignedMoney(m.unrealized)}</b>
+        </div>
+        <div class="inv-summary-metric">
+            <span>Ganancia est.</span>
+            <b class="${invPlClass(m.projected)}">${fmtSignedMoney(m.projected)}</b>
+        </div>
+        <div class="inv-summary-metric">
+            <span>Margen vs mercado</span>
+            <b class="${invPlClass(m.marginVsMarket)}">${fmtSignedMoney(m.marginVsMarket)}</b>
+        </div>
+    `);
+
     // 2. Load History Chart - delayed to ensure modal layout is fully stable and visible
     setTimeout(() => {
         if ($('#inv-tab-resumen').is(':visible')) {
             renderPriceHistoryChart(card.id);
         }
     }, 400);
+}
+
+function renderProfitabilityTab(card) {
+    if (!card) return;
+    const m = computeCardMetrics(card);
+
+    $('#inv-renta-name').text((card.card_name || '').toUpperCase());
+    $('#inv-renta-set').text(`${(card.set_name || 'SIN SET').toUpperCase()} - ${(card.rarity || 'SIN RAREZA').toUpperCase()}`);
+
+    const statusHtml = m.isSold
+        ? `<span class="inv-renta-pill inv-renta-pill-sold"><i class="fas fa-check-circle"></i> VENDIDA ${card.sold_at ? '· ' + new Date(card.sold_at).toLocaleDateString() : ''}</span>`
+        : `<span class="inv-renta-pill inv-renta-pill-open"><i class="fas fa-circle-dot"></i> EN CARTERA</span>`;
+    $('#inv-renta-status').html(statusHtml);
+
+    const pctOfCost = m.cost > 0 ? (m.unrealized / m.cost) * 100 : 0;
+
+    const row = (label, value, cls = '', hint = '') => `
+        <div class="inv-renta-row">
+            <span class="inv-renta-label">${label}${hint ? `<i class="inv-renta-hint" title="${hint}">?</i>` : ''}</span>
+            <b class="inv-renta-value ${cls}">${value}</b>
+        </div>
+    `;
+
+    let gridHtml = '';
+    gridHtml += `<div class="inv-renta-block">
+        <div class="inv-renta-block-title">INVERSIÓN</div>
+        ${row('Precio de compra (unitario)', fmtMoney(card.purchase_price))}
+        ${row('Cantidad', 'x' + m.qty)}
+        ${row('Costo total', fmtMoney(m.cost))}
+    </div>`;
+
+    gridHtml += `<div class="inv-renta-block">
+        <div class="inv-renta-block-title">VALORACIÓN ACTUAL</div>
+        ${row('Precio de mercado (unitario)', fmtMoney(card.current_price))}
+        ${row('Valor de mercado total', fmtMoney(m.market))}
+        ${row('Ganancia / pérdida latente', fmtSignedMoney(m.unrealized), invPlClass(m.unrealized), 'Diferencia entre valor de mercado y costo')}
+        ${row('Variación sobre costo', fmtPct(pctOfCost), invPlClass(pctOfCost))}
+    </div>`;
+
+    gridHtml += `<div class="inv-renta-block">
+        <div class="inv-renta-block-title">VENTA OBJETIVO</div>
+        ${row('Precio de venta fijado', fmtMoney(card.sale_price))}
+        ${row('Valor de venta total', fmtMoney(m.saleTarget))}
+        ${row('Ganancia / pérdida estimada', fmtSignedMoney(m.projected), invPlClass(m.projected), 'Ganancia si vendo al precio de venta fijado')}
+        ${row('ROI estimado', fmtPct(m.roi), invPlClass(m.roi))}
+    </div>`;
+
+    gridHtml += `<div class="inv-renta-block">
+        <div class="inv-renta-block-title">MARGEN VS MERCADO</div>
+        ${row('Diferencia venta - mercado', fmtSignedMoney(m.marginVsMarket), invPlClass(m.marginVsMarket))}
+        ${row('Margen porcentual', fmtPct(m.marginPct), invPlClass(m.marginPct))}
+        ${row('Estado del precio', m.marginVsMarket >= 0 ? 'Venta por encima del mercado' : 'Venta por debajo del mercado', invPlClass(m.marginVsMarket))}
+    </div>`;
+
+    if (m.isSold) {
+        gridHtml += `<div class="inv-renta-block inv-renta-block-sold">
+            <div class="inv-renta-block-title">VENTA REALIZADA</div>
+            ${row('Precio de venta real', fmtMoney(card.sold_price))}
+            ${row('Unidades vendidas', 'x' + m.soldQty)}
+            ${row('Ingreso total', fmtMoney(m.soldTotal))}
+            ${row('Ganancia / pérdida realizada', fmtSignedMoney(m.realized), invPlClass(m.realized))}
+        </div>`;
+    }
+
+    $('#inv-renta-grid').html(gridHtml);
+
+    // Actions: sell or undo sale
+    if (m.isSold) {
+        $('#inv-renta-actions').html(`
+            <button class="btn-inv-outline" id="btn-inv-undo-sale" style="width: 100%;"><i class="fas fa-rotate-left"></i> MARCAR COMO NO VENDIDA</button>
+        `);
+    } else {
+        $('#inv-renta-actions').html(`
+            <button class="btn-inv-main" id="btn-inv-sell-card" style="width: 100%;"><i class="fas fa-hand-holding-dollar"></i> MARCAR COMO VENDIDA</button>
+        `);
+    }
 }
 
 async function saveNewPrice(cardId, newPrice) {
@@ -1347,4 +1756,165 @@ async function renderPriceHistoryChart(cardId) {
             </div>
         `);
     });
+}
+
+// --- SALES & LEDGER ---
+
+async function registerCardSale(card, soldPrice, soldQty) {
+    Swal.fire({ title: 'Registrando venta...', didOpen: () => Swal.showLoading(), customClass: { popup: 'inv-swal-popup' } });
+
+    const updatePayload = {
+        is_sold: true,
+        sold_price: soldPrice,
+        sold_quantity: soldQty,
+        sold_at: new Date().toISOString()
+    };
+
+    const { error } = await _supabase
+        .from('investment_cards')
+        .update(updatePayload)
+        .eq('id', card.id);
+
+    if (error) {
+        Swal.fire({ title: 'Error', text: 'No se pudo registrar la venta: ' + error.message, icon: 'error', customClass: { popup: 'inv-swal-popup' } });
+        return;
+    }
+
+    await logInvestmentTransaction({
+        user_id: currentUser.id,
+        category_id: card.category_id || currentInvestmentCategoryId,
+        card_id: card.id,
+        card_name: card.card_name,
+        type: 'sale',
+        quantity: soldQty,
+        unit_price: soldPrice,
+        total: soldPrice * soldQty,
+        note: 'Venta registrada'
+    });
+
+    const { data: updatedCard } = await _supabase.from('investment_cards').select('*').eq('id', card.id).single();
+    const idx = localInvestmentCards.findIndex(c => c.id === card.id);
+    if (idx !== -1) localInvestmentCards[idx] = updatedCard;
+
+    renderInvestmentCards(currentInvestmentViewMode);
+    renderProfitabilityTab(updatedCard);
+
+    Swal.fire({ icon: 'success', title: 'Venta registrada', timer: 1300, showConfirmButton: false, customClass: { popup: 'inv-swal-popup' } });
+}
+
+async function openVaultLedger(cat) {
+    currentLedgerCategory = cat;
+    $('#ledger-title').text((cat.name || 'VAULT').toUpperCase());
+    $('#ledger-totals, #ledger-tbody, #ledger-tfoot, #ledger-history-list').html('<div class="loading">Cargando...</div>');
+    $('#vault-ledger-modal').addClass('active');
+
+    const { data: cards, error } = await _supabase
+        .from('investment_cards')
+        .select('*')
+        .eq('category_id', cat.id)
+        .order('position', { ascending: true });
+
+    if (error) {
+        $('#ledger-totals').html('<div class="error">Error al cargar los datos.</div>');
+        return;
+    }
+
+    const list = cards || [];
+    const t = computeVaultTotals(list);
+
+    // Totals cards
+    $('#ledger-totals').html(`
+        <div class="inv-ledger-total"><span>Costo total</span><b>${fmtMoney(t.cost)}</b></div>
+        <div class="inv-ledger-total"><span>Valor mercado</span><b>${fmtMoney(t.market)}</b></div>
+        <div class="inv-ledger-total"><span>Valor venta</span><b>${fmtMoney(t.saleTarget)}</b></div>
+        <div class="inv-ledger-total"><span>Ganancia latente</span><b class="${invPlClass(t.unrealized)}">${fmtSignedMoney(t.unrealized)}</b></div>
+        <div class="inv-ledger-total"><span>Ganancia estimada</span><b class="${invPlClass(t.projected)}">${fmtSignedMoney(t.projected)}</b></div>
+        <div class="inv-ledger-total"><span>ROI estimado</span><b class="${invPlClass(t.roi)}">${fmtPct(t.roi)}</b></div>
+        <div class="inv-ledger-total"><span>Realizado (vendido)</span><b class="${invPlClass(t.realized)}">${fmtSignedMoney(t.realized)}</b></div>
+        <div class="inv-ledger-total"><span>Activos / Vendidos</span><b>${t.count - t.soldCount} / ${t.soldCount}</b></div>
+    `);
+
+    // Rows
+    if (list.length === 0) {
+        $('#ledger-tbody').html('<tr><td colspan="11" style="text-align:center; padding: 30px; color:#888;">Sin activos en esta colección.</td></tr>');
+        $('#ledger-tfoot').empty();
+    } else {
+        const $tbody = $('#ledger-tbody').empty();
+        list.forEach(card => {
+            const m = computeCardMetrics(card);
+            const statusPill = m.isSold
+                ? '<span class="inv-ledger-status sold">VENDIDA</span>'
+                : '<span class="inv-ledger-status open">EN CARTERA</span>';
+            $tbody.append(`
+                <tr class="inv-ledger-row" data-id="${card.id}">
+                    <td class="inv-ledger-card-cell">
+                        <img src="${card.image_url || ''}" class="inv-ledger-thumb" alt="">
+                        <span>${escapeHtml(card.card_name)}</span>
+                    </td>
+                    <td>${escapeHtml(card.set_name || '-')}<br><small>${escapeHtml(card.rarity || '-')}</small></td>
+                    <td class="num">x${m.qty}</td>
+                    <td class="num">${fmtMoney(card.purchase_price)}</td>
+                    <td class="num">${fmtMoney(m.cost)}</td>
+                    <td class="num">${fmtMoney(m.market)}</td>
+                    <td class="num">${fmtMoney(m.saleTarget)}</td>
+                    <td class="num ${invPlClass(m.unrealized)}">${fmtSignedMoney(m.unrealized)}</td>
+                    <td class="num ${invPlClass(m.projected)}">${fmtSignedMoney(m.projected)}</td>
+                    <td class="num ${invPlClass(m.roi)}">${fmtPct(m.roi)}</td>
+                    <td>${statusPill}</td>
+                </tr>
+            `);
+        });
+
+        $('#ledger-tfoot').html(`
+            <tr>
+                <td colspan="2">TOTALES</td>
+                <td class="num">x${t.units}</td>
+                <td class="num">—</td>
+                <td class="num">${fmtMoney(t.cost)}</td>
+                <td class="num">${fmtMoney(t.market)}</td>
+                <td class="num">${fmtMoney(t.saleTarget)}</td>
+                <td class="num ${invPlClass(t.unrealized)}">${fmtSignedMoney(t.unrealized)}</td>
+                <td class="num ${invPlClass(t.projected)}">${fmtSignedMoney(t.projected)}</td>
+                <td class="num ${invPlClass(t.roi)}">${fmtPct(t.roi)}</td>
+                <td></td>
+            </tr>
+        `);
+    }
+
+    // Click a row to open the card manager
+    $('#ledger-tbody').off('click', '.inv-ledger-row').on('click', '.inv-ledger-row', function() {
+        const id = $(this).data('id');
+        const card = list.find(c => c.id === id);
+        if (card) {
+            $('#vault-ledger-modal').removeClass('active');
+            openInvestmentCardModal(card);
+        }
+    });
+
+    // Movements history
+    const { data: movements } = await _supabase
+        .from('investment_transactions')
+        .select('*')
+        .eq('category_id', cat.id)
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+    const $hist = $('#ledger-history-list').empty();
+    if (!movements || movements.length === 0) {
+        $hist.html('<div class="inv-ledger-history-empty">Sin movimientos registrados todavía.</div>');
+    } else {
+        const typeLabel = { purchase: 'COMPRA', sale: 'VENTA', price_update: 'PRECIO' };
+        const typeClass = { purchase: 'purchase', sale: 'sale', price_update: 'update' };
+        movements.forEach(mv => {
+            $hist.append(`
+                <div class="inv-ledger-movement">
+                    <span class="inv-ledger-mv-type ${typeClass[mv.type] || 'update'}">${typeLabel[mv.type] || mv.type}</span>
+                    <span class="inv-ledger-mv-name">${escapeHtml(mv.card_name || '-')}</span>
+                    <span class="inv-ledger-mv-qty">x${mv.quantity || 1}</span>
+                    <span class="inv-ledger-mv-total">${fmtMoney(mv.total)}</span>
+                    <span class="inv-ledger-mv-date">${new Date(mv.created_at).toLocaleString()}</span>
+                </div>
+            `);
+        });
+    }
 }

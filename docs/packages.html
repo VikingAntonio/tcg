@@ -4318,53 +4318,67 @@
                 didOpen: () => Swal.showLoading()
             });
 
+            // Some tables may not yet have the optional columns (description,
+            // model_url). When PostgREST reports an unknown column we drop the
+            // optional keys and retry, so the row still saves.
+            const OPTIONAL_COLS = ['description', 'model_url'];
+            const insertResilient = async (table, payload) => {
+                const data = { ...payload };
+                while (true) {
+                    const { error } = await _supabase.from(table).insert([data]);
+                    if (!error) return null;
+                    const msg = error.message || '';
+                    const missing = OPTIONAL_COLS.find(col =>
+                        col in data && (msg.includes(`'${col}' column`) || msg.includes(`column "${col}"`))
+                    );
+                    if (!missing) return error;
+                    delete data[missing];
+                }
+            };
+
             let savedCount = 0;
             const errors = [];
 
             for (const item of queue) {
                 try {
-                    if (['sleeves', 'deckbox', 'coin', 'mats'].includes(item.type)) {
-                        const accData = {
+                    if (['sleeves', 'deckbox', 'coin', 'mats', 'dice'].includes(item.type)) {
+                        const err = await insertResilient('accessories', {
                             name: item.name,
                             category: item.type,
                             image_url: item.fileUrl,
                             model_url: item.fileType === 'gltf' ? item.fileUrl : null,
                             price_mxn: item.price || 0,
                             description: item.description || ''
-                        };
-                        const { error } = await _supabase.from('accessories').insert([accData]);
-                        if (error) throw error;
+                        });
+                        if (err) throw err;
                     } else if (item.type === 'sealed') {
-                        const spData = {
+                        const err = await insertResilient('sealed_products', {
                             name: item.name,
                             image_url: item.fileUrl,
                             price: item.price || 0,
                             description: item.description || '',
                             tcg: item.tcg
-                        };
-                        const { error } = await _supabase.from('sealed_products').insert([spData]);
-                        if (error) throw error;
+                        });
+                        if (err) throw err;
                     } else if (item.type === 'preorder') {
-                        const poData = {
+                        const err = await insertResilient('preorders', {
                             name: item.name,
                             image_url: item.fileUrl,
                             price: item.price || 0,
                             description: item.description || '',
                             tcg: item.tcg
-                        };
-                        const { error } = await _supabase.from('preorders').insert([poData]);
-                        if (error) throw error;
+                        });
+                        if (err) throw err;
                     } else {
-                        const singleData = {
+                        const err = await insertResilient('viking_data', {
                             type: 'card_single',
                             name: item.name,
                             image_url: item.fileUrl,
                             price: item.price || 0,
                             description: item.description || '',
                             tcg: item.tcg
-                        };
-                        const { error } = await _supabase.from('viking_data').insert([singleData]);
-                        if (error && error.code !== '42P01') throw error;
+                        });
+                        if (err && err.code !== '42P01') throw err;
                     }
                     savedCount++;
                 } catch (err) {
