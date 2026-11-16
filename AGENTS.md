@@ -117,25 +117,25 @@ Caso real: se compran N cartas juntas por un solo precio (p.ej. 10 cartas por $1
 - **Dónde se pone el valor (dentro del binder):** `editVaultLotCost()` abre un Swal solo con el campo del lote. Se dispara desde 3 sitios: `#btn-edit-vault-lot` (cabecera escritorio), `#btn-edit-vault-lot-mobile` (panel lateral móvil) y `#btn-inv-lot-from-card` (justo debajo del campo "Precio compra" de la carta, en la pestaña DATOS). `#inv-desktop-lot-cost`/`#inv-mobile-lot-cost` muestran "Lote: $X" o "Costo por carta"; `updateVaultLotIndicators()` los refresca en `loadInvestmentCards()`. `updateCardLotHint(card)` muestra bajo el precio de compra el lote y la parte asignada a esa carta.
 
 
-## Inversiones — reporte general de la colección (hoja de cálculos)
-El usuario compra lotes, vende y marca cartas "no disponibles"; quiere un REPORTE GENERAL limpio (sin repetir "(disponibles)" en cada etiqueta) con la info de ⓘ.
-- `computeCardMetrics` expone `isAvailable` (`card.is_available !== false`) e `isActive` (`!isSold && isAvailable`).
-- `computeVaultTotals` (docs/js/inversiones.js) entrega el reporte general:
-  - `cost` = **lote** si está definido; si no, suma del precio de compra de TODAS las cartas (`sumCardCost`). **Nunca** reparte el lote solo entre las disponibles (bug previo: mostraba una fracción, p.ej. $3166.67 de un lote de $3800).
-  - `market` (todas), `marketActive` (disponibles), `saleAll` (todas: incluye vendidas/no disponibles), `saleActive` (solo disponibles), `realized` (ventas reales), `soldCount`/`soldUnits`.
-  - Derivados: `unrealized = market − cost`, `projected = saleAll − cost`, `roi = projected / cost`, `marginPct`. `saleTarget` queda como alias de `saleAll` por compatibilidad.
-- **Reporte general** (`renderCalcSheet(totals)`) arriba del modo lista, con dos secciones:
-  - *Inversión y valores*: LO QUE PAGUÉ (TOTAL) · VALOR DE MERCADO · PRECIO DE VENTA (TODO) · PRECIO DE VENTA (DISPONIBLE)
-  - *Ganancia (venta − compra)*: GANANCIA SI VENDO TODO · GANANCIA SI VENDO LO DISPONIBLE · GANANCIA A PRECIO DE MERCADO · RENDIMIENTO SOBRE LO INVERTIDO
-  - Pie: Ganancia ya realizada (ventas) + Vendidas / no disponibles. Chips: nº de cartas/unidades + fuera de cartera.
-- **Ayuda ⓘ:** `INV_METRIC_HELP` (id→{title,body}) + `invInfoIcon(key)`; handler `$(document).on('click', '.inv-info-icon')` abre un Swal. Claves del reporte: `cost, market, saleAll, saleActive, gainSaleAll, gainSaleActive, gainMarket, roi, realized, sold`; por carta: `saleTarget, unrealized, projected, margin`.
-- El checkbox `#inv-card-available-toggle` se lee "ESTADO (¿DISPONIBLE?)" y al apagarlo muestra **VENDIDO** (deja de contar como disponible). Badges/overlays también dicen VENDIDO.
-- Ledger (`openVaultLedger(cat)` — recibe el **objeto** categoría, no el id): totales y pie usan el reporte general; filas fuera de cartera atenuadas (`.inv-ledger-row-out`).
-- CSS: `.inv-calc-sheet/.inv-calc-head/.inv-calc-section-title/.inv-calc-grid/.inv-calc-card/.inv-calc-chips/.inv-calc-sold`, `.inv-info-icon`, `.inv-list-item-out`.
-- Verificado con Playwright (escritorio + móvil): con lote 3800 y cartas en 0, "LO QUE PAGUÉ (TOTAL)" = $3800; venta todo $2900 / disponible $1500; mercado $1800; los 3 modos (álbum/slide/lista), el gráfico y el cierre del modal OK; sin overflow.
+## Inversiones — reporte general SIN inventar precios (lote no se reparte)
+Regla de oro del usuario: los cálculos usan **solo los valores que él escribe**. Nunca se inventan ni se reparten precios.
+- `computeCardMetrics(card)` (docs/js/inversiones.js) usa SIEMPRE `purchase_price`, `current_price`, `sale_price` × `quantity` de la propia carta. **Ya no acepta `costOverride`** (se eliminó el reparto del lote).
+- `computeVaultTotals(cards, lotOverride)`:
+  - `sumCardCost` = suma del precio de compra real de TODAS las cartas.
+  - `cost` = **lote** si está definido; si no, `sumCardCost`. El lote es SOLO el total general; **nunca** se reparte por carta (bug histórico: con lote 3800 y compras en 0, repartía 3800/nº cartas ≈ 211 por carta y lo mostraba como "Lo que pagué").
+  - `market` (todas), `marketActive` (disponibles), `saleAll` (todas: incluye vendidas/no disponibles), `saleActive` (solo disponibles), `realized`, `soldCount`/`soldUnits`.
+  - Derivados: `unrealized = market − cost`, `projected = saleAll − cost`, `roi`, `marginPct`. `saleTarget` = alias de `saleAll`.
+- **Eliminados**: `allocateLotCost`, `currentLotMap`, `currentCardCost` y el uso de `costOverride`. Si vuelve a aparecer la tentación de "repartir el lote", NO hacerlo: el usuario lo pidió explícitamente.
+- Ledger (`openVaultLedger(cat)`, recibe el objeto categoría): columna "Costo unit." muestra `card.purchase_price` real (sin "(lote)"); el pie usa el costo general.
+- `updateCardLotHint` solo avisa "Lote de la colección: $X (total general, no se reparte por carta)".
+- Reporte general (`renderCalcSheet`) con dos secciones: *Inversión y valores* (LO QUE PAGUÉ (TOTAL) · VALOR DE MERCADO · PRECIO DE VENTA (TODO) · PRECIO DE VENTA (DISPONIBLE)) y *Ganancia (venta − compra)* (GANANCIA SI VENDO TODO · GANANCIA SI VENDO LO DISPONIBLE · GANANCIA A PRECIO DE MERCADO · RENDIMIENTO SOBRE LO INVERTIDO) + pie (realizado / fuera de cartera).
+- Ayuda ⓘ: `INV_METRIC_HELP` + `invInfoIcon(key)`; handler `$(document).on('click', '.inv-info-icon')` abre un Swal. Claves reporte: `cost, market, saleAll, saleActive, gainSaleAll, gainSaleActive, gainMarket, roi, realized, sold`; por carta: `saleTarget, unrealized, projected, margin`.
+- Checkbox `#inv-card-available-toggle` = "ESTADO (¿DISPONIBLE?)"; al apagarlo muestra **VENDIDO** y la carta deja de contar como disponible.
+- CSS: `.inv-calc-sheet/.inv-calc-head/.inv-calc-section-title/.inv-calc-grid/.inv-calc-card/.inv-calc-chips/.inv-calc-sold`, `.inv-info-icon`, `.inv-list-item-out`, `.inv-ledger-row-out`.
+- Verificado con Playwright (escritorio + móvil): lote 3800 + compras en 0 + venta 3500 → "LO QUE PAGUÉ (TOTAL)" $3800, "PRECIO DE VENTA (TODO)" $3500, por carta $0/$0/$3500; sin lote el costo es la suma real ($1400 con 500+300×2+200+100). Los 3 modos, el gráfico y el cierre del modal OK; sin overflow.
 
 ## Rendimiento móvil — Service Worker (crítico)
 `docs/sw.js` no llegaba a **instalarse**: `URLS_TO_CACHE` incluía `./build.html`, que ya no existe, y `cache.addAll()` rechaza todo el install si **una** URL da 404 → el SW quedaba sin activar y **no se cacheaba nada**. Como el `.gltf` del asistente referencia un `.bin` de ~2.7 MB, se re-descargaba en cada navegación (lentísimo en móvil).
 - Install tolerante: se cachea cada URL por separado (`cache.add(url).catch(...)`) en vez de `addAll`.
 - `isModelAsset` incluye `bin|ktx2|basis|drc` además de `glb|gltf`, para cache-first de los buffers/texturas del modelo (antes caían al branch network-first de Supabase).
-- Al cambiar assets, subir `STATIC_CACHE` (ahora `viking-static-v230`).
+- Al cambiar assets, subir `STATIC_CACHE` (ahora `viking-static-v231`).
