@@ -116,8 +116,20 @@ Caso real: se compran N cartas juntas por un solo precio (p.ej. 10 cartas por $1
 - Helpers de conveniencia: `currentLotMap(cards)` y `currentCardCost(card, lotMap)` usan `currentInvestmentCategory`.
 - **Dónde se pone el valor (dentro del binder):** `editVaultLotCost()` abre un Swal solo con el campo del lote. Se dispara desde 3 sitios: `#btn-edit-vault-lot` (cabecera escritorio), `#btn-edit-vault-lot-mobile` (panel lateral móvil) y `#btn-inv-lot-from-card` (justo debajo del campo "Precio compra" de la carta, en la pestaña DATOS). `#inv-desktop-lot-cost`/`#inv-mobile-lot-cost` muestran "Lote: $X" o "Costo por carta"; `updateVaultLotIndicators()` los refresca en `loadInvestmentCards()`. `updateCardLotHint(card)` muestra bajo el precio de compra el lote y la parte asignada a esa carta.
 
+
+## Inversiones — cálculos de disponibles vs vendidas + hoja de cálculos
+El usuario compra lotes, vende y marca cartas "no disponibles"; pidió que los cálculos generales reflejen SOLO lo disponible y que los títulos sean entendibles.
+- `computeCardMetrics` expone `isAvailable` (`card.is_available !== false`) e `isActive` (`!isSold && isAvailable`).
+- `computeVaultTotals` (docs/js/inversiones.js) separa cartera: los campos generales (`cost`, `market`, `saleTarget`, `unrealized`, `projected`, `roi`) suman SOLO `isActive`. Aparte: `activeCount`/`activeUnits`, `soldCount`/`soldUnits`/`soldTotal`/`soldCost`/`realized` (incluye vendidas Y no disponibles). **OJO:** ya NO se fuerza `totals.cost = lotOverride` (el lote se reparte y las vendidas no lo inflan).
+- El checkbox `#inv-card-available-toggle` ahora se lee "ESTADO (¿DISPONIBLE?)" y al apagarlo muestra **VENDIDO** (antes "NO DISPONIBLE"): deja de contar en los cálculos generales. Los badges/overlays también dicen VENDIDO.
+- **Hoja de cálculos** (`renderCalcSheet(totals)`) sustituye la barra negra del modo lista: panel negro con chips (disponibles / fuera de cartera), 7 tarjetas con títulos llanos (LO QUE PAGUÉ, VALE HOY EN EL MERCADO, LO VENDERÉ EN, GANANCIA AL PRECIO DE MERCADO, GANANCIA AL PRECIO DE VENTA, MARGEN SOBRE EL MERCADO, RENDIMIENTO SOBRE LO INVERTIDO) y pie con realizado + fuera de cartera.
+- **Ayuda ⓘ:** `INV_METRIC_HELP` (mapa id→{title,body}) + `invInfoIcon(key)`; el handler `$(document).on('click', '.inv-info-icon')` abre un Swal explicando la métrica en español llano. Está en la hoja, en `#inv-detail-metrics` (RESUMEN), en el ledger y en los chips.
+- Etiquetas renombradas en toda la UI: "Me costó"→"Lo que pagué", "Mercado"→"Vale hoy", "Vendo en"→"Lo venderé en", "Ganancia lat."→"Ganancia a mercado", "Ganancia est."→"Ganancia a mi precio", "ROI"→"Rendimiento sobre lo invertido".
+- CSS: `.inv-calc-sheet/.inv-calc-head/.inv-calc-grid/.inv-calc-card/.inv-calc-chips/.inv-calc-sold`, `.inv-info-icon`, `.inv-list-item-out`/`.inv-ledger-row-out` (atenuar fuera de cartera).
+- Ledger: totales y pie dicen "(disponibles)"; estados DISPONIBLE / VENDIDA / FUERA.
+
 ## Rendimiento móvil — Service Worker (crítico)
 `docs/sw.js` no llegaba a **instalarse**: `URLS_TO_CACHE` incluía `./build.html`, que ya no existe, y `cache.addAll()` rechaza todo el install si **una** URL da 404 → el SW quedaba sin activar y **no se cacheaba nada**. Como el `.gltf` del asistente referencia un `.bin` de ~2.7 MB, se re-descargaba en cada navegación (lentísimo en móvil).
 - Install tolerante: se cachea cada URL por separado (`cache.add(url).catch(...)`) en vez de `addAll`.
 - `isModelAsset` incluye `bin|ktx2|basis|drc` además de `glb|gltf`, para cache-first de los buffers/texturas del modelo (antes caían al branch network-first de Supabase).
-- Al cambiar assets, subir `STATIC_CACHE` (ahora `viking-static-v228`).
+- Al cambiar assets, subir `STATIC_CACHE` (ahora `viking-static-v229`).

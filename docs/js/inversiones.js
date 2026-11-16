@@ -38,6 +38,52 @@ function fmtPct(v) {
     return (n >= 0 ? '+' : '') + n.toFixed(1) + '%';
 }
 
+// Human-readable explanation for every metric shown in the UI. Keyed by the
+// same id used by invInfoIcon(), so tapping the ⓘ opens the right help text.
+const INV_METRIC_HELP = {
+    cost: {
+        title: '¿Cuánto me costó?',
+        body: 'Lo que pagaste por estas cartas que aún tienes disponibles. Es la suma de tu precio de compra (o el precio del lote si definiste uno para la colección).'
+    },
+    market: {
+        title: '¿Cuánto valen hoy en el mercado?',
+        body: 'El valor actual de las cartas disponibles según el precio de mercado que registraste. Es lo que recibirías si las vendieras hoy a ese precio.'
+    },
+    saleTarget: {
+        title: '¿En cuánto las quiero vender?',
+        body: 'El valor total al precio de venta que tú fijaste para cada carta disponible. Es tu objetivo de venta.'
+    },
+    unrealized: {
+        title: 'Ganancia al precio de mercado',
+        body: 'Si vendieras hoy al precio de mercado: valor de mercado menos lo que te costó. Es ganancia "en papel", todavía no realizada.'
+    },
+    projected: {
+        title: 'Ganancia al precio de venta',
+        body: 'Si vendieras al precio de venta que fijaste: valor de venta menos lo que te costó. Es tu ganancia esperada.'
+    },
+    margin: {
+        title: 'Margen sobre el mercado',
+        body: 'Cuánto más caro estás vendiendo respecto al precio de mercado: valor de venta menos valor de mercado. Te dice si tu precio está por encima o por debajo del mercado.'
+    },
+    roi: {
+        title: 'Rendimiento sobre lo invertido',
+        body: 'La ganancia esperada (al precio de venta) como porcentaje de lo que te costó. Ejemplo: invertiste $500 y esperas ganar $100 → 20%.'
+    },
+    realized: {
+        title: 'Ganancia ya realizada (ventas)',
+        body: 'Lo que ya ganaste con las cartas que marcaste como VENDIDAS: precio real de venta menos lo que te costaron.'
+    },
+    sold: {
+        title: 'Cartas fuera de cartera',
+        body: 'Cartas que ya no cuentan como disponibles: las que marcaste como VENDIDAS o como no disponibles. No entran en los cálculos generales de arriba.'
+    }
+};
+
+// Small ⓘ button that opens the explanation for a metric.
+function invInfoIcon(key) {
+    return `<span class="inv-info-icon" data-help="${key}" title="Ver explicación"><i class="fas fa-circle-info"></i></span>`;
+}
+
 // Profit/loss + margin calculations for a single card.
 // `costOverride` lets a collection lot price replace the card's own cost.
 function computeCardMetrics(card, costOverride) {
@@ -48,6 +94,8 @@ function computeCardMetrics(card, costOverride) {
     const market = invNum(card.current_price) * qty;
     const saleTarget = invNum(card.sale_price) * qty;
     const isSold = card.is_sold === true;
+    const isAvailable = card.is_available !== false;
+    const isActive = !isSold && isAvailable;   // Disponible para vender
     const soldQty = parseInt(card.sold_quantity) || qty;
     const soldTotal = invNum(card.sold_price) * soldQty;
 
@@ -62,6 +110,8 @@ function computeCardMetrics(card, costOverride) {
         roi: cost > 0 ? ((saleTarget - cost) / cost) * 100 : 0,
         marginPct: market > 0 ? ((saleTarget - market) / market) * 100 : 0,
         isSold,
+        isAvailable,
+        isActive,
         soldQty,
         soldTotal,
         realized: isSold ? soldTotal - cost : 0
@@ -94,6 +144,8 @@ function allocateLotCost(cards, lot) {
 // Aggregated totals for a whole vault / collection.
 // `lotOverride` (collection lot price) replaces the sum of per-card purchase
 // prices and is distributed proportionally so per-card profit stays coherent.
+// The "general" figures (cost, market, saleTarget, unrealized, projected, roi)
+// cover ONLY the available cards; sold / unavailable ones are reported apart.
 function computeVaultTotals(cards, lotOverride) {
     const list = cards || [];
     const hasLot = lotOverride !== null && lotOverride !== undefined && lotOverride !== '' && !isNaN(invNum(lotOverride));
@@ -102,7 +154,9 @@ function computeVaultTotals(cards, lotOverride) {
         count: 0, units: 0,
         cost: 0, market: 0, saleTarget: 0,
         unrealized: 0, projected: 0, realized: 0,
+        activeCount: 0, activeUnits: 0,
         soldCount: 0, soldUnits: 0, soldTotal: 0,
+        soldCost: 0,
         hasLotCost: hasLot, lotCost: hasLot ? invNum(lotOverride) : null
     };
 
@@ -110,22 +164,23 @@ function computeVaultTotals(cards, lotOverride) {
         const m = computeCardMetrics(card, hasLot ? lotCosts[card.id] : undefined);
         totals.count++;
         totals.units += m.qty;
-        totals.cost += m.cost;
-        totals.market += m.market;
-        totals.saleTarget += m.saleTarget;
-        if (m.isSold) {
-            totals.soldCount++;
-            totals.soldUnits += m.soldQty;
-            totals.soldTotal += m.soldTotal;
-            totals.realized += m.realized;
-        } else {
+        if (m.isActive) {
+            totals.activeCount++;
+            totals.activeUnits += m.qty;
+            totals.cost += m.cost;
+            totals.market += m.market;
+            totals.saleTarget += m.saleTarget;
             totals.unrealized += m.unrealized;
             totals.projected += m.projected;
+        } else {
+            totals.soldCount++;
+            totals.soldUnits += m.isSold ? m.soldQty : m.qty;
+            totals.soldCost += m.cost;
+            totals.soldTotal += m.isSold ? m.soldTotal : 0;
+            totals.realized += m.realized;
         }
     });
 
-    // The lot price is authoritative: show it exactly, not the rounded sum.
-    if (hasLot) totals.cost = invNum(lotOverride);
     totals.roi = totals.cost > 0 ? (totals.projected / totals.cost) * 100 : 0;
     totals.marginPct = totals.market > 0 ? ((totals.saleTarget - totals.market) / totals.market) * 100 : 0;
     totals.latentGain = totals.unrealized;
@@ -291,6 +346,20 @@ function initInvestmentListeners() {
     $(document).on('click', '#btn-edit-vault-lot, #btn-edit-vault-lot-mobile, #btn-inv-lot-from-card', function(e) {
         e.preventDefault();
         editVaultLotCost();
+    });
+
+    // ⓘ help: explains each metric in plain Spanish
+    $(document).on('click', '.inv-info-icon', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const help = INV_METRIC_HELP[$(this).data('help')];
+        if (!help) return;
+        Swal.fire({
+            title: help.title,
+            html: `<div style="text-align:left; font-size:0.95rem; line-height:1.5; color:#333;">${help.body}</div>`,
+            confirmButtonText: 'ENTENDIDO',
+            customClass: { popup: 'inv-swal-popup', confirmButton: 'btn-inv-main' }
+        });
     });
 
     $(document).on('click', '#inv-side-panel-overlay', function() {
@@ -590,7 +659,7 @@ function initInvestmentListeners() {
 
     $(document).on('change', '#inv-card-available-toggle', function() {
         const isChecked = $(this).is(':checked');
-        $('#inv-card-available-status').text(isChecked ? 'DISPONIBLE' : 'NO DISPONIBLE').css('color', isChecked ? '#2ed573' : '#ff4757');
+        $('#inv-card-available-status').text(isChecked ? 'DISPONIBLE' : 'VENDIDO').css('color', isChecked ? '#2ed573' : '#ff4757');
     });
 }
 
@@ -697,24 +766,24 @@ async function loadInvestmentCategories() {
                 <div class="inv-category-info">
                     <div>
                         <h3>${escapeHtml(cat.name)}</h3>
-                        <div class="inv-category-meta">${t.count} activo${t.count === 1 ? '' : 's'} · ${t.units} unidad${t.units === 1 ? '' : 'es'}</div>
+                        <div class="inv-category-meta">${t.activeCount} disponible${t.activeCount === 1 ? '' : 's'} · ${t.activeUnits} unidad${t.activeUnits === 1 ? '' : 'es'}${t.soldCount > 0 ? ` · ${t.soldCount} fuera de cartera` : ''}</div>
                     </div>
 
                     <div class="inv-cat-metrics">
                         <div class="inv-cat-metric">
-                            <span>Costo${t.hasLotCost ? ' (lote)' : ''}</span>
+                            <span>Lo que pagué${t.hasLotCost ? ' (lote)' : ''}</span>
                             <b>${fmtMoney(t.cost)}</b>
                         </div>
                         <div class="inv-cat-metric">
-                            <span>Mercado</span>
+                            <span>Vale hoy</span>
                             <b>${fmtMoney(t.market)}</b>
                         </div>
                         <div class="inv-cat-metric">
-                            <span>Venta</span>
+                            <span>Lo venderé en</span>
                             <b>${fmtMoney(t.saleTarget)}</b>
                         </div>
                         <div class="inv-cat-metric">
-                            <span>Ganancia est.</span>
+                            <span>Ganancia a mi precio</span>
                             <b class="${invPlClass(t.projected)}">${fmtSignedMoney(t.projected)}</b>
                         </div>
                     </div>
@@ -1065,7 +1134,7 @@ function renderAlbumMode($container) {
                 const isPrivate = card.is_public === false;
                 const isUnavailable = card.is_available === false;
                 const privateBadge = isPrivate ? `<div class="inv-card-private-badge" style="position: absolute; top: 5px; right: 5px; background: rgba(255, 71, 87, 0.9); color: #fff; padding: 2px 6px; border-radius: 3px; font-size: 9px; font-weight: 800; z-index: 115;" title="Privado (Oculto en link público)"><i class="fas fa-lock"></i></div>` : '';
-                const stampOverlay = isUnavailable ? `<div class="inv-stamp-unavailable">NO DISPONIBLE</div>` : '';
+                const stampOverlay = isUnavailable ? `<div class="inv-stamp-unavailable">VENDIDO</div>` : '';
 
                 $slot.append(`
                     <img src="${card.image_url}" class="tcg-card" style="border-radius: 4px; border: 1px solid #000; width: 100%; height: 100%; object-fit: contain; position: relative; z-index: 1;">
@@ -1227,7 +1296,7 @@ function renderSlideMode($container) {
         const isPrivate = card.is_public === false;
         const isUnavailable = card.is_available === false;
         const privateBadge = isPrivate ? `<div class="inv-card-private-badge" style="position: absolute; top: 10px; right: 10px; background: rgba(255, 71, 87, 0.9); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 800; z-index: 115;" title="Privado (Oculto en link público)"><i class="fas fa-lock"></i> PRIVADO</div>` : '';
-        const stampOverlay = isUnavailable ? `<div class="inv-stamp-unavailable">NO DISPONIBLE</div>` : '';
+        const stampOverlay = isUnavailable ? `<div class="inv-stamp-unavailable">VENDIDO</div>` : '';
 
         const $slide = $(`
             <div class="swiper-slide inv-card-slot inv-card-item" data-id="${card.id}" style="background: transparent; cursor: pointer; position: relative; display: flex; align-items: center; justify-content: center; height: 100%;">
@@ -1296,21 +1365,53 @@ function renderSlideMode($container) {
     });
 }
 
+// "Hoja de cálculos": a clear, spreadsheet-like panel shown above the card
+// list. Every figure refers ONLY to the available cards; sold / unavailable
+// ones are summarised apart so the general numbers are always understandable.
+function renderCalcSheet(totals) {
+    const none = totals.activeCount === 0;
+    const card = (key, label, value, cls = '') => `
+        <div class="inv-calc-card">
+            <div class="inv-calc-card-label">${label}${invInfoIcon(key)}</div>
+            <div class="inv-calc-card-value ${cls}">${value}</div>
+        </div>`;
+
+    return `
+        <div class="inv-calc-sheet">
+            <div class="inv-calc-head">
+                <div>
+                    <div class="inv-calc-eyebrow"><i class="fas fa-table"></i> HOJA DE CÁLCULOS</div>
+                    <div class="inv-calc-title">Resumen de tus cartas disponibles</div>
+                </div>
+                <div class="inv-calc-chips">
+                    <span class="inv-calc-chip"><i class="fas fa-layer-group"></i> ${totals.activeCount} disponible${totals.activeCount === 1 ? '' : 's'} · ${totals.activeUnits} u.</span>
+                    ${totals.soldCount > 0 ? `<span class="inv-calc-chip inv-calc-chip-muted"><i class="fas fa-box-archive"></i> ${totals.soldCount} fuera de cartera${invInfoIcon('sold')}</span>` : ''}
+                </div>
+            </div>
+            ${none ? '<div class="inv-calc-empty">Todavía no tienes cartas disponibles en esta colección. Las vendidas o no disponibles no entran en estos cálculos.</div>' : `
+            <div class="inv-calc-grid">
+                ${card('cost', 'LO QUE PAGUÉ', fmtMoney(totals.cost))}
+                ${card('market', 'VALE HOY EN EL MERCADO', fmtMoney(totals.market))}
+                ${card('saleTarget', 'LO VENDERÉ EN', fmtMoney(totals.saleTarget))}
+                ${card('unrealized', 'GANANCIA AL PRECIO DE MERCADO', fmtSignedMoney(totals.unrealized), invPlClass(totals.unrealized))}
+                ${card('projected', 'GANANCIA AL PRECIO DE VENTA', fmtSignedMoney(totals.projected), invPlClass(totals.projected))}
+                ${card('margin', 'MARGEN SOBRE EL MERCADO', `${fmtSignedMoney(totals.saleTarget - totals.market)} (${fmtPct(totals.marginPct)})`, invPlClass(totals.saleTarget - totals.market))}
+                ${card('roi', 'RENDIMIENTO SOBRE LO INVERTIDO', fmtPct(totals.roi), invPlClass(totals.roi))}
+            </div>`}
+            <div class="inv-calc-sold">
+                <div class="inv-calc-sold-item"><span>Ganancia ya realizada (ventas)${invInfoIcon('realized')}</span><b class="${invPlClass(totals.realized)}">${fmtSignedMoney(totals.realized)}</b></div>
+                <div class="inv-calc-sold-item"><span>Vendidas / fuera de cartera</span><b>${totals.soldCount}</b></div>
+            </div>
+        </div>
+    `;
+}
+
 function renderListMode($container) {
     $container.addClass('investment-list-layout').removeClass('investment-slide-layout investment-album-layout');
 
-    // Portfolio summary bar
+    // "Hoja de cálculos" for the available cards
     const totals = computeVaultTotals(localInvestmentCards, catLotCost(currentInvestmentCategory));
-    const $summary = $(`
-        <div class="inv-list-summary">
-            <div class="inv-list-summary-item"><span>Costo total${totals.hasLotCost ? ' (lote)' : ''}</span><b>${fmtMoney(totals.cost)}</b></div>
-            <div class="inv-list-summary-item"><span>Valor mercado</span><b>${fmtMoney(totals.market)}</b></div>
-            <div class="inv-list-summary-item"><span>Valor venta</span><b>${fmtMoney(totals.saleTarget)}</b></div>
-            <div class="inv-list-summary-item"><span>Ganancia latente</span><b class="${invPlClass(totals.unrealized)}">${fmtSignedMoney(totals.unrealized)}</b></div>
-            <div class="inv-list-summary-item"><span>Ganancia est.</span><b class="${invPlClass(totals.projected)}">${fmtSignedMoney(totals.projected)}</b></div>
-            <div class="inv-list-summary-item"><span>ROI</span><b class="${invPlClass(totals.roi)}">${fmtPct(totals.roi)}</b></div>
-        </div>
-    `);
+    const $summary = $(renderCalcSheet(totals));
 
     const $list = $('<div class="inv-list-container" style="margin: 20px 0;"></div>');
 
@@ -1321,12 +1422,12 @@ function renderListMode($container) {
         const isPrivate = card.is_public === false;
         const isUnavailable = card.is_available === false;
         const privateBadge = isPrivate ? `<span style="background: rgba(255, 71, 87, 0.1); color: #ff4757; border: 1px solid #ff4757; padding: 2px 6px; border-radius: 3px; font-size: 0.65rem; font-weight: 800; margin-left: 8px;"><i class="fas fa-lock"></i> PRIVADO</span>` : '';
-        const unavailableBadge = isUnavailable ? `<span style="background: rgba(0, 0, 0, 0.85); color: #ff3344; border: 1px solid #ff3344; padding: 2px 6px; border-radius: 3px; font-size: 0.65rem; font-weight: 800; margin-left: 8px;"><i class="fas fa-ban"></i> NO DISPONIBLE</span>` : '';
+        const unavailableBadge = isUnavailable ? `<span style="background: rgba(0, 0, 0, 0.85); color: #ff3344; border: 1px solid #ff3344; padding: 2px 6px; border-radius: 3px; font-size: 0.65rem; font-weight: 800; margin-left: 8px;"><i class="fas fa-ban"></i> VENDIDO</span>` : '';
         const soldBadge = m.isSold ? `<span class="inv-sold-badge"><i class="fas fa-check-circle"></i> VENDIDA</span>` : '';
-        const stampOverlay = isUnavailable ? `<div class="inv-stamp-unavailable" style="font-size: 0.65rem; padding: 2px 6px;">NO DISPONIBLE</div>` : '';
+        const stampOverlay = isUnavailable ? `<div class="inv-stamp-unavailable" style="font-size: 0.65rem; padding: 2px 6px;">VENDIDO</div>` : '';
 
         const $item = $(`
-            <div class="inv-list-item" style="border: 1px solid #eee; border-radius: 4px; padding: 15px; background: white; margin-bottom: 10px; display: flex; align-items: center; gap: 20px; cursor: pointer;">
+            <div class="inv-list-item ${m.isActive ? '' : 'inv-list-item-out'}" style="border: 1px solid #eee; border-radius: 4px; padding: 15px; background: white; margin-bottom: 10px; display: flex; align-items: center; gap: 20px; cursor: pointer;">
                 <div class="inv-list-img-wrapper" style="position: relative; width: 60px; height: 84px; flex-shrink: 0;">
                     <img src="${card.image_url}" class="inv-list-thumb" style="width: 100%; height: 100%; object-fit: contain; border: 1px solid #000; border-radius: 2px; position: relative; z-index: 1;">
                     ${stampOverlay}
@@ -1337,23 +1438,23 @@ function renderListMode($container) {
                 </div>
                 <div class="inv-list-metrics">
                     <div class="inv-metric-cell">
-                        <span>Me costó</span>
+                        <span>Lo que pagué</span>
                         <b>${fmtMoney(m.cost)}</b>
                     </div>
                     <div class="inv-metric-cell">
-                        <span>Mercado</span>
+                        <span>Vale hoy (mercado)</span>
                         <b>${fmtMoney(m.market)} ${trend}</b>
                     </div>
                     <div class="inv-metric-cell">
-                        <span>Vendo en</span>
+                        <span>Lo venderé en</span>
                         <b>${fmtMoney(m.saleTarget)}</b>
                     </div>
                     <div class="inv-metric-cell">
-                        <span>Ganancia lat.</span>
+                        <span>Ganancia a mercado</span>
                         <b class="${invPlClass(m.unrealized)}">${fmtSignedMoney(m.unrealized)}</b>
                     </div>
                     <div class="inv-metric-cell">
-                        <span>Ganancia est.</span>
+                        <span>Ganancia a mi precio</span>
                         <b class="${invPlClass(m.projected)}">${fmtSignedMoney(m.projected)}</b>
                     </div>
                     <div class="inv-metric-cell">
@@ -1484,7 +1585,7 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
         $('#inv-card-public-toggle').prop('checked', isPublic);
         $('#inv-card-public-status').text(isPublic ? 'PÚBLICO' : 'PRIVADO').css('color', isPublic ? '#333' : '#ff4757');
         $('#inv-card-available-toggle').prop('checked', isAvailable);
-        $('#inv-card-available-status').text(isAvailable ? 'DISPONIBLE' : 'NO DISPONIBLE').css('color', isAvailable ? '#2ed573' : '#ff4757');
+        $('#inv-card-available-status').text(isAvailable ? 'DISPONIBLE' : 'VENDIDO').css('color', isAvailable ? '#2ed573' : '#ff4757');
 
         if (defaultTab === 'inv-tab-resumen') {
             updateSummaryTab(card);
@@ -1759,27 +1860,27 @@ function updateSummaryTab(card) {
     const m = computeCardMetrics(card, currentCardCost(card, currentLotMap(localInvestmentCards)));
     $('#inv-detail-metrics').html(`
         <div class="inv-summary-metric">
-            <span>Me costó</span>
+            <span>Lo que pagué${invInfoIcon('cost')}</span>
             <b>${fmtMoney(m.cost)}</b>
         </div>
         <div class="inv-summary-metric">
-            <span>Mercado</span>
+            <span>Vale hoy (mercado)${invInfoIcon('market')}</span>
             <b>${fmtMoney(m.market)}</b>
         </div>
         <div class="inv-summary-metric">
-            <span>Vendo en</span>
+            <span>Lo venderé en${invInfoIcon('saleTarget')}</span>
             <b>${fmtMoney(m.saleTarget)}</b>
         </div>
         <div class="inv-summary-metric">
-            <span>Ganancia latente</span>
+            <span>Ganancia a mercado${invInfoIcon('unrealized')}</span>
             <b class="${invPlClass(m.unrealized)}">${fmtSignedMoney(m.unrealized)}</b>
         </div>
         <div class="inv-summary-metric">
-            <span>Ganancia est.</span>
+            <span>Ganancia a mi precio${invInfoIcon('projected')}</span>
             <b class="${invPlClass(m.projected)}">${fmtSignedMoney(m.projected)}</b>
         </div>
         <div class="inv-summary-metric">
-            <span>Margen vs mercado</span>
+            <span>Margen vs mercado${invInfoIcon('margin')}</span>
             <b class="${invPlClass(m.marginVsMarket)}">${fmtSignedMoney(m.marginVsMarket)}</b>
         </div>
     `);
@@ -1801,7 +1902,9 @@ function renderProfitabilityTab(card) {
 
     const statusHtml = m.isSold
         ? `<span class="inv-renta-pill inv-renta-pill-sold"><i class="fas fa-check-circle"></i> VENDIDA ${card.sold_at ? '· ' + new Date(card.sold_at).toLocaleDateString() : ''}</span>`
-        : `<span class="inv-renta-pill inv-renta-pill-open"><i class="fas fa-circle-dot"></i> EN CARTERA</span>`;
+        : (m.isAvailable
+            ? `<span class="inv-renta-pill inv-renta-pill-open"><i class="fas fa-circle-dot"></i> DISPONIBLE</span>`
+            : `<span class="inv-renta-pill inv-renta-pill-sold"><i class="fas fa-ban"></i> VENDIDO / FUERA DE CARTERA</span>`);
     $('#inv-renta-status').html(statusHtml);
 
     const pctOfCost = m.cost > 0 ? (m.unrealized / m.cost) * 100 : 0;
@@ -2067,16 +2170,16 @@ async function openVaultLedger(cat) {
     const lotMap = lot !== null ? allocateLotCost(list, lot) : null;
     const t = computeVaultTotals(list, lot);
 
-    // Totals cards
+    // Totals cards (general figures = available cards only)
     $('#ledger-totals').html(`
-        <div class="inv-ledger-total"><span>Costo total</span><b>${fmtMoney(t.cost)}</b></div>
-        <div class="inv-ledger-total"><span>Valor mercado</span><b>${fmtMoney(t.market)}</b></div>
-        <div class="inv-ledger-total"><span>Valor venta</span><b>${fmtMoney(t.saleTarget)}</b></div>
-        <div class="inv-ledger-total"><span>Ganancia latente</span><b class="${invPlClass(t.unrealized)}">${fmtSignedMoney(t.unrealized)}</b></div>
-        <div class="inv-ledger-total"><span>Ganancia estimada</span><b class="${invPlClass(t.projected)}">${fmtSignedMoney(t.projected)}</b></div>
-        <div class="inv-ledger-total"><span>ROI estimado</span><b class="${invPlClass(t.roi)}">${fmtPct(t.roi)}</b></div>
-        <div class="inv-ledger-total"><span>Realizado (vendido)</span><b class="${invPlClass(t.realized)}">${fmtSignedMoney(t.realized)}</b></div>
-        <div class="inv-ledger-total"><span>Activos / Vendidos</span><b>${t.count - t.soldCount} / ${t.soldCount}</b></div>
+        <div class="inv-ledger-total"><span>Lo que pagué (disponibles)</span><b>${fmtMoney(t.cost)}</b></div>
+        <div class="inv-ledger-total"><span>Vale hoy (disponibles)</span><b>${fmtMoney(t.market)}</b></div>
+        <div class="inv-ledger-total"><span>Lo venderé en (disponibles)</span><b>${fmtMoney(t.saleTarget)}</b></div>
+        <div class="inv-ledger-total"><span>Ganancia a mercado</span><b class="${invPlClass(t.unrealized)}">${fmtSignedMoney(t.unrealized)}</b></div>
+        <div class="inv-ledger-total"><span>Ganancia a mi precio</span><b class="${invPlClass(t.projected)}">${fmtSignedMoney(t.projected)}</b></div>
+        <div class="inv-ledger-total"><span>Rendimiento sobre lo invertido</span><b class="${invPlClass(t.roi)}">${fmtPct(t.roi)}</b></div>
+        <div class="inv-ledger-total"><span>Ganancia ya realizada (ventas)</span><b class="${invPlClass(t.realized)}">${fmtSignedMoney(t.realized)}</b></div>
+        <div class="inv-ledger-total"><span>Disponibles / fuera de cartera</span><b>${t.activeCount} / ${t.soldCount}</b></div>
     `);
 
     // Rows
@@ -2089,9 +2192,11 @@ async function openVaultLedger(cat) {
             const m = computeCardMetrics(card, currentCardCost(card, lotMap));
             const statusPill = m.isSold
                 ? '<span class="inv-ledger-status sold">VENDIDA</span>'
-                : '<span class="inv-ledger-status open">EN CARTERA</span>';
+                : (m.isActive
+                    ? '<span class="inv-ledger-status open">DISPONIBLE</span>'
+                    : '<span class="inv-ledger-status open">FUERA</span>');
             $tbody.append(`
-                <tr class="inv-ledger-row" data-id="${card.id}">
+                <tr class="inv-ledger-row ${m.isActive ? '' : 'inv-ledger-row-out'}" data-id="${card.id}">
                     <td class="inv-ledger-card-cell">
                         <img src="${card.image_url || ''}" class="inv-ledger-thumb" alt="">
                         <span>${escapeHtml(card.card_name)}</span>
@@ -2113,8 +2218,8 @@ async function openVaultLedger(cat) {
 
         $('#ledger-tfoot').html(`
             <tr>
-                <td colspan="2">TOTALES</td>
-                <td class="num">x${t.units}</td>
+                <td colspan="2">TOTALES (solo disponibles)</td>
+                <td class="num">x${t.activeUnits}</td>
                 <td class="num">—</td>
                 <td class="num">${fmtMoney(t.cost)}</td>
                 <td class="num">${fmtMoney(t.market)}</td>
