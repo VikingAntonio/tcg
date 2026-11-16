@@ -775,13 +775,31 @@
 
 
 .inv-detail-chart-area {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
     margin-bottom: 25px;
 }
 
+/* Binder slot drag & drop (reorder) */
+.inv-card-slot[draggable="true"] { cursor: grab; }
+.inv-card-slot.inv-slot-dragging { opacity: 0.4; cursor: grabbing; }
+.inv-card-slot.inv-slot-drop-target {
+    outline: 3px dashed var(--inv-black, #000);
+    outline-offset: 2px;
+}
+
+/* Fixed height: Chart.js (responsive + maintainAspectRatio:false) sizes the
+   canvas from its parent, so a % / flex height causes an infinite resize loop. */
 .inv-detail-chart-container {
-    height: 180px;
+    position: relative;
+    height: 200px;
     width: 100%;
     background: #fff;
+    border: 1px solid #f0f0f0;
+    border-radius: 4px;
+    padding: 15px;
+    box-sizing: border-box;
 }
 
 .inv-detail-history-list {

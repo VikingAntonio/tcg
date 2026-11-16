@@ -64,8 +64,11 @@
             }
 
             #inv-price-chart {
-                height: 200px !important;
                 width: 100% !important;
+            }
+
+            .inv-detail-chart-container {
+                height: 200px !important;
             }
 
             .inv-modal-datos-container {
@@ -319,9 +322,9 @@
                                 <!-- Populated by updateSummaryTab -->
                             </div>
 
-                            <div style="flex: 1; min-height: 0;">
+                            <div class="inv-detail-chart-area">
                                 <label style="font-size: 0.65rem; font-weight: 800; color: #aaa; text-transform: uppercase; margin-bottom: 10px; display: block;">GRÁFICA DE MERCADO</label>
-                                <div style="height: calc(100% - 30px); background: #fff; border: 1px solid #f0f0f0; border-radius: 4px; padding: 15px;">
+                                <div class="inv-detail-chart-container">
                                     <canvas id="inv-price-chart"></canvas>
                                 </div>
                             </div>
@@ -537,6 +540,7 @@
                                 <th class="num">Venta</th>
                                 <th class="num">Ganancia lat.</th>
                                 <th class="num">Ganancia est.</th>
+                                <th class="num">Margen vs mercado</th>
                                 <th class="num">ROI</th>
                                 <th>Estado</th>
                             </tr>
