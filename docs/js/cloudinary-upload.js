@@ -65,3 +65,7 @@ const CloudinaryUpload = {
         }
     }
 };
+
+// Expose on window too: `const` creates a lexical global, not a window property,
+// so `window.CloudinaryUpload` was undefined in code that guards on it.
+window.CloudinaryUpload = CloudinaryUpload;

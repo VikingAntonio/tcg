@@ -88,8 +88,16 @@ Sustituye a `model-viewer` **solo en móvil/GPU débil** (`useMobile3D()`), porq
 - Las cartas sueltas guardan `type: 'card_single'` y aparecen en todas las búsquedas por nombre porque `VikingData.search()` (js/viking-data.js) hace `ilike('name', ...)` sin filtrar por `type`; lo usan utils.js, fast-mode.js, deseos.js, productoSellado.js, binders/admin/inversiones, etc.
 - `packages.html` es una vista con gate de auth (redirige a index.html si no hay sesión admin). Para probarla con Playwright: `ctx.addInitScript(() => localStorage.setItem('tcg_session', JSON.stringify({id,role:'admin'})))` y mockear `**/rest/v1/usuarios**`. Registrar la ruta genérica `**/rest/v1/**` ANTES que las específicas (Playwright da prioridad a la última registrada).
 
+## Inversiones — buscador y cierre de modales
+- `inversiones.html` **debe** cargar `js/viking-data.js` (junto a `js/supabase-config.js`) para que `VikingData` exista; `searchExternalCard` (utils.js) sólo consulta `viking_data` si `typeof VikingData !== 'undefined'`. Sin ese script, el buscador sólo devuelve cartas externas y nunca las cartas propias guardadas en la BDD. Otros visores (binders.html) ya lo cargan.
+- Los modales usan `.overlay-content` (de `style.css`), que trae `align-items: center`. Como `.inv-modal-header` es un hijo flex en columna, quedaba encogido a su contenido y centrado → la X (`.inv-close-btn`, `position:absolute`) aparecía a ~350-450px del borde derecho. Arreglo: `align-items: stretch` en `#investment-card-modal .overlay-content` y en `.inv-ledger-content`, y `width: 100%` en `.inv-modal-header`. Resultado: X a 16px (13px móvil) de la esquina, sin overflow.
+- Los `.inv-tab-link` con sus data-tab deben seguir siendo 5; el buscador vive en la pestaña DATOS (`#inv-tab-datos`), por eso al probar con Playwright hay que activar esa pestaña antes de `fill()`.
+
+## Cloudinary — `window.CloudinaryUpload` (bug de subida)
+`js/cloudinary-upload.js` declara `const CloudinaryUpload = {...}`. Un `const` en el top-level crea un **global léxico**, NO una propiedad de `window`; por eso `window.CloudinaryUpload` era `undefined` aunque `typeof CloudinaryUpload === 'object'`. El código que guarda con `if (window.CloudinaryUpload && ...)` (p. ej. `packages.html` → `handleBddFileSelected`) saltaba la subida, intentaba el fallback a Supabase Storage (bucket `accessories`, bloqueado por RLS → 403) y acababa guardando un `URL.createObjectURL(file)` = `blob:https://...` **muerto** en `image_url`. Resultado: cartas guardadas con imagen rota. Arreglo: `window.CloudinaryUpload = CloudinaryUpload;` al final del archivo. El resto de vistas usan la referencia léxica (`CloudinaryUpload.uploadImage`) y ya funcionaban.
+
 ## Rendimiento móvil — Service Worker (crítico)
 `docs/sw.js` no llegaba a **instalarse**: `URLS_TO_CACHE` incluía `./build.html`, que ya no existe, y `cache.addAll()` rechaza todo el install si **una** URL da 404 → el SW quedaba sin activar y **no se cacheaba nada**. Como el `.gltf` del asistente referencia un `.bin` de ~2.7 MB, se re-descargaba en cada navegación (lentísimo en móvil).
 - Install tolerante: se cachea cada URL por separado (`cache.add(url).catch(...)`) en vez de `addAll`.
 - `isModelAsset` incluye `bin|ktx2|basis|drc` además de `glb|gltf`, para cache-first de los buffers/texturas del modelo (antes caían al branch network-first de Supabase).
-- Al cambiar assets, subir `STATIC_CACHE` (ahora `viking-static-v223`).
+- Al cambiar assets, subir `STATIC_CACHE` (ahora `viking-static-v225`).
