@@ -134,8 +134,16 @@ Regla de oro del usuario: los cálculos usan **solo los valores que él escribe*
 - CSS: `.inv-calc-sheet/.inv-calc-head/.inv-calc-section-title/.inv-calc-grid/.inv-calc-card/.inv-calc-chips/.inv-calc-sold`, `.inv-info-icon`, `.inv-list-item-out`, `.inv-ledger-row-out`.
 - Verificado con Playwright (escritorio + móvil): lote 3800 + compras en 0 + venta 3500 → "LO QUE PAGUÉ (TOTAL)" $3800, "PRECIO DE VENTA (TODO)" $3500, por carta $0/$0/$3500; sin lote el costo es la suma real ($1400 con 500+300×2+200+100). Los 3 modos, el gráfico y el cierre del modal OK; sin overflow.
 
+## Inversiones — sin paréntesis en etiquetas; usar iconos ⓘ
+Regla explícita del usuario (repetida varias veces): **prohibido** poner texto entre paréntesis en las etiquetas de la UI ("(lote)", "(todo)", "(total)", "(disponible)", "(ventas)", "(unitario)", "(mercado)", "(opcional)"). Se ve feo y largo. En su lugar:
+- La etiqueta va limpia: `PRECIO DE VENTA TOTAL`, `GANANCIA YA REALIZADA`, `VALE HOY`, etc.
+- Para explicar de dónde sale cada valor se usa `invInfoIcon(clave)` (icono azul `fa-circle-info`, `#2f80ed`; `#7db4ff` sobre el fondo oscuro de `.inv-calc-sheet`). Al pulsarlo abre un Swal con `INV_METRIC_HELP[clave]`.
+- Iconos presentes en: reporte general (`.inv-calc-sheet`, 11), lista de cartas (`.inv-list-metrics`, 18), ledger (`#ledger-totals`, 8) y tarjetas de colección (`.inv-cat-metric`, 4).
+- El porcentaje del margen va con `·` (punto medio), no entre paréntesis: `+$3500.00 · +0.0%`.
+- Los únicos paréntesis aceptados son los del selector de tamaño de carpeta ("3x3 (9 Cartas)"), que es texto funcional del layout, no una métrica.
+
 ## Rendimiento móvil — Service Worker (crítico)
 `docs/sw.js` no llegaba a **instalarse**: `URLS_TO_CACHE` incluía `./build.html`, que ya no existe, y `cache.addAll()` rechaza todo el install si **una** URL da 404 → el SW quedaba sin activar y **no se cacheaba nada**. Como el `.gltf` del asistente referencia un `.bin` de ~2.7 MB, se re-descargaba en cada navegación (lentísimo en móvil).
 - Install tolerante: se cachea cada URL por separado (`cache.add(url).catch(...)`) en vez de `addAll`.
 - `isModelAsset` incluye `bin|ktx2|basis|drc` además de `glb|gltf`, para cache-first de los buffers/texturas del modelo (antes caían al branch network-first de Supabase).
-- Al cambiar assets, subir `STATIC_CACHE` (ahora `viking-static-v231`).
+- Al cambiar assets, subir `STATIC_CACHE` (ahora `viking-static-v232`).

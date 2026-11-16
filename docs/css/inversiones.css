@@ -1697,14 +1697,15 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: #999;
-    font-size: 0.75rem;
-    transition: color 0.15s ease;
+    color: #2f80ed;
+    font-size: 0.78rem;
+    margin-left: 4px;
+    opacity: 0.85;
+    transition: color 0.15s ease, opacity 0.15s ease, transform 0.15s ease;
 }
 
-.inv-info-icon { color: #999; }
-.inv-info-icon:hover { color: #000; }
-.inv-calc-sheet .inv-info-icon { color: #777; }
+.inv-info-icon:hover { color: #1b5fc1; opacity: 1; transform: scale(1.12); }
+.inv-calc-sheet .inv-info-icon { color: #7db4ff; opacity: 0.9; }
 .inv-calc-sheet .inv-info-icon:hover { color: #fff; }
 
 /* Rows out of the portfolio (sold / unavailable) */
