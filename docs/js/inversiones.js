@@ -17,6 +17,9 @@ let currentLedgerCategory = null;
 let pendingSlotIndex = null;
 // Timestamp of the last finished slot drag, to swallow the follow-up click.
 let invDragJustEnded = 0;
+// Binder sheet (turn.js page) currently open. It is captured before a re-render
+// so saving/editing a card does not send the user back to the cover.
+let invAlbumPage = 1;
 
 // --- UTILS ---
 function invNum(v) {
@@ -240,6 +243,50 @@ function moveInvestmentCard(fromIdx, toIdx) {
     const clamped = Math.max(0, Math.min(toIdx, localInvestmentCards.length));
     localInvestmentCards.splice(clamped, 0, card);
     return true;
+}
+
+// Moves a card one step in the shared order. Every mode reads the same array,
+// so arranging in one mode rearranges the others too.
+function invShiftCard(fromIdx, delta) {
+    if (isNaN(fromIdx)) return;
+    const toIdx = fromIdx + delta;
+    if (toIdx < 0 || toIdx >= localInvestmentCards.length) return;
+    if (moveInvestmentCard(fromIdx, toIdx)) {
+        renderInvestmentCards(currentInvestmentViewMode);
+        persistInvestmentPositions();
+    }
+}
+
+// Two small buttons to nudge a card in the shared order. Works on desktop and
+// mobile (HTML5 drag & drop is desktop-only), so every mode can be arranged.
+function invReorderControls(idx, total, vertical = false) {
+    const prevIcon = vertical ? 'fa-arrow-up' : 'fa-arrow-left';
+    const nextIcon = vertical ? 'fa-arrow-down' : 'fa-arrow-right';
+    return `
+        <div class="inv-reorder${vertical ? ' inv-reorder-v' : ''}">
+            <button type="button" class="inv-reorder-btn inv-move-prev" data-idx="${idx}" ${idx <= 0 ? 'disabled' : ''} title="Mover"><i class="fas ${prevIcon}"></i></button>
+            <button type="button" class="inv-reorder-btn inv-move-next" data-idx="${idx}" ${idx >= total - 1 ? 'disabled' : ''} title="Mover"><i class="fas ${nextIcon}"></i></button>
+        </div>`;
+}
+
+// Binds the reorder buttons. stopPropagation on the button itself stops the
+// parent slot/item click from opening the card modal.
+function bindInvReorder($scope) {
+    $scope.find('.inv-reorder-btn').on('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        invShiftCard(parseInt($(this).attr('data-idx'), 10), $(this).hasClass('inv-move-prev') ? -1 : 1);
+    });
+}
+
+// Remembers the binder sheet (turn.js page) before the album is rebuilt, so a
+// save/edit re-render keeps the user on the same sheet instead of the cover.
+function captureAlbumPage() {
+    const $album = $('#investment-card-container .investment-album');
+    if ($album.length && $album.turn('is')) {
+        const p = $album.turn('page');
+        if (p && p > 0) invAlbumPage = p;
+    }
 }
 
 // Wires drag & drop reordering onto a binder slot. turn.js is paused while
@@ -1010,6 +1057,8 @@ async function openInvestmentCategory(cat) {
     const upperName = cat.name.toUpperCase();
     $('#inv-category-title').text(upperName);
     $('#inv-category-title-mobile').text(upperName);
+    // A freshly opened vault starts on its cover.
+    invAlbumPage = 1;
     showView('investment-details');
     loadInvestmentCards();
 }
@@ -1050,6 +1099,8 @@ async function loadInvestmentCards() {
 
 function renderInvestmentCards(mode) {
     const $container = $('#investment-card-container');
+    // Keep the open binder sheet across re-renders (add/edit/delete/reorder).
+    if (mode === 'album') captureAlbumPage();
     $container.empty();
 
     if (mode === 'album') {
@@ -1135,7 +1186,10 @@ function renderAlbumMode($container) {
                     ${privateBadge}
                     <div class="inv-card-info-badge" style="z-index: 110;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
                     <div class="zoom-btn" style="z-index: 110;"><i class="fas fa-search"></i></div>
+                    ${invReorderControls(cardIdx, localInvestmentCards.length, true)}
                 `);
+
+                bindInvReorder($slot);
 
                 $slot.find('.zoom-btn').on('click', (e) => {
                     e.preventDefault();
@@ -1269,6 +1323,10 @@ function renderAlbumMode($container) {
             'margin-left': 'auto',
             'margin-right': 'auto'
         });
+
+        // Return to the sheet the user was on before the re-render.
+        const restore = Math.min(Math.max(1, invAlbumPage), $album.turn('pages'));
+        if (restore > 1) $album.turn('page', restore);
     }, 200);
 }
 
@@ -1285,7 +1343,7 @@ function renderSlideMode($container) {
         </div>
     `);
 
-    localInvestmentCards.forEach(card => {
+    localInvestmentCards.forEach((card, cardIdx) => {
         const isPrivate = card.is_public === false;
         const isUnavailable = card.is_available === false;
         const privateBadge = isPrivate ? `<div class="inv-card-private-badge" style="position: absolute; top: 10px; right: 10px; background: rgba(255, 71, 87, 0.9); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 800; z-index: 115;" title="Privado (Oculto en link público)"><i class="fas fa-lock"></i> PRIVADO</div>` : '';
@@ -1296,9 +1354,11 @@ function renderSlideMode($container) {
                 <img src="${card.image_url}" style="width: auto; max-width: 100%; height: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; border: 2px solid #000; box-shadow: 0 20px 40px rgba(0,0,0,0.3); position: relative; z-index: 1; display: block; margin: 0 auto;">
                 ${stampOverlay}
                 ${privateBadge}
+                ${invReorderControls(cardIdx, localInvestmentCards.length)}
             </div>
         `);
 
+        bindInvReorder($slide);
         $swiper.find('.swiper-wrapper').append($slide);
     });
 
@@ -1417,7 +1477,7 @@ function renderListMode($container) {
 
     const $list = $('<div class="inv-list-container" style="margin: 20px 0;"></div>');
 
-    localInvestmentCards.forEach(card => {
+    localInvestmentCards.forEach((card, cardIdx) => {
         const m = computeCardMetrics(card);
         const trend = getTrendIcon(card.current_price, card.previous_price);
         const isPrivate = card.is_public === false;
@@ -1466,10 +1526,12 @@ function renderListMode($container) {
                 <div class="inv-list-actions" style="display: flex; gap: 8px; flex-direction: column;">
                     <button class="btn-inv-outline btn-edit-inv-card" data-id="${card.id}" style="padding: 8px 12px;"><i class="fas fa-pen"></i></button>
                     <button class="btn-inv-danger btn-delete-inv-card" data-id="${card.id}" style="padding: 8px 12px;"><i class="fas fa-trash"></i></button>
+                    ${invReorderControls(cardIdx, localInvestmentCards.length, true)}
                 </div>
             </div>
         `);
 
+        bindInvReorder($item);
         $item.click((e) => {
             if ($(e.target).closest('button').length) return;
             e.preventDefault();
