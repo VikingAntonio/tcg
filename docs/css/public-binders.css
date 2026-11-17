@@ -1,0 +1,690 @@
+/*
+   Vista pública de Binders (public.html, ?view=binders).
+
+   Todo el CSS está acotado a #binders-view para no afectar a otras vistas
+   (ni a la vista pública de Inversiones, que usa public-inversiones.css).
+   Se reutilizan las variables de tema (--text-color, --card-bg,
+   --primary-color...) para que el texto contraste en claro/oscuro/morado.
+*/
+
+/* Acento legible para texto (el --primary-color del tema claro es muy
+   claro para texto sobre fondo crema). */
+#binders-view {
+    --pub-binder-accent: var(--primary-color);
+}
+
+body.theme-light #binders-view {
+    --pub-binder-accent: #6c5ce7;
+}
+
+body.theme-purple #binders-view {
+    --pub-binder-accent: #ffe08a;
+}
+
+/* ===================== Encabezado del binder ===================== */
+#binders-view .pub-binder-header {
+    width: 100%;
+    margin: 0 0 22px 0;
+    padding: 22px 24px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    text-align: left;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 18px;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.12);
+}
+
+#binders-view .pub-binder-back {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: 50px;
+    border: 1px solid var(--card-border);
+    background: transparent;
+    color: var(--text-color);
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+#binders-view .pub-binder-back:hover {
+    border-color: var(--primary-color);
+    background: rgba(127, 127, 127, 0.12);
+    transform: translateX(-2px);
+}
+
+#binders-view .pub-binder-header-text {
+    min-width: 0;
+    flex: 1;
+}
+
+#binders-view .pub-binder-eyebrow {
+    font-size: 0.62rem;
+    letter-spacing: 0.28em;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+#binders-view .pub-binder-header-title {
+    margin: 0;
+    font-size: clamp(1.5rem, 4vw, 2.2rem);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    text-transform: uppercase;
+    color: var(--text-color);
+    overflow-wrap: anywhere;
+}
+
+#binders-view .pub-binder-share {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1px solid var(--card-border);
+    background: transparent;
+    color: var(--text-color);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+#binders-view .pub-binder-share:hover {
+    border-color: var(--primary-color);
+    background: rgba(127, 127, 127, 0.12);
+}
+
+/* ===================== Tarjetas de binder (menú) ===================== */
+#public-binder-categories.album-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 22px;
+    width: 100%;
+}
+
+#binders-view .pub-binder-vault {
+    display: flex;
+    flex-direction: column;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 18px;
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+#binders-view .pub-binder-vault:hover {
+    transform: translateY(-6px);
+    border-color: var(--primary-color);
+    box-shadow: 0 22px 50px rgba(0, 0, 0, 0.22);
+}
+
+#binders-view .pub-binder-vault-cover {
+    position: relative;
+    height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+        radial-gradient(120% 130% at 20% 10%, rgba(0, 210, 255, 0.35), transparent 60%),
+        linear-gradient(140deg, #1c2130 0%, #0c0e14 100%);
+    overflow: hidden;
+}
+
+#binders-view .pub-binder-vault-cover > img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+#binders-view .pub-binder-vault-cover-inner {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#binders-view .pub-binder-vault-icon {
+    font-size: 2.4rem;
+    color: rgba(255, 255, 255, 0.92);
+    text-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+
+#binders-view .pub-binder-vault-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 18px 20px 20px;
+    text-align: left;
+}
+
+#binders-view .pub-binder-vault-name {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 900;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    color: var(--text-color);
+    overflow-wrap: anywhere;
+}
+
+#binders-view .pub-binder-vault-meta {
+    font-size: 0.62rem;
+    letter-spacing: 0.22em;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+#binders-view .pub-binder-vault-btn {
+    margin-top: 16px;
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    padding: 12px 18px;
+    border: none;
+    border-radius: 12px;
+    background: var(--primary-color);
+    color: #0b0e14;
+    font-weight: 800;
+    font-size: 0.82rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+#binders-view .pub-binder-vault-btn:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+}
+
+#binders-view .pub-binder-vault-btn i {
+    font-size: 0.78rem;
+}
+
+/* ===================== Pestañas de modo ===================== */
+#binders-view #public-binder-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    margin: 0 0 22px 0;
+    padding: 6px;
+    border-radius: 50px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+#binders-view #public-binder-tabs .tab-pill {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    padding: 10px 22px;
+}
+
+#binders-view #public-binder-tabs .tab-pill:hover {
+    color: var(--text-color);
+    background: rgba(127, 127, 127, 0.12);
+}
+
+#binders-view #public-binder-tabs .tab-pill.active {
+    background: var(--primary-color);
+    color: #0b0e14;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+
+/* ===================== Contenedor de render ===================== */
+#binders-view #binders-container {
+    width: 100%;
+}
+
+/* Contiene el álbum: evita que al girar una hoja crezca el documento y
+   aparezca la barra de scroll. */
+#binders-view #binders-container.pub-binder-album-layout {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 600px;
+    padding: 20px;
+    overflow: hidden !important;
+    overscroll-behavior: contain;
+    border-radius: 18px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+}
+
+#binders-view #binders-container .album-wrapper {
+    overflow: visible;
+}
+
+/* turn.js detecta la esquina con el content box de la página, pero mide el
+   puntero contra el wrapper de 300x420. La regla global .page añade padding y
+   borde (content box 274x394), así que la franja derecha/inferior queda fuera
+   y solo giraba la portada. Se mueve ese padding/borde al grid interno. */
+#binders-view #binders-container .public-binder-album .album-page {
+    padding: 0;
+    border: none;
+}
+
+#binders-view #binders-container .public-binder-album .album-page > .grid-container {
+    padding: 12px;
+    border: 1px solid var(--card-border);
+    box-sizing: border-box;
+}
+
+@media (max-width: 640px) {
+    #binders-view #binders-container .public-binder-album .album-page > .grid-container {
+        padding: 4px;
+    }
+}
+
+/* La portada del binder conserva su propia imagen/color (no se fuerza cósmico). */
+#binders-view .public-binder-album .cover-page .textured-cover {
+    width: 100%;
+    height: 100%;
+}
+
+/* Etiqueta de precio sobre cada carta del binder */
+#binders-view .pub-binder-slot-price {
+    position: absolute;
+    left: 6px;
+    bottom: 6px;
+    z-index: 5;
+    padding: 3px 9px;
+    border-radius: 50px;
+    background: rgba(8, 10, 14, 0.85);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Sello "AGOTADO" (solo si el slot tiene stock 0) */
+#binders-view .pub-binder-stamp {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-14deg);
+    padding: 0.22em 0.45em;
+    border-radius: 0.35em;
+    background: rgba(8, 10, 14, 0.82);
+    border: 0.08em solid #ff4d5e;
+    color: #ff4d5e;
+    font-size: 4.5px;
+    font-weight: 900;
+    line-height: 1.1;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    z-index: 6;
+    pointer-events: none;
+    -webkit-text-size-adjust: none;
+    text-size-adjust: none;
+}
+
+#binders-view .pub-binder-slide-media .pub-binder-stamp {
+    font-size: 20px;
+}
+
+#binders-view .pub-binder-list-img .pub-binder-stamp {
+    font-size: 3px;
+}
+
+/* ===================== Modo lista ===================== */
+#binders-view .pub-binder-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+}
+
+#binders-view .pub-binder-list-item {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 14px 18px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+#binders-view .pub-binder-list-item:hover {
+    transform: translateY(-2px);
+    border-color: var(--primary-color);
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.16);
+}
+
+#binders-view .pub-binder-list-img {
+    position: relative;
+    flex-shrink: 0;
+    width: 58px;
+    height: 80px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--slot-bg);
+    border: 1px solid var(--card-border);
+}
+
+#binders-view .pub-binder-list-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+#binders-view .pub-binder-list-details {
+    flex: 1;
+    min-width: 0;
+}
+
+#binders-view .pub-binder-list-name {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--text-color);
+    overflow-wrap: anywhere;
+}
+
+#binders-view .pub-binder-list-set {
+    margin-top: 3px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-muted);
+}
+
+#binders-view .pub-binder-list-out {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 8px;
+    border-radius: 50px;
+    font-size: 0.6rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #ff4d5e;
+    border: 1px solid #ff4d5e;
+    background: rgba(255, 77, 94, 0.1);
+}
+
+#binders-view .pub-binder-list-price {
+    flex-shrink: 0;
+    text-align: right;
+}
+
+#binders-view .pub-binder-list-price span {
+    display: block;
+    font-size: 0.58rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+}
+
+#binders-view .pub-binder-list-price b {
+    font-size: 1.15rem;
+    font-weight: 900;
+    color: var(--text-color);
+}
+
+/* ===================== Modo slide ===================== */
+/* El efecto "cards" de Swiper recorta el slide (overflow:hidden) y su alto
+   sigue al contenedor, así que el swiper debe ser al menos tan alto como la
+   media + el pie; si no, la parte de abajo de la carta se corta. */
+#binders-view .pub-binder-swiper {
+    width: 100%;
+    max-width: 260px;
+    margin: 0 auto;
+    min-height: 585px;
+    padding: 12px 0 20px;
+}
+
+#binders-view .pub-binder-slide {
+    background: transparent;
+    cursor: pointer;
+}
+
+#binders-view .pub-binder-slide-media {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--card-border);
+    box-shadow: 0 22px 44px rgba(0, 0, 0, 0.32);
+    background: #0b0e14;
+}
+
+#binders-view .pub-binder-slide-media img {
+    width: 100%;
+    display: block;
+    object-fit: contain;
+}
+
+#binders-view .pub-binder-slide-body {
+    margin-top: 12px;
+    padding: 13px 15px;
+    border-radius: 14px;
+    text-align: center;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+}
+
+#binders-view .pub-binder-slide-body h4 {
+    margin: 0;
+    font-size: 0.88rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: var(--text-color);
+    overflow-wrap: anywhere;
+}
+
+#binders-view .pub-binder-slide-body p {
+    margin: 4px 0 0;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-muted);
+}
+
+#binders-view .pub-binder-slide-price {
+    margin-top: 8px;
+    font-size: 1.15rem;
+    font-weight: 900;
+    color: var(--pub-binder-accent);
+}
+
+/* ===================== Lupa por carta ===================== */
+/* En public.html no se carga inversiones.css, así que se replica aquí el
+   estilo de la lupa (visible solo en móvil). El botón lleva .zoom-btn para que
+   app.js lo trate como elemento protegido (no deja pasar el toque a turn.js). */
+#binders-view .pub-binder-slot-zoom {
+    display: none;
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    width: 30px;
+    height: 30px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: #000;
+    color: #fff;
+    border: 1px solid #fff;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10;
+    opacity: 0.9;
+    transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
+}
+
+#binders-view .pub-binder-slot-zoom i {
+    font-size: 14px;
+    opacity: 1;
+}
+
+#binders-view .pub-binder-slot-zoom:hover {
+    opacity: 1;
+    transform: scale(1.1);
+    background: #222;
+}
+
+/* ===================== Responsive ===================== */
+@media (max-width: 768px) {
+    #binders-view .pub-binder-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 18px;
+    }
+
+    #binders-view .pub-binder-share {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+    }
+
+    #public-binder-categories.album-list {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 14px;
+    }
+
+    #binders-view .pub-binder-vault-cover {
+        height: 120px;
+    }
+
+    #binders-view .pub-binder-vault-icon {
+        font-size: 1.7rem;
+    }
+
+    #binders-view .pub-binder-vault-body {
+        padding: 14px;
+    }
+
+    #binders-view .pub-binder-vault-name {
+        font-size: 0.95rem;
+    }
+
+    #binders-view .pub-binder-vault-btn {
+        padding: 10px 14px;
+        font-size: 0.72rem;
+    }
+
+    #binders-view #public-binder-tabs .tab-pill {
+        padding: 9px 14px;
+        font-size: 0.72rem;
+    }
+
+    #binders-view #binders-container.pub-binder-album-layout {
+        height: auto;
+        min-height: 340px;
+        padding: 10px 6px;
+    }
+
+    /* Álbumes 4x3 en móvil: la carta es la más pequeña de todas, así que se
+       recorta el margen (gap/padding) para agrandarla lo máximo posible. */
+    #binders-view #binders-container.pub-binder-album-layout.inv-album-4x3 {
+        padding: 10px 2px;
+    }
+
+    #binders-view #binders-container.inv-album-4x3 .public-binder-album .album-page > .grid-container.grid-layout-4x3 {
+        gap: 3px !important;
+        padding: 2px !important;
+    }
+
+    /* Lupa por carta (solo móvil): abre el popup sin girar la hoja.
+       En escritorio se deja el click en la carta. */
+    #binders-view .pub-binder-slot-zoom {
+        display: flex;
+        position: absolute;
+        right: 2px;
+        bottom: 2px;
+        width: 40%;
+        max-width: 22px;
+        height: auto;
+        aspect-ratio: 1 / 1;
+        padding: 0;
+        align-items: center;
+        justify-content: center;
+        background: rgba(8, 10, 14, 0.85);
+        color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.7);
+        border-radius: 50%;
+        cursor: pointer;
+        z-index: 7;
+        pointer-events: auto !important;
+    }
+
+    #binders-view .pub-binder-slot-zoom i {
+        font-size: 8px;
+        opacity: 1;
+    }
+
+    /* El precio sube al borde superior para dejar libre la esquina inferior
+       derecha donde va la lupa. */
+    #binders-view .pub-binder-slot-price {
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: auto;
+        width: 100%;
+        padding: 1px 2px;
+        border-radius: 0 0 6px 6px;
+        font-size: clamp(4.5px, 1.5vw, 9px);
+        text-align: center;
+        letter-spacing: 0;
+        overflow: hidden;
+    }
+
+    #binders-view .pub-binder-list-item {
+        gap: 12px;
+        padding: 12px;
+    }
+
+    #binders-view .pub-binder-list-img {
+        width: 46px;
+        height: 64px;
+    }
+
+    #binders-view .pub-binder-list-name {
+        font-size: 0.8rem;
+    }
+
+    #binders-view .pub-binder-list-price b {
+        font-size: 0.95rem;
+    }
+
+    #binders-view .pub-binder-slide-media .pub-binder-stamp {
+        font-size: 15px;
+    }
+}

@@ -1,4 +1,4 @@
-const STATIC_CACHE = 'viking-static-v237';
+const STATIC_CACHE = 'viking-static-v238';
 const IMAGE_CACHE = 'viking-images-v1';
 const DATA_CACHE = 'viking-data-v1';
 
@@ -49,10 +49,12 @@ const URLS_TO_CACHE = [
   './css/cards.css',
   './css/inversiones.css',
   './css/public-inversiones.css',
+  './css/public-binders.css',
   './css/barajaryg.css',
   './css/build.css',
   './css/global.css',
   './js/app.js',
+  './js/public-binders.js',
   './js/admin.js',
   './js/utils.js',
   './js/supabase-config.js',
