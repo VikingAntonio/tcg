@@ -53,6 +53,29 @@
     box-shadow: 0 30px 60px rgba(0,0,0,0.2);
 }
 
+/* turn.js detects the flip corner from the page's content box (jQuery .width()
+   / .height()), but measures the pointer against the full 300x420 wrapper. The
+   shared .page rule adds padding + border, so the content box was 274x394 and
+   the right/bottom 26px strip fell out of bounds: only the cover (no padding)
+   could be flipped and inner spreads looked stuck. Move the padding/border to
+   the inner grid so the page content box matches the wrapper again. */
+#investment-card-container .investment-album .album-page {
+    padding: 0;
+    border: none;
+}
+
+#investment-card-container .investment-album .album-page > .grid-container {
+    padding: 12px;
+    border: 1px solid var(--card-border);
+    box-sizing: border-box;
+}
+
+@media (max-width: 640px) {
+    #investment-card-container .investment-album .album-page > .grid-container {
+        padding: 4px;
+    }
+}
+
 /* Category Grid */
 .inv-category-item {
     background: var(--inv-white);
@@ -787,6 +810,67 @@
 .inv-card-slot.inv-slot-drop-target {
     outline: 3px dashed var(--inv-black, #000);
     outline-offset: 2px;
+}
+
+/* Reorder controls (shared order across binder / slide / list) */
+.inv-reorder {
+    display: flex;
+    gap: 4px;
+    z-index: 120;
+}
+.inv-reorder-v { flex-direction: column; }
+.inv-reorder-btn {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    background: rgba(0, 0, 0, 0.75);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    cursor: pointer;
+    transition: var(--inv-transition);
+}
+.inv-reorder-btn:hover:not(:disabled) { background: #000; transform: scale(1.1); }
+.inv-reorder-btn:disabled { opacity: 0.25; cursor: default; }
+
+.inv-card-slot .inv-reorder {
+    position: absolute;
+    bottom: 5px;
+    left: 5px;
+}
+.inv-card-item .inv-reorder {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+.inv-list-actions .inv-reorder { justify-content: center; }
+.inv-list-actions .inv-reorder-btn {
+    background: var(--inv-gray-100);
+    color: var(--inv-black);
+    border-color: var(--inv-gray-300);
+}
+.inv-list-actions .inv-reorder-btn:hover:not(:disabled) { background: var(--inv-gray-200); }
+
+@media (max-width: 768px) {
+    /* Album slots shrink to ~45px on phones, so the desktop-sized controls
+       would sit on top of the price badge and the zoom button. Tuck a smaller
+       pair into the free bottom-left corner instead. */
+    #investment-card-container .inv-card-slot .inv-reorder {
+        bottom: 2px;
+        left: 2px;
+        gap: 2px;
+    }
+    #investment-card-container .inv-card-slot .inv-reorder-btn {
+        width: 12px;
+        height: 12px;
+        font-size: 7px;
+        border-width: 1px;
+    }
 }
 
 /* Fixed height: Chart.js (responsive + maintainAspectRatio:false) sizes the
