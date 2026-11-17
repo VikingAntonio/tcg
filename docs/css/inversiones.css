@@ -812,65 +812,25 @@
     outline-offset: 2px;
 }
 
-/* Reorder controls (shared order across binder / slide / list) */
-.inv-reorder {
-    display: flex;
-    gap: 4px;
-    z-index: 120;
+/* Reorder ghost (long-press touch drag) and drop highlight, shared by all modes */
+.inv-drag-ghost {
+    position: fixed;
+    z-index: 4000;
+    opacity: 0.85;
+    transform: translate(-50%, -50%);
+    filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.45));
 }
-.inv-reorder-v { flex-direction: column; }
-.inv-reorder-btn {
-    width: 22px;
-    height: 22px;
-    padding: 0;
-    border-radius: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    background: rgba(0, 0, 0, 0.75);
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 10px;
-    cursor: pointer;
-    transition: var(--inv-transition);
-}
-.inv-reorder-btn:hover:not(:disabled) { background: #000; transform: scale(1.1); }
-.inv-reorder-btn:disabled { opacity: 0.25; cursor: default; }
-
-.inv-card-slot .inv-reorder {
-    position: absolute;
-    bottom: 5px;
-    left: 5px;
-}
-.inv-card-item .inv-reorder {
-    position: absolute;
-    bottom: 12px;
-    left: 50%;
-    transform: translateX(-50%);
-}
-.inv-list-actions .inv-reorder { justify-content: center; }
-.inv-list-actions .inv-reorder-btn {
-    background: var(--inv-gray-100);
-    color: var(--inv-black);
-    border-color: var(--inv-gray-300);
-}
-.inv-list-actions .inv-reorder-btn:hover:not(:disabled) { background: var(--inv-gray-200); }
-
-@media (max-width: 768px) {
-    /* Album slots shrink to ~45px on phones, so the desktop-sized controls
-       would sit on top of the price badge and the zoom button. Tuck a smaller
-       pair into the free bottom-left corner instead. */
-    #investment-card-container .inv-card-slot .inv-reorder {
-        bottom: 2px;
-        left: 2px;
-        gap: 2px;
-    }
-    #investment-card-container .inv-card-slot .inv-reorder-btn {
-        width: 12px;
-        height: 12px;
-        font-size: 7px;
-        border-width: 1px;
-    }
+/* The clone keeps children like .zoom-btn, which set pointer-events:auto
+   !important; without this the ghost would swallow the drop hit-test. */
+.inv-drag-ghost,
+.inv-drag-ghost * { pointer-events: none !important; }
+.inv-card-item.inv-slot-dragging,
+.inv-list-item.inv-slot-dragging { opacity: 0.4; }
+.inv-card-item.inv-slot-drop-target,
+.inv-list-item.inv-slot-drop-target {
+    outline: 3px dashed var(--inv-black, #000);
+    outline-offset: 2px;
+    border-radius: 6px;
 }
 
 /* Fixed height: Chart.js (responsive + maintainAspectRatio:false) sizes the
