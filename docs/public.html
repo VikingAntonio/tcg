@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="css/cosmoPaldea.css">
     <link rel="stylesheet" href="css/barajaryg.css">
     <link rel="stylesheet" href="css/public-inversiones.css?v=237">
+    <link rel="stylesheet" href="css/public-binders.css?v=238">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -140,11 +141,28 @@
         </div>
 
         <div id="binders-view" class="view-section">
-            <div id="binders-container">
+            <div class="pub-binder-header" id="public-binder-header" style="display: none;">
+                <button class="pub-binder-back" type="button" onclick="showPublicBinderCategories()"><i class="fas fa-arrow-left"></i> Volver</button>
+                <div class="pub-binder-header-text">
+                    <div class="pub-binder-eyebrow">Binder</div>
+                    <h2 id="public-binder-title" class="pub-binder-header-title">Binder</h2>
+                </div>
+                <button class="pub-binder-share" type="button" onclick="shareCurrentPublicBinder()" title="Compartir Binder"><i class="fas fa-share-alt"></i></button>
+            </div>
+
+            <div id="public-binder-tabs" class="sticky-tabs-container" style="display: none;">
+                <button class="tab-pill active" data-mode="album">binder</button>
+                <button class="tab-pill" data-mode="slide">vikingSlide</button>
+                <button class="tab-pill" data-mode="list">lista</button>
+            </div>
+
+            <div id="public-binder-categories" class="album-list">
                 <div class="loading">
                     <i class="fas fa-spinner fa-spin"></i> Cargando Binders...
                 </div>
             </div>
+
+            <div id="binders-container" style="display: none;"></div>
         </div>
 
         <div id="albums-view" class="view-section">
@@ -752,6 +770,7 @@
     <script src="js/duelTerminal.js"></script>
     <script src="js/cosmoPaldea.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/public-binders.js"></script>
     <script src="js/animacionesdeseos.js"></script>
     <script>
         if ('serviceWorker' in navigator) {

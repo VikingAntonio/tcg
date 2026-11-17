@@ -66,6 +66,7 @@ window.openShareModal = function(title, type, id, extraId) {
             if (extraId) shareUrl += `&wishlistId=${extraId}`;
         } else {
             const paramName = type === 'albums' ? 'albumId' :
+                            type === 'binders' ? 'binderId' :
                             type === 'decks' ? 'deckId' :
                             type === 'sealed' ? 'productId' :
                             type === 'preorders' ? 'preorderId' : 'eventId';
@@ -394,8 +395,8 @@ $(document).ready(async function() {
             else initialView = 'home';
         }
 
-        // Only show 3D loading screen if the entry point is 'binders' or 'albums' (public/share links)
-        if (initialView === 'binders' || initialView === 'albums') {
+        // Only show 3D loading screen if the entry point is 'albums' (public/share links)
+        if (initialView === 'albums') {
             showLoading('Cargando...');
         }
 
@@ -1416,9 +1417,11 @@ function applyVisualsToModal(holo, mask, use3d, options = {}) {
 async function switchView(view, skipPush = false) {
     if (!view) return;
 
-    // Show loader early for binders/albums to mask data loading and build mode checks
-    if (view === 'binders' || view === 'albums') {
-        showLoading(view === 'binders' ? 'Cargando Binders...' : 'Cargando Álbumes...');
+    // Show loader early for binders/albums to mask data loading and build mode checks.
+    // El loader 3D solo se usa para 'albums'; en 'binders' ya no hace falta
+    // porque primero se muestra el menú de colecciones.
+    if (view === 'albums') {
+        showLoading('Cargando Álbumes...');
     }
 
     // Robust View Validation (fixes common truncations like "albu")
@@ -1549,12 +1552,23 @@ async function switchView(view, skipPush = false) {
 
     // View-specific data loading
     if (view === 'binders') {
-        try {
-            if (window.currentStoreId) {
-                await loadPublicBinders(window.currentStoreId);
+        // Vista pública de Binders: menú de colecciones (o binder directo si
+        // ?binderId=...), igual que la vista pública de Inversiones. El modo
+        // clásico (widget embebido) sigue usando loadPublicBinders.
+        if (typeof window.publicBindersNeedsClassicRender === 'function' && window.publicBindersNeedsClassicRender()) {
+            $('#public-binder-header, #public-binder-tabs, #public-binder-categories').hide();
+            $('#binders-container').show();
+            try {
+                if (window.currentStoreId) {
+                    await loadPublicBinders(window.currentStoreId);
+                }
+            } finally {
+                hideLoading();
             }
-        } finally {
-            hideLoading();
+        } else if (typeof window.loadPublicBinderCategories === 'function') {
+            await window.loadPublicBinderCategories(window.currentStoreId);
+        } else if (window.currentStoreId) {
+            await loadPublicBinders(window.currentStoreId);
         }
     } else if (view === 'albums') {
         try {
