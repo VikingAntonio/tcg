@@ -336,25 +336,57 @@ body.theme-purple .pub-inv-modal {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
-/* Sello "AGOTADO" (compartido en todos los modos y en el modal) */
+/* Sello "AGOTADO". El tamaño es relativo (em) para que escale con cada
+   contexto: compacto en binder/lista, grande en slide y modal. El tamaño de
+   fuente del contenedor define la escala de cada vista. */
 #investments-view .inv-stamp-unavailable,
 .pub-inv-modal .inv-stamp-unavailable {
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%) rotate(-18deg);
-    padding: 6px 14px;
-    border-radius: 8px;
+    transform: translate(-50%, -50%) rotate(-14deg);
+    padding: 0.32em 0.7em;
+    border-radius: 0.45em;
     background: rgba(8, 10, 14, 0.82);
-    border: 2px solid #ff4d5e;
+    border: 0.1em solid #ff4d5e;
     color: #ff4d5e;
-    font-size: 0.72rem;
+    font-size: 1em;
     font-weight: 900;
-    letter-spacing: 0.14em;
+    line-height: 1.1;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     white-space: nowrap;
     z-index: 6;
     pointer-events: none;
+    /* Evita que el autosizing de texto de Chromium móvil infle el sello. */
+    -webkit-text-size-adjust: none;
+    text-size-adjust: none;
+}
+
+/* Contextos pequeños (binder y lista): sello compacto */
+#investments-view .pub-inv-slot .inv-stamp-unavailable,
+#investments-view .pub-inv-list-img .inv-stamp-unavailable {
+    padding: 0.22em 0.45em;
+    border-radius: 0.35em;
+    border-width: 0.08em;
+    letter-spacing: 0.03em;
+}
+
+/* Escala del sello por contexto */
+#investments-view .pub-inv-slot {
+    font-size: 4.5px;
+}
+
+#investments-view .pub-inv-list-img {
+    font-size: 3px;
+}
+
+#investments-view .pub-inv-slide-media {
+    font-size: 20px;
+}
+
+.pub-inv-modal .pub-inv-modal-img-wrap {
+    font-size: 23px;
 }
 
 /* ===================== Modo lista ===================== */
@@ -399,12 +431,6 @@ body.theme-purple .pub-inv-modal {
     height: 100%;
     object-fit: cover;
     display: block;
-}
-
-#investments-view .pub-inv-list-img .inv-stamp-unavailable {
-    font-size: 0.5rem;
-    padding: 2px 5px;
-    letter-spacing: 0.08em;
 }
 
 #investments-view .pub-inv-list-details {
@@ -469,12 +495,15 @@ body.theme-purple .pub-inv-modal {
 }
 
 /* ===================== Modo slide ===================== */
+/* El efecto "cards" de Swiper recorta el slide (overflow:hidden) y su alto
+   sigue al contenedor, así que el swiper debe ser al menos tan alto como la
+   media + el pie; si no, la parte de abajo de la carta se corta. */
 #investments-view .pub-inv-swiper {
     width: 100%;
-    max-width: 350px;
+    max-width: 260px;
     margin: 0 auto;
-    min-height: 520px;
-    padding: 20px 0;
+    min-height: 585px;
+    padding: 12px 0 20px;
 }
 
 #investments-view .pub-inv-slide {
@@ -498,8 +527,8 @@ body.theme-purple .pub-inv-modal {
 }
 
 #investments-view .pub-inv-slide-body {
-    margin-top: 14px;
-    padding: 16px 18px;
+    margin-top: 12px;
+    padding: 13px 15px;
     border-radius: 14px;
     text-align: center;
     background: var(--card-bg);
@@ -508,7 +537,7 @@ body.theme-purple .pub-inv-modal {
 
 #investments-view .pub-inv-slide-body h4 {
     margin: 0;
-    font-size: 0.95rem;
+    font-size: 0.88rem;
     font-weight: 900;
     text-transform: uppercase;
     color: var(--text-color);
@@ -516,8 +545,8 @@ body.theme-purple .pub-inv-modal {
 }
 
 #investments-view .pub-inv-slide-body p {
-    margin: 5px 0 0;
-    font-size: 0.72rem;
+    margin: 4px 0 0;
+    font-size: 0.68rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.03em;
@@ -525,8 +554,8 @@ body.theme-purple .pub-inv-modal {
 }
 
 #investments-view .pub-inv-slide-price {
-    margin-top: 10px;
-    font-size: 1.25rem;
+    margin-top: 8px;
+    font-size: 1.15rem;
     font-weight: 900;
     color: var(--pub-inv-accent);
 }
@@ -902,8 +931,13 @@ body.theme-purple .pub-inv-modal {
         gap: 14px;
     }
 
-    .pub-inv-modal-img-wrap {
+    .pub-inv-modal .pub-inv-modal-img-wrap {
         max-width: 130px;
+        font-size: 11px;
+    }
+
+    #investments-view .pub-inv-slide-media {
+        font-size: 15px;
     }
 
     .pub-inv-modal-facts {
