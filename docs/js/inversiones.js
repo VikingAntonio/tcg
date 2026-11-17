@@ -17,6 +17,25 @@ let currentLedgerCategory = null;
 let pendingSlotIndex = null;
 // Timestamp of the last finished slot drag, to swallow the follow-up click.
 let invDragJustEnded = 0;
+// Live Swiper instance (slide mode), so a card drag can pause swipe navigation.
+let invSwiperInstance = null;
+
+// Closest flat card (binder slot or list row) to a point. Used when the pointer
+// is released outside any card.
+function invNearestFlatTarget(x, y) {
+    let best = null, bestDist = Infinity;
+    $('.inv-card-slot, .inv-list-item').each(function() {
+        if (!this.querySelector('img') || this.offsetParent === null) return;
+        const r = this.getBoundingClientRect();
+        if (r.width < 4 || r.height < 4) return;
+        const d = Math.hypot(r.x + r.width / 2 - x, r.y + r.height / 2 - y);
+        if (d < bestDist) { bestDist = d; best = this; }
+    });
+    return best ? $(best) : null;
+}
+
+// Horizontal center where the current drag started (slide mode shifts by distance).
+let invDragStartX = 0;
 // Binder sheet (turn.js page) currently open. It is captured before a re-render
 // so saving/editing a card does not send the user back to the cover.
 let invAlbumPage = 1;
@@ -245,38 +264,13 @@ function moveInvestmentCard(fromIdx, toIdx) {
     return true;
 }
 
-// Moves a card one step in the shared order. Every mode reads the same array,
-// so arranging in one mode rearranges the others too.
-function invShiftCard(fromIdx, delta) {
-    if (isNaN(fromIdx)) return;
-    const toIdx = fromIdx + delta;
-    if (toIdx < 0 || toIdx >= localInvestmentCards.length) return;
+// Applies a reorder and re-renders + persists. Shared by desktop (HTML5 drag)
+// and mobile (long-press touch drag) in all three modes.
+function invApplyMove(fromIdx, toIdx) {
     if (moveInvestmentCard(fromIdx, toIdx)) {
         renderInvestmentCards(currentInvestmentViewMode);
         persistInvestmentPositions();
     }
-}
-
-// Two small buttons to nudge a card in the shared order. Works on desktop and
-// mobile (HTML5 drag & drop is desktop-only), so every mode can be arranged.
-function invReorderControls(idx, total, vertical = false) {
-    const prevIcon = vertical ? 'fa-arrow-up' : 'fa-arrow-left';
-    const nextIcon = vertical ? 'fa-arrow-down' : 'fa-arrow-right';
-    return `
-        <div class="inv-reorder${vertical ? ' inv-reorder-v' : ''}">
-            <button type="button" class="inv-reorder-btn inv-move-prev" data-idx="${idx}" ${idx <= 0 ? 'disabled' : ''} title="Mover"><i class="fas ${prevIcon}"></i></button>
-            <button type="button" class="inv-reorder-btn inv-move-next" data-idx="${idx}" ${idx >= total - 1 ? 'disabled' : ''} title="Mover"><i class="fas ${nextIcon}"></i></button>
-        </div>`;
-}
-
-// Binds the reorder buttons. stopPropagation on the button itself stops the
-// parent slot/item click from opening the card modal.
-function bindInvReorder($scope) {
-    $scope.find('.inv-reorder-btn').on('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        invShiftCard(parseInt($(this).attr('data-idx'), 10), $(this).hasClass('inv-move-prev') ? -1 : 1);
-    });
 }
 
 // Remembers the binder sheet (turn.js page) before the album is rebuilt, so a
@@ -289,32 +283,183 @@ function captureAlbumPage() {
     }
 }
 
-// Wires drag & drop reordering onto a binder slot. turn.js is paused while
-// dragging so it does not page-turn under the pointer.
-function bindInvSlotDrop($slot, $album) {
-    $slot.on('dragover', function(e) {
+// --- Reordering by drag & drop (no visible controls) ---
+// Desktop uses native HTML5 drag & drop; touch devices use a long-press drag
+// with a ghost that follows the finger. Both highlight the same
+// .inv-slot-drop-target and drop onto the shared order.
+
+function invAlbumTurnDisabled(disabled) {
+    const $album = $('#investment-card-container .investment-album');
+    if ($album.length && $album.turn('is')) $album.turn('disable', disabled);
+}
+
+// Pauses the current mode's own gesture handling (turn.js page flip, Swiper
+// swipe) while a card drag is in progress, so it does not fight the reorder.
+function invSuspendNav(suspended) {
+    invAlbumTurnDisabled(suspended);
+    if (invSwiperInstance) {
+        try { suspended ? invSwiperInstance.disable() : invSwiperInstance.enable(); } catch (e) { /* ignore */ }
+    }
+}
+
+function invDragCleanup() {
+    $('.inv-slot-drop-target').removeClass('inv-slot-drop-target');
+    $('.inv-slot-dragging').removeClass('inv-slot-dragging');
+    $('.inv-drag-ghost').remove();
+    invSuspendNav(false);
+}
+
+// Native HTML5 drag source (desktop). turn.js is paused so it does not flip
+// under the pointer while dragging.
+function bindInvDragSource($el, idx) {
+    $el.attr('draggable', 'true');
+    $el.on('dragstart', function(e) {
+        invDragJustEnded = 0;
+        const oe = e.originalEvent || e;
+        const dt = oe.dataTransfer;
+        if (dt) { dt.setData('text/plain', String(idx)); dt.effectAllowed = 'move'; }
+        const r = $el[0].getBoundingClientRect();
+        invDragStartX = r.x + r.width / 2;
+        $(this).addClass('inv-slot-dragging');
+        invSuspendNav(true);
+    });
+    $el.on('dragend', function() {
+        invDragJustEnded = Date.now();
+        invDragCleanup();
+    });
+    // Long-press drag for touch (mobile). The whole card is the handle: a tap
+    // opens the card, a swipe flips/scrolls, a long press starts the drag.
+    if ($el[0]) {
+        $el[0].addEventListener('touchstart', function(e) {
+            invStartTouchDrag(idx, $el, e);
+        }, { passive: true });
+    }
+}
+
+// Reads the slot index off a card element (binder/slide/list share these attrs).
+function invIndexFromEl($el) {
+    const raw = $el.attr('data-slot-index') !== undefined ? $el.attr('data-slot-index') : $el.attr('data-idx');
+    const n = parseInt(raw, 10);
+    return isNaN(n) ? NaN : n;
+}
+
+function invElementByIndex(idx) {
+    return $('.inv-card-slot, .inv-card-item, .inv-list-item').filter(function() {
+        return invIndexFromEl($(this)) === idx;
+    }).first();
+}
+
+// Resolves the drop slot under the pointer. Binder and list lay the cards out
+// flat, so a hit test works. Slide mode stacks them (Swiper "cards" effect), so
+// there the horizontal drag distance decides how many slots to shift.
+function invResolveDrop(x, y, $source, sourceIdx, startX) {
+    if ($source.hasClass('inv-card-item')) {
+        const w = $source[0].getBoundingClientRect().width || 300;
+        const steps = Math.round((x - startX) / (w * 0.55));
+        const idx = Math.max(0, Math.min(localInvestmentCards.length - 1, sourceIdx + steps));
+        return { idx: idx, $el: invElementByIndex(idx) };
+    }
+    const el = document.elementFromPoint(x, y);
+    if (el) {
+        const $t = $(el).closest('.inv-card-slot, .inv-list-item');
+        if ($t.length) return { idx: invIndexFromEl($t), $el: $t };
+    }
+    // Pointer off any card (e.g. released past the last row): use the closest.
+    const $near = invNearestFlatTarget(x, y);
+    return { idx: $near ? invIndexFromEl($near) : NaN, $el: $near };
+}
+
+// Native HTML5 drop target (desktop). Works for the binder, slide and list.
+function bindInvDropTarget($el) {
+    $el.on('dragover', function(e) {
         if (!$('.inv-slot-dragging').length) return;
         e.preventDefault();
-        e.originalEvent.dataTransfer.dropEffect = 'move';
-        $(this).addClass('inv-slot-drop-target');
+        const oe = e.originalEvent || e;
+        const dt = oe.dataTransfer;
+        if (dt) dt.dropEffect = 'move';
+        const r = invResolveDrop(oe.clientX, oe.clientY, $el, invIndexFromEl($el), invDragStartX);
+        if (r.$el && r.$el.length) r.$el.addClass('inv-slot-drop-target');
     });
-    $slot.on('dragleave', function() {
-        $(this).removeClass('inv-slot-drop-target');
-    });
-    $slot.on('drop', function(e) {
+    $el.on('dragleave', function() { $(this).removeClass('inv-slot-drop-target'); });
+    $el.on('drop', function(e) {
         e.preventDefault();
-        $(this).removeClass('inv-slot-drop-target');
         invDragJustEnded = Date.now();
-        if ($album.turn('is')) $album.turn('disable', false);
-        const fromIdx = parseInt(e.originalEvent.dataTransfer.getData('text/plain'), 10);
-        const toIdx = parseInt($(this).attr('data-slot-index'), 10);
-        if (isNaN(fromIdx) || isNaN(toIdx)) return;
-        if (moveInvestmentCard(fromIdx, toIdx)) {
-            renderInvestmentCards(currentInvestmentViewMode);
-            persistInvestmentPositions();
-        }
+        const oe = e.originalEvent || e;
+        const dt = oe.dataTransfer;
+        const fromIdx = dt ? parseInt(dt.getData('text/plain'), 10) : NaN;
+        const r = invResolveDrop(oe.clientX, oe.clientY, $el, invIndexFromEl($el), invDragStartX);
+        invDragCleanup();
+        if (!isNaN(fromIdx) && !isNaN(r.idx)) invApplyMove(fromIdx, r.idx);
     });
 }
+
+const INV_LONGPRESS_MS = 350;
+let invTouchDrag = null;
+
+function invStartTouchDrag(idx, $el, e) {
+    const t = e.touches && e.touches[0];
+    if (!t || !$el[0]) return;
+    const drag = { idx: idx, $el: $el, startX: t.clientX, startY: t.clientY, active: false, ghost: null, timer: null };
+    invTouchDrag = drag;
+    drag.timer = setTimeout(function() {
+        if (invTouchDrag !== drag) return;
+        drag.active = true;
+        invDragJustEnded = 0;
+        drag.$el.addClass('inv-slot-dragging');
+        invSuspendNav(true);
+        const rect = drag.$el[0].getBoundingClientRect();
+        drag.ghost = $('<div class="inv-drag-ghost"></div>')
+            .css({ width: rect.width + 'px', height: rect.height + 'px' })
+            .append(drag.$el.clone().css({ margin: 0, width: '100%', height: '100%', position: 'static' }));
+        $('body').append(drag.ghost);
+        invPositionGhost(drag, drag.startX, drag.startY);
+        if (navigator.vibrate) navigator.vibrate(15);
+    }, INV_LONGPRESS_MS);
+}
+
+function invPositionGhost(drag, x, y) {
+    if (drag.ghost) drag.ghost.css({ left: x + 'px', top: y + 'px' });
+}
+
+function invMoveTouchDrag(e) {
+    const drag = invTouchDrag;
+    if (!drag) return;
+    const t = e.touches && e.touches[0];
+    if (!t) return;
+    if (!drag.active) {
+        // Moved before the long press completed: it is a swipe/scroll, not a drag.
+        if (Math.hypot(t.clientX - drag.startX, t.clientY - drag.startY) > 10) {
+            clearTimeout(drag.timer);
+            invTouchDrag = null;
+        }
+        return;
+    }
+    if (e.cancelable) e.preventDefault();
+    invPositionGhost(drag, t.clientX, t.clientY);
+    $('.inv-slot-drop-target').removeClass('inv-slot-drop-target');
+    const r = invResolveDrop(t.clientX, t.clientY, drag.$el, drag.idx, drag.startX);
+    if (r.$el && r.$el.length) r.$el.addClass('inv-slot-drop-target');
+}
+
+function invEndTouchDrag(e) {
+    const drag = invTouchDrag;
+    if (!drag) return;
+    invTouchDrag = null;
+    clearTimeout(drag.timer);
+    if (!drag.active) return;
+    invDragJustEnded = Date.now();
+    const t = e.changedTouches && e.changedTouches[0];
+    let toIdx = NaN;
+    if (t) toIdx = invResolveDrop(t.clientX, t.clientY, drag.$el, drag.idx, drag.startX).idx;
+    invDragCleanup();
+    if (!isNaN(toIdx)) invApplyMove(drag.idx, toIdx);
+}
+
+// Native touch listeners on document so the finger can leave the card mid-drag.
+// passive:false is required to cancel the page scroll once the drag is active.
+document.addEventListener('touchmove', function(e) { if (invTouchDrag) invMoveTouchDrag(e); }, { passive: false });
+document.addEventListener('touchend', function(e) { if (invTouchDrag) invEndTouchDrag(e); });
+document.addEventListener('touchcancel', function(e) { if (invTouchDrag) invEndTouchDrag(e); });
 
 // Best-effort ledger entry (never blocks the main flow if the table is absent)
 async function logInvestmentTransaction(entry) {
@@ -1101,6 +1246,7 @@ function renderInvestmentCards(mode) {
     const $container = $('#investment-card-container');
     // Keep the open binder sheet across re-renders (add/edit/delete/reorder).
     if (mode === 'album') captureAlbumPage();
+    invSwiperInstance = null;
     $container.empty();
 
     if (mode === 'album') {
@@ -1186,10 +1332,7 @@ function renderAlbumMode($container) {
                     ${privateBadge}
                     <div class="inv-card-info-badge" style="z-index: 110;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
                     <div class="zoom-btn" style="z-index: 110;"><i class="fas fa-search"></i></div>
-                    ${invReorderControls(cardIdx, localInvestmentCards.length, true)}
                 `);
-
-                bindInvReorder($slot);
 
                 $slot.find('.zoom-btn').on('click', (e) => {
                     e.preventDefault();
@@ -1201,20 +1344,7 @@ function renderAlbumMode($container) {
                     e.stopImmediatePropagation();
                 });
 
-                $slot.attr('draggable', 'true');
-                $slot.on('dragstart', function(e) {
-                    invDragJustEnded = 0;
-                    e.originalEvent.dataTransfer.setData('text/plain', String(cardIdx));
-                    e.originalEvent.dataTransfer.effectAllowed = 'move';
-                    $(this).addClass('inv-slot-dragging');
-                    if ($album.turn('is')) $album.turn('disable', true);
-                });
-                $slot.on('dragend', function() {
-                    invDragJustEnded = Date.now();
-                    $(this).removeClass('inv-slot-dragging');
-                    $('.inv-slot-drop-target').removeClass('inv-slot-drop-target');
-                    if ($album.turn('is')) $album.turn('disable', false);
-                });
+                bindInvDragSource($slot, cardIdx);
 
                 $slot.click(function(e) {
                     if (Date.now() - invDragJustEnded < 400) return;
@@ -1258,7 +1388,7 @@ function renderAlbumMode($container) {
                 });
             }
 
-            bindInvSlotDrop($slot, $album);
+            bindInvDropTarget($slot);
 
             $grid.append($slot);
         }
@@ -1285,7 +1415,7 @@ function renderAlbumMode($container) {
                 pendingSlotIndex = localInvestmentCards.length;
                 openInvestmentCardModal(null, 'inv-tab-datos');
             });
-            bindInvSlotDrop($slot, $album);
+            bindInvDropTarget($slot);
             $grid.append($slot);
         }
         $fillerPage.append($grid);
@@ -1350,15 +1480,15 @@ function renderSlideMode($container) {
         const stampOverlay = isUnavailable ? `<div class="inv-stamp-unavailable">VENDIDO</div>` : '';
 
         const $slide = $(`
-            <div class="swiper-slide inv-card-slot inv-card-item" data-id="${card.id}" style="background: transparent; cursor: pointer; position: relative; display: flex; align-items: center; justify-content: center; height: 100%;">
+            <div class="swiper-slide inv-card-slot inv-card-item" data-id="${card.id}" data-idx="${cardIdx}" style="background: transparent; cursor: pointer; position: relative; display: flex; align-items: center; justify-content: center; height: 100%;">
                 <img src="${card.image_url}" style="width: auto; max-width: 100%; height: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; border: 2px solid #000; box-shadow: 0 20px 40px rgba(0,0,0,0.3); position: relative; z-index: 1; display: block; margin: 0 auto;">
                 ${stampOverlay}
                 ${privateBadge}
-                ${invReorderControls(cardIdx, localInvestmentCards.length)}
             </div>
         `);
 
-        bindInvReorder($slide);
+        bindInvDragSource($slide, cardIdx);
+        bindInvDropTarget($slide);
         $swiper.find('.swiper-wrapper').append($slide);
     });
 
@@ -1383,6 +1513,7 @@ function renderSlideMode($container) {
     });
 
     $swiper.on('pointerup touchend click', '.inv-card-item', function(e) {
+        if (Date.now() - invDragJustEnded < 400) return;
         if ($(e.target).closest('button').length) return;
         const touch = e.originalEvent && e.originalEvent.changedTouches ? e.originalEvent.changedTouches[0] : e;
         const endX = touch.clientX !== undefined ? touch.clientX : startX;
@@ -1402,6 +1533,10 @@ function renderSlideMode($container) {
         centeredSlides: true,
         slidesPerView: 'auto',
         threshold: 8,
+        // Cards are draggable for reordering, so desktop navigation uses the
+        // wheel and arrow keys instead of a mouse drag.
+        mousewheel: { forceToAxis: true },
+        keyboard: { enabled: true },
         preventClicks: false,
         preventClicksPropagation: false,
         on: {
@@ -1416,6 +1551,7 @@ function renderSlideMode($container) {
             }
         }
     });
+    invSwiperInstance = invSwiper;
 }
 
 // "Reporte general": a clean, spreadsheet-like panel shown above the card
@@ -1526,13 +1662,15 @@ function renderListMode($container) {
                 <div class="inv-list-actions" style="display: flex; gap: 8px; flex-direction: column;">
                     <button class="btn-inv-outline btn-edit-inv-card" data-id="${card.id}" style="padding: 8px 12px;"><i class="fas fa-pen"></i></button>
                     <button class="btn-inv-danger btn-delete-inv-card" data-id="${card.id}" style="padding: 8px 12px;"><i class="fas fa-trash"></i></button>
-                    ${invReorderControls(cardIdx, localInvestmentCards.length, true)}
                 </div>
             </div>
         `);
 
-        bindInvReorder($item);
+        $item.attr('data-idx', cardIdx);
+        bindInvDragSource($item, cardIdx);
+        bindInvDropTarget($item);
         $item.click((e) => {
+            if (Date.now() - invDragJustEnded < 400) return;
             if ($(e.target).closest('button').length) return;
             e.preventDefault();
             e.stopPropagation();
