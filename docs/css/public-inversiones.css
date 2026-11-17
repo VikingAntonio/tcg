@@ -1,0 +1,946 @@
+/*
+   Vista pública de Inversiones (public.html)
+   Todo el CSS está acotado a #investments-view y al modal público,
+   para no afectar a inversiones.html ni a otras vistas.
+   Usa las variables de tema (--text-color, --card-bg, --primary-color...)
+   para que el texto contraste correctamente en claro / oscuro / morado.
+*/
+
+/* Acento legible para texto (el --primary-color del tema claro es muy
+   claro para texto sobre fondo crema). */
+#investments-view,
+.pub-inv-modal {
+    --pub-inv-accent: var(--primary-color);
+}
+
+body.theme-light #investments-view,
+body.theme-light .pub-inv-modal {
+    --pub-inv-accent: #6c5ce7;
+}
+
+body.theme-purple #investments-view,
+body.theme-purple .pub-inv-modal {
+    --pub-inv-accent: #ffe08a;
+}
+
+/* ===================== Encabezado de la colección ===================== */
+#investments-view .pub-inv-header {
+    width: 100%;
+    margin: 0 0 22px 0;
+    padding: 22px 24px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    text-align: left;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 18px;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.12);
+}
+
+#investments-view .pub-inv-back {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: 50px;
+    border: 1px solid var(--card-border);
+    background: transparent;
+    color: var(--text-color);
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+#investments-view .pub-inv-back:hover {
+    border-color: var(--primary-color);
+    background: rgba(127, 127, 127, 0.12);
+    transform: translateX(-2px);
+}
+
+#investments-view .pub-inv-header-text {
+    min-width: 0;
+}
+
+#investments-view .pub-inv-eyebrow {
+    font-size: 0.62rem;
+    letter-spacing: 0.28em;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+#investments-view .pub-inv-header-title {
+    margin: 0;
+    font-size: clamp(1.5rem, 4vw, 2.2rem);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    text-transform: uppercase;
+    color: var(--text-color);
+}
+
+/* ===================== Tarjetas de colección (vaults) ===================== */
+#public-investment-categories.album-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 22px;
+    width: 100%;
+}
+
+#investments-view .pub-inv-vault {
+    display: flex;
+    flex-direction: column;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 18px;
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+#investments-view .pub-inv-vault:hover {
+    transform: translateY(-6px);
+    border-color: var(--primary-color);
+    box-shadow: 0 22px 50px rgba(0, 0, 0, 0.22);
+}
+
+#investments-view .pub-inv-vault-cover {
+    position: relative;
+    height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+        radial-gradient(120% 130% at 20% 10%, rgba(0, 210, 255, 0.35), transparent 60%),
+        linear-gradient(140deg, #1c2130 0%, #0c0e14 100%);
+    overflow: hidden;
+}
+
+#investments-view .pub-inv-vault-cover::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.05) 0 2px, transparent 2px 12px);
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+#investments-view .pub-inv-vault-cover-inner {
+    position: relative;
+    z-index: 1;
+    width: 74px;
+    height: 74px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+#investments-view .pub-inv-vault-icon {
+    font-size: 1.9rem;
+    color: #fff;
+}
+
+#investments-view .pub-inv-vault-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 18px 20px 20px;
+    text-align: left;
+}
+
+#investments-view .pub-inv-vault-name {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 900;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    color: var(--text-color);
+    overflow-wrap: anywhere;
+}
+
+#investments-view .pub-inv-vault-meta {
+    font-size: 0.62rem;
+    letter-spacing: 0.22em;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+#investments-view .pub-inv-vault-btn {
+    margin-top: 16px;
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    padding: 12px 18px;
+    border: none;
+    border-radius: 12px;
+    background: var(--primary-color);
+    color: #0b0e14;
+    font-weight: 800;
+    font-size: 0.82rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+#investments-view .pub-inv-vault-btn:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+}
+
+#investments-view .pub-inv-vault-btn i {
+    font-size: 0.78rem;
+}
+
+/* ===================== Pestañas de modo ===================== */
+#investments-view #public-investment-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    margin: 0 0 22px 0;
+    padding: 6px;
+    border-radius: 50px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+#investments-view #public-investment-tabs .tab-pill {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    padding: 10px 22px;
+}
+
+#investments-view #public-investment-tabs .tab-pill:hover {
+    color: var(--text-color);
+    background: rgba(127, 127, 127, 0.12);
+}
+
+#investments-view #public-investment-tabs .tab-pill.active {
+    background: var(--primary-color);
+    color: #0b0e14;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+
+/* ===================== Contenedor de render ===================== */
+#investments-view #public-investment-cards {
+    width: 100%;
+}
+
+/* Contiene el álbum: evita que al girar una hoja crezca el documento
+   y aparezca la barra de scroll. */
+#investments-view #public-investment-cards.investment-album-layout {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 600px;
+    padding: 20px;
+    overflow: hidden !important;
+    overscroll-behavior: contain;
+    border-radius: 18px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+}
+
+#investments-view #public-investment-cards .album-wrapper {
+    overflow: visible;
+}
+
+/* turn.js detecta la esquina con el content box de la página, pero mide el
+   puntero contra el wrapper de 300x420. La regla global .page añade padding y
+   borde (content box 274x394), así que la franja derecha/inferior queda fuera
+   y solo giraba la portada. Se mueve ese padding/borde al grid interno. */
+#investments-view #public-investment-cards .public-inv-album .album-page {
+    padding: 0;
+    border: none;
+}
+
+#investments-view #public-investment-cards .public-inv-album .album-page > .grid-container {
+    padding: 12px;
+    border: 1px solid var(--card-border);
+    box-sizing: border-box;
+}
+
+@media (max-width: 640px) {
+    #investments-view #public-investment-cards .public-inv-album .album-page > .grid-container {
+        padding: 4px;
+    }
+}
+
+/* Portada del binder */
+#investments-view .public-inv-album .cover-page .textured-cover {
+    background-image:
+        radial-gradient(120% 130% at 25% 15%, rgba(0, 210, 255, 0.4), transparent 62%),
+        linear-gradient(140deg, #1c2130 0%, #0c0e14 100%) !important;
+    background-color: transparent !important;
+}
+
+#investments-view .pub-inv-cover-label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 24px;
+    text-align: center;
+    z-index: 2;
+    pointer-events: none;
+}
+
+#investments-view .pub-inv-cover-label i {
+    font-size: 2rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+#investments-view .pub-inv-cover-label span {
+    font-size: 0.95rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #fff;
+}
+
+/* Etiqueta de precio sobre cada carta del binder */
+#investments-view .pub-inv-slot-price {
+    position: absolute;
+    left: 6px;
+    bottom: 6px;
+    z-index: 5;
+    padding: 3px 9px;
+    border-radius: 50px;
+    background: rgba(8, 10, 14, 0.85);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Sello "AGOTADO" (compartido en todos los modos y en el modal) */
+#investments-view .inv-stamp-unavailable,
+.pub-inv-modal .inv-stamp-unavailable {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-18deg);
+    padding: 6px 14px;
+    border-radius: 8px;
+    background: rgba(8, 10, 14, 0.82);
+    border: 2px solid #ff4d5e;
+    color: #ff4d5e;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    z-index: 6;
+    pointer-events: none;
+}
+
+/* ===================== Modo lista ===================== */
+#investments-view .pub-inv-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+}
+
+#investments-view .pub-inv-list-item {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 14px 18px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+#investments-view .pub-inv-list-item:hover {
+    transform: translateY(-2px);
+    border-color: var(--primary-color);
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.16);
+}
+
+#investments-view .pub-inv-list-img {
+    position: relative;
+    flex-shrink: 0;
+    width: 58px;
+    height: 80px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--slot-bg);
+    border: 1px solid var(--card-border);
+}
+
+#investments-view .pub-inv-list-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+#investments-view .pub-inv-list-img .inv-stamp-unavailable {
+    font-size: 0.5rem;
+    padding: 2px 5px;
+    letter-spacing: 0.08em;
+}
+
+#investments-view .pub-inv-list-details {
+    flex: 1;
+    min-width: 0;
+}
+
+#investments-view .pub-inv-list-name {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--text-color);
+    overflow-wrap: anywhere;
+}
+
+#investments-view .pub-inv-list-set {
+    margin-top: 3px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-muted);
+}
+
+#investments-view .pub-inv-list-out {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 8px;
+    border-radius: 50px;
+    font-size: 0.6rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #ff4d5e;
+    border: 1px solid #ff4d5e;
+    background: rgba(255, 77, 94, 0.1);
+}
+
+#investments-view .pub-inv-list-price {
+    flex-shrink: 0;
+    text-align: right;
+}
+
+#investments-view .pub-inv-list-price span {
+    display: block;
+    font-size: 0.58rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+}
+
+#investments-view .pub-inv-list-price b {
+    font-size: 1.15rem;
+    font-weight: 900;
+    color: var(--text-color);
+}
+
+/* ===================== Modo slide ===================== */
+#investments-view .pub-inv-swiper {
+    width: 100%;
+    max-width: 350px;
+    margin: 0 auto;
+    min-height: 520px;
+    padding: 20px 0;
+}
+
+#investments-view .pub-inv-slide {
+    background: transparent;
+    cursor: pointer;
+}
+
+#investments-view .pub-inv-slide-media {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--card-border);
+    box-shadow: 0 22px 44px rgba(0, 0, 0, 0.32);
+    background: #0b0e14;
+}
+
+#investments-view .pub-inv-slide-media img {
+    width: 100%;
+    display: block;
+    object-fit: contain;
+}
+
+#investments-view .pub-inv-slide-body {
+    margin-top: 14px;
+    padding: 16px 18px;
+    border-radius: 14px;
+    text-align: center;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+}
+
+#investments-view .pub-inv-slide-body h4 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: var(--text-color);
+    overflow-wrap: anywhere;
+}
+
+#investments-view .pub-inv-slide-body p {
+    margin: 5px 0 0;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-muted);
+}
+
+#investments-view .pub-inv-slide-price {
+    margin-top: 10px;
+    font-size: 1.25rem;
+    font-weight: 900;
+    color: var(--pub-inv-accent);
+}
+
+/* ===================== Modal de detalle ===================== */
+.pub-inv-modal.overlay-content {
+    max-width: 880px;
+    width: 95%;
+    max-height: 92vh;
+    padding: 26px;
+    border-radius: 20px;
+    align-items: stretch;
+    color: var(--text-color);
+}
+
+.pub-inv-modal .pub-inv-modal-close {
+    top: 12px;
+    right: 14px;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(127, 127, 127, 0.16);
+    color: var(--text-color);
+    font-size: 26px;
+    line-height: 1;
+    z-index: 20;
+}
+
+.pub-inv-modal .pub-inv-modal-close:hover {
+    background: rgba(127, 127, 127, 0.3);
+    color: var(--text-color);
+}
+
+.pub-inv-modal-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 26px;
+    width: 100%;
+}
+
+.pub-inv-modal-media {
+    flex: 1 1 280px;
+    min-width: 240px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.pub-inv-modal-img-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 300px;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid var(--card-border);
+    background: #0b0e14;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+}
+
+.pub-inv-modal-img-wrap img {
+    width: 100%;
+    display: block;
+    object-fit: contain;
+}
+
+.pub-inv-modal-thumbs {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    overflow-x: auto;
+    padding: 4px 2px;
+}
+
+.pub-inv-modal-thumbs::-webkit-scrollbar {
+    height: 6px;
+}
+
+.pub-inv-thumb {
+    flex: 0 0 auto;
+    width: 48px;
+    height: 64px;
+    padding: 0;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    background: #0b0e14;
+    border: 2px solid var(--card-border);
+    opacity: 0.65;
+    transition: opacity 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.pub-inv-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.pub-inv-thumb:hover {
+    opacity: 1;
+    transform: translateY(-2px);
+}
+
+.pub-inv-thumb.active {
+    opacity: 1;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(0, 210, 255, 0.25);
+}
+
+.pub-inv-modal-info {
+    flex: 1 1 320px;
+    min-width: 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.pub-inv-modal-set {
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--pub-inv-accent);
+}
+
+.pub-inv-modal-title {
+    margin: 0;
+    font-size: clamp(1.4rem, 3.4vw, 1.9rem);
+    font-weight: 900;
+    line-height: 1.15;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    color: var(--text-color);
+    overflow-wrap: anywhere;
+}
+
+.pub-inv-modal-price-card {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 16px 20px;
+    border-radius: 14px;
+    background: rgba(127, 127, 127, 0.1);
+    border: 1px solid var(--card-border);
+}
+
+.pub-inv-modal-price-label {
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--text-muted);
+}
+
+.pub-inv-modal-price {
+    font-size: 2.1rem;
+    font-weight: 900;
+    line-height: 1.05;
+    color: var(--pub-inv-accent);
+}
+
+.pub-inv-modal-facts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.pub-inv-modal-fact {
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: rgba(127, 127, 127, 0.08);
+    border: 1px solid var(--card-border);
+}
+
+.pub-inv-modal-fact-label {
+    font-size: 0.62rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+}
+
+.pub-inv-modal-fact-value {
+    margin-top: 3px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--text-color);
+    overflow-wrap: anywhere;
+}
+
+.pub-inv-modal-notes {
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: rgba(127, 127, 127, 0.08);
+    border: 1px solid var(--card-border);
+}
+
+.pub-inv-modal-notes #public-inv-modal-notes {
+    margin-top: 4px;
+    font-size: 0.88rem;
+    line-height: 1.45;
+    color: var(--text-color);
+    white-space: pre-wrap;
+}
+
+.pub-inv-modal-buy {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 12px;
+    margin-top: auto;
+    padding-top: 6px;
+}
+
+.pub-inv-modal-qty-selector {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px;
+    border-radius: 12px;
+    background: rgba(127, 127, 127, 0.1);
+    border: 1px solid var(--card-border);
+}
+
+.pub-inv-qty-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--text-color);
+    font-size: 1.15rem;
+    font-weight: 900;
+    cursor: pointer;
+    transition: background 0.18s ease;
+}
+
+.pub-inv-qty-btn:hover {
+    background: rgba(127, 127, 127, 0.22);
+}
+
+.pub-inv-modal-qty-selector input {
+    width: 48px;
+    border: none;
+    background: transparent;
+    color: var(--text-color);
+    font-size: 1.05rem;
+    font-weight: 900;
+    text-align: center;
+    -moz-appearance: textfield;
+}
+
+.pub-inv-modal-qty-selector input::-webkit-outer-spin-button,
+.pub-inv-modal-qty-selector input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.pub-inv-add-cart {
+    flex: 1 1 200px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 14px 22px;
+    border: none;
+    border-radius: 12px;
+    background: var(--primary-color);
+    color: #0b0e14;
+    font-size: 0.95rem;
+    font-weight: 900;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+.pub-inv-add-cart:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+}
+
+.pub-inv-add-cart.is-disabled,
+.pub-inv-add-cart:disabled {
+    cursor: not-allowed;
+    filter: grayscale(0.7);
+    opacity: 0.6;
+    transform: none;
+}
+
+/* ===================== Responsive ===================== */
+@media (max-width: 768px) {
+    #investments-view .pub-inv-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 18px;
+    }
+
+    #public-investment-categories.album-list {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 14px;
+    }
+
+    #investments-view .pub-inv-vault-cover {
+        height: 120px;
+    }
+
+    #investments-view .pub-inv-vault-cover-inner {
+        width: 56px;
+        height: 56px;
+    }
+
+    #investments-view .pub-inv-vault-icon {
+        font-size: 1.4rem;
+    }
+
+    #investments-view .pub-inv-vault-body {
+        padding: 14px;
+    }
+
+    #investments-view .pub-inv-vault-name {
+        font-size: 0.95rem;
+    }
+
+    #investments-view .pub-inv-vault-btn {
+        padding: 10px 14px;
+        font-size: 0.72rem;
+    }
+
+    #investments-view #public-investment-tabs .tab-pill {
+        padding: 9px 14px;
+        font-size: 0.72rem;
+    }
+
+    #investments-view #public-investment-cards.investment-album-layout {
+        height: auto;
+        min-height: 340px;
+        padding: 10px 6px;
+    }
+
+    #investments-view .pub-inv-list-item {
+        gap: 12px;
+        padding: 12px;
+    }
+
+    #investments-view .pub-inv-list-img {
+        width: 46px;
+        height: 64px;
+    }
+
+    #investments-view .pub-inv-list-name {
+        font-size: 0.8rem;
+    }
+
+    #investments-view .pub-inv-list-price b {
+        font-size: 0.95rem;
+    }
+
+    .pub-inv-modal.overlay-content {
+        padding: 20px 16px;
+    }
+
+    .pub-inv-modal-grid {
+        gap: 14px;
+    }
+
+    .pub-inv-modal-img-wrap {
+        max-width: 130px;
+    }
+
+    .pub-inv-modal-facts {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .pub-inv-modal-fact {
+        padding: 9px 11px;
+    }
+
+    .pub-inv-modal-buy {
+        gap: 10px;
+    }
+
+    .pub-inv-add-cart {
+        padding: 12px 18px;
+        font-size: 0.9rem;
+    }
+
+    .pub-inv-modal-thumbs {
+        gap: 6px;
+    }
+
+    .pub-inv-thumb {
+        width: 42px;
+        height: 56px;
+    }
+
+    .pub-inv-modal-price {
+        font-size: 1.6rem;
+    }
+
+    .pub-inv-modal-price-card {
+        padding: 12px 16px;
+    }
+
+    .pub-inv-modal-title {
+        font-size: 1.25rem;
+    }
+}
