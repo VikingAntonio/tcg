@@ -905,6 +905,63 @@ body.theme-purple .pub-inv-modal {
         padding: 10px 6px;
     }
 
+    /* Álbumes 4x3 en móvil: la carta es la más pequeña de todas, así que se
+       recorta el margen (gap/padding) para agrandarla lo máximo posible sin
+       que lleguen a tocarse. Solo aplica en móvil; en PC no cambia nada. */
+    #investments-view #public-investment-cards.investment-album-layout.inv-album-4x3 {
+        padding: 10px 2px;
+    }
+
+    #investments-view #public-investment-cards.inv-album-4x3 .public-inv-album .album-page > .grid-container.grid-layout-4x3 {
+        gap: 3px !important;
+        padding: 2px !important;
+    }
+
+    /* Lupa por carta (solo móvil): abre el popup sin girar la hoja.
+       En escritorio se deja el comportamiento de siempre (click en la carta). */
+    #investments-view .pub-inv-slot-zoom {
+        display: flex;
+        position: absolute;
+        right: 2px;
+        bottom: 2px;
+        width: 40%;
+        max-width: 22px;
+        height: auto;
+        aspect-ratio: 1 / 1;
+        padding: 0;
+        align-items: center;
+        justify-content: center;
+        background: rgba(8, 10, 14, 0.85);
+        color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.7);
+        border-radius: 50%;
+        cursor: pointer;
+        z-index: 7;
+        pointer-events: auto !important;
+    }
+
+    #investments-view .pub-inv-slot-zoom i {
+        font-size: 8px;
+        opacity: 1;
+    }
+
+    /* El precio sube al borde superior para dejar libre la esquina inferior
+       derecha donde va la lupa. Ancho completo para que nunca desborde la carta
+       y tamaño de fuente proporcional al ancho (escala con el viewport). */
+    #investments-view .pub-inv-slot-price {
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: auto;
+        width: 100%;
+        padding: 1px 2px;
+        border-radius: 0 0 6px 6px;
+        font-size: clamp(4.5px, 1.5vw, 9px);
+        text-align: center;
+        letter-spacing: 0;
+        overflow: hidden;
+    }
+
     #investments-view .pub-inv-list-item {
         gap: 12px;
         padding: 12px;

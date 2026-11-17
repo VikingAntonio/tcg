@@ -5328,10 +5328,6 @@ function publicInvIsAvailable(card) {
 
 function renderPublicInvAlbumMode($container) {
     $container.addClass('investment-album-layout').removeClass('investment-list-layout investment-slide-layout');
-    const { width, height } = typeof window.getAlbumSize === 'function' ? window.getAlbumSize($container) : { width: 600, height: 420 };
-    const $albumWrapper = $(`<div class="album-wrapper" style="width: ${width}px; height: ${height}px;"><div class="album public-inv-album"></div></div>`);
-    const $album = $albumWrapper.find('.album');
-    $container.append($albumWrapper);
 
     const gridLayout = (currentPublicInvCategory && currentPublicInvCategory.grid_layout) ? currentPublicInvCategory.grid_layout : '3x3';
     let numSlots = 9;
@@ -5339,6 +5335,23 @@ function renderPublicInvAlbumMode($container) {
     else if (gridLayout === '4x4') numSlots = 16;
     else if (gridLayout === '2x2') numSlots = 4;
     else if (gridLayout === '1x1') numSlots = 1;
+
+    $container.removeClass('inv-album-3x3 inv-album-4x3 inv-album-4x4 inv-album-2x2 inv-album-1x1').addClass(`inv-album-${gridLayout}`);
+
+    // En escritorio se mantiene el tamaño de siempre. En móvil, los álbumes 4x3
+    // (cartas muy pequeñas) aprovechan casi todo el ancho del contenedor para
+    // agrandar la carta; el resto de layouts conserva el cálculo habitual.
+    let width, height;
+    ({ width, height } = typeof window.getAlbumSize === 'function' ? window.getAlbumSize($container) : { width: 600, height: 420 });
+    if (window.innerWidth <= 768 && gridLayout === '4x3') {
+        const containerWidth = $container.width() || $(window).width();
+        width = Math.max(240, containerWidth - 2);
+        height = Math.floor(width * (420 / 600));
+    }
+
+    const $albumWrapper = $(`<div class="album-wrapper" style="width: ${width}px; height: ${height}px;"><div class="album public-inv-album"></div></div>`);
+    const $album = $albumWrapper.find('.album');
+    $container.append($albumWrapper);
 
     const coverLabel = `
         <div class="pub-inv-cover-label">
@@ -5370,13 +5383,32 @@ function renderPublicInvAlbumMode($container) {
                     <img src="${card.image_url}" class="tcg-card" alt="${escapeHtml(card.card_name || 'Carta')}">
                     ${stampOverlay}
                     <div class="pub-inv-slot-price">${publicInvPriceLabel(card)}</div>
+                    <button type="button" class="zoom-btn pub-inv-slot-zoom" aria-label="Ver ${escapeHtml(card.card_name || 'carta')}"><i class="fas fa-search"></i></button>
                 `);
+                // La lupa abre el popup sin girar la hoja. En móvil turn.js gira la
+                // hoja al tocar cualquier punto de la página, así que el toque de la
+                // lupa se frena en fase de captura (app.js: protectedElements incluye
+                // .zoom-btn) y además aquí se corta la propagación del click para que
+                // no llegue al handler global de .card-slot.
+                $slot.find('.pub-inv-slot-zoom').on('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    openPublicInvestmentCardModal(card);
+                }).on('mousedown touchstart pointerdown', function(e) {
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                });
                 if (card.show_foil && card.holo_effect && typeof window.applyFoilToElement === 'function') {
                     window.applyFoilToElement($slot, card.holo_effect, card.custom_mask_url);
                 }
                 $slot.on('click', function(e) {
                     e.stopPropagation();
                     e.preventDefault();
+                    // En móvil, turn.js se queda con el toque del cuerpo de la carta
+                    // (gira la hoja); el popup se abre solo con la lupa. Así el
+                    // comportamiento es igual que en el binder privado.
+                    if (window.innerWidth <= 768) return;
                     openPublicInvestmentCardModal(card);
                 });
             }
