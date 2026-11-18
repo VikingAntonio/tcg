@@ -1695,6 +1695,44 @@ function checkHandTrayHover(e, traySelector) {
     return false;
 }
 
+// Resolve which hand (1 or 2) a released card should snap into, based on the
+// pointer position. Returns 0 when the drop is not over a hand.
+// The mobile layout floats the hands on top of the board, so the old tray-rect
+// detection (plus a 30px buffer) flagged most of the board as "hand" and lifted
+// cards the user meant to drop on the board. A card now snaps to a hand only
+// when the pointer is released beyond the board edge (below -> Player 1, above
+// -> Player 2) or over the visible hand cards. A board zone under the pointer
+// wins over the hand, so cards dropped on the board stay on the board.
+function resolveHandDropTarget(endPos, overBoardZone) {
+    const playmatEl = $("#playmat")[0];
+    if (playmatEl) {
+        const pRect = playmatEl.getBoundingClientRect();
+        if (endPos.y > pRect.bottom) return 1;
+        if (endPos.y < pRect.top) return 2;
+    }
+
+    if (overBoardZone) return 0;
+
+    const hands = [["#hand-p1", 1], ["#hand-p2", 2]];
+    for (let h = 0; h < hands.length; h++) {
+        const cards = document.querySelectorAll(hands[h][0] + " .duel-card");
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (let i = 0; i < cards.length; i++) {
+            const r = cards[i].getBoundingClientRect();
+            if (!r.width || !r.height) continue;
+            minX = Math.min(minX, r.left);
+            minY = Math.min(minY, r.top);
+            maxX = Math.max(maxX, r.right);
+            maxY = Math.max(maxY, r.bottom);
+        }
+        if (minX === Infinity) continue;
+        if (endPos.x >= minX && endPos.x <= maxX && endPos.y >= minY && endPos.y <= maxY) {
+            return hands[h][1];
+        }
+    }
+    return 0;
+}
+
 // Helper to render card image and description in preview
 function renderCardEffectInPreview(card) {
     $("#detail-card-img").attr("src", card.imageUrl);
@@ -7652,23 +7690,10 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                     };
 
                     const hoverZone = findOverlappingZone(centerCoords);
-                    let isOverP1Hand = checkHandTrayHover(e, "#hand-tray-p1");
-                    let isOverP2Hand = checkHandTrayHover(e, "#hand-tray-p2");
-
-                    // Check if dragged outside the board towards hand zones
-                    const playmatEl = $("#playmat")[0];
-                    if (playmatEl) {
-                        const pRect = playmatEl.getBoundingClientRect();
-                        if (endPos.y > pRect.bottom - 10) {
-                            isOverP1Hand = true;
-                        }
-                        if (endPos.y < pRect.top + 10) {
-                            isOverP2Hand = true;
-                        }
-                    }
+                    const handTarget = resolveHandDropTarget(endPos, hoverZone);
 
                     if (cardObj.isToken) {
-                        if (isOverP1Hand || isOverP2Hand || (hoverZone && (hoverZone.id.startsWith("deck_") || (hoverZone.id.startsWith("extra_") && !hoverZone.id.startsWith("extra_monster")) || hoverZone.id.startsWith("grave_") || hoverZone.id.startsWith("banished_")))) {
+                        if (handTarget || (hoverZone && (hoverZone.id.startsWith("deck_") || (hoverZone.id.startsWith("extra_") && !hoverZone.id.startsWith("extra_monster")) || hoverZone.id.startsWith("grave_") || hoverZone.id.startsWith("banished_")))) {
                             state.cards = state.cards.filter(c => c.instanceId !== cardObj.instanceId);
                             if (typeof sendGameAction === "function") {
                                 sendGameAction(`Desapareció Token: ${cardObj.name} al salir del campo`);
@@ -7681,7 +7706,13 @@ window.setupPokemonPrizes = setupPokemonPrizes;
 
                     const oldZone = cardObj.zone;
 
-                    if (hoverZone) {
+                    if (handTarget) {
+                        cardObj.zone = `hand_${handTarget}`;
+                        cardObj.controller = handTarget === 1 ? "player1" : "player2";
+                        cardObj.faceDown = false;
+                        cardObj.tapped = false;
+                        cardObj.attachedTo = null;
+                    } else if (hoverZone) {
                         if (hoverZone.id.startsWith("grave_") || hoverZone.id.startsWith("banished_")) {
                             const zonePrefix = hoverZone.id.split("_")[0];
                             const originalSuffix = cardObj.owner === "player1" ? 1 : 2;
@@ -7729,20 +7760,6 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                                 });
                             }
                         }
-                    } else if (isOverP1Hand || isOverP2Hand) {
-                        let targetHandSuffix;
-                        if (isOverP1Hand && !isOverP2Hand) {
-                            targetHandSuffix = 1;
-                        } else if (isOverP2Hand && !isOverP1Hand) {
-                            targetHandSuffix = 2;
-                        } else {
-                            targetHandSuffix = cardObj.owner === "player1" ? 1 : 2;
-                        }
-                        cardObj.zone = `hand_${targetHandSuffix}`;
-                        cardObj.controller = targetHandSuffix === 1 ? "player1" : "player2";
-                        cardObj.faceDown = false;
-                        cardObj.tapped = false;
-                        cardObj.attachedTo = null;
                     } else {
                         cardObj.zone = "field_free";
                         cardObj.attachedTo = null;

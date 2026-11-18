@@ -1263,20 +1263,18 @@
                     y = (pos.y - matOffset.top) / scale - dragOffset.y;
                 }
 
-                const boundedX = Math.max(-10, Math.min(1120 - 70, x));
-                const boundedY = Math.max(-10, Math.min(600 - 100, y));
-
-                cardObj.x = boundedX;
-                cardObj.y = boundedY;
+                // Free movement across the whole screen without artificial clamping
+                cardObj.x = x;
+                cardObj.y = y;
 
                 dragCard.css({
-                    left: `${boundedX}px`,
-                    top: `${boundedY}px`
+                    left: `${x}px`,
+                    top: `${y}px`
                 });
 
                 const centerCoords = {
-                    x: boundedX + 40,
-                    y: boundedY + 58
+                    x: x + 40,
+                    y: y + 58
                 };
 
                 $(".board-zone").removeClass("highlighted");
