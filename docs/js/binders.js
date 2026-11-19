@@ -826,7 +826,40 @@ async function openOrganizeModal(type) {
 // ====================================================================
 
 let allUserBinderSlots = [];
+let allUserBinders = [];
+let allUserBinderPages = [];
+let invBinderFilter = '';
 let pendingInvChanges = {};
+
+function invEsc(value) {
+    return String(value === undefined || value === null ? '' : value)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function slotQty(slot) {
+    const raw = slot.quantity;
+    const qty = (raw !== undefined && raw !== null && raw !== '') ? parseInt(raw, 10) : 1;
+    return isNaN(qty) ? 0 : Math.max(0, qty);
+}
+
+function slotMetrics(slot) {
+    const qty = slotQty(slot);
+    const costUnit = parseFloat(slot.cost_price || 0) || 0;
+    const saleUnit = parseFloat(slot.price || 0) || 0;
+    return {
+        qty,
+        costUnit,
+        saleUnit,
+        costTotal: costUnit * qty,
+        saleTotal: saleUnit * qty,
+        profit: (saleUnit - costUnit) * qty
+    };
+}
+
+function invMoney(value) {
+    return (value < 0 ? '-$' : '$') + Math.abs(value).toFixed(2);
+}
 
 $(document).on('click', '#btn-nav-inversiones', function(e) {
     e.preventDefault();
@@ -854,7 +887,9 @@ $(document).on('click', '#btn-refresh-reportes', function(e) {
 // Cargar tabla completa de Inversiones / Stock de todas las cartas de binders
 async function loadInversionesStockTable() {
     const $tbody = $('#inversiones-table-body');
-    $tbody.html('<tr><td colspan="9" style="text-align: center; padding: 30px; color: #94a3b8;"><i class="fas fa-spinner fa-spin"></i> Cargando inventario de cartas...</td></tr>');
+    const emptyRow = msg => `<tr><td colspan="12" style="text-align: center; padding: 30px; color: #94a3b8;">${msg}</td></tr>`;
+    $tbody.html(emptyRow('<i class="fas fa-spinner fa-spin"></i> Cargando inventario de cartas...'));
+    $('#inv-table-totals').empty();
     pendingInvChanges = {};
 
     try {
@@ -867,9 +902,15 @@ async function loadInversionesStockTable() {
             .eq('user_id', currentUser.id);
 
         if (!binders || binders.length === 0) {
-            $tbody.html('<tr><td colspan="9" style="text-align: center; padding: 30px; color: #94a3b8;">No tienes binders creados todavía.</td></tr>');
+            allUserBinders = [];
+            allUserBinderSlots = [];
+            renderInvBinderFilter();
+            $('#inv-binders-breakdown').empty();
+            $tbody.html(emptyRow('No tienes binders creados todavía.'));
             return;
         }
+
+        allUserBinders = binders;
 
         const binderMap = {};
         binders.forEach(b => { binderMap[b.id] = b.title; });
@@ -881,9 +922,12 @@ async function loadInversionesStockTable() {
             .in('binder_id', binders.map(b => b.id))
             .order('page_index', { ascending: true });
 
+        allUserBinderPages = pages || [];
         if (!pages || pages.length === 0) {
+            allUserBinderSlots = [];
+            renderInvBinderFilter();
             $('#inv-binders-breakdown').empty();
-            $tbody.html('<tr><td colspan="9" style="text-align: center; padding: 30px; color: #94a3b8;">No hay páginas ni cartas registradas en tus binders.</td></tr>');
+            $tbody.html(emptyRow('No hay páginas ni cartas registradas en tus binders.'));
             return;
         }
 
@@ -915,14 +959,49 @@ async function loadInversionesStockTable() {
             };
         });
 
+        renderInvBinderFilter();
         renderInversionesSummary(binders, pages, allUserBinderSlots);
-        renderInversionesTable(allUserBinderSlots);
+        applyInvFilters();
 
     } catch (err) {
         console.error("Error al cargar inversiones:", err);
-        $tbody.html(`<tr><td colspan="9" style="text-align: center; padding: 30px; color: #ff4757;">Error al cargar inventario: ${err.message || ''}</td></tr>`);
+        $tbody.html(emptyRow(`<span style="color: #ff4757;">Error al cargar inventario: ${invEsc(err.message || '')}</span>`));
     }
 }
+
+function renderInvBinderFilter() {
+    const $select = $('#inv-binder-filter');
+    const previous = invBinderFilter;
+    $select.html('<option value="">Todos los binders</option>');
+    allUserBinders.forEach(b => {
+        $select.append(`<option value="${invEsc(b.id)}">${invEsc(b.title || 'Binder')}</option>`);
+    });
+    const stillExists = allUserBinders.some(b => String(b.id) === String(previous));
+    invBinderFilter = stillExists ? previous : '';
+    $select.val(invBinderFilter);
+}
+
+function getFilteredInvSlots() {
+    const term = ($('#inv-table-search').val() || '').toLowerCase().trim();
+    return allUserBinderSlots.filter(s => {
+        if (invBinderFilter && String(s.binder_id) !== String(invBinderFilter)) return false;
+        if (!term) return true;
+        return (s.name && s.name.toLowerCase().includes(term)) ||
+            (s.binder_title && s.binder_title.toLowerCase().includes(term)) ||
+            (s.expansion && s.expansion.toLowerCase().includes(term)) ||
+            (s.rarity && s.rarity.toLowerCase().includes(term));
+    });
+}
+
+function applyInvFilters() {
+    $('.inv-binder-card').each(function() {
+        const id = $(this).data('binder-id');
+        $(this).toggleClass('inv-binder-active', !!invBinderFilter && String(id) === String(invBinderFilter));
+    });
+    $('#inv-binder-filter').val(invBinderFilter);
+    renderInversionesTable(getFilteredInvSlots());
+}
+
 
 function renderInversionesSummary(binders, pages, slots) {
     const $container = $('#inv-binders-breakdown').empty();
@@ -947,12 +1026,10 @@ function renderInversionesSummary(binders, pages, slots) {
             let pageCards = 0;
 
             pageSlots.forEach(s => {
-                const qty = (s.quantity !== undefined && s.quantity !== null && s.quantity !== '') ? parseInt(s.quantity, 10) : 1;
-                const price = parseFloat(s.price || 0) || 0;
-                const cost = parseFloat(s.cost_price || 0) || 0;
-                pageSale += (price * (qty > 0 ? qty : 1));
-                pageCost += (cost * (qty > 0 ? qty : 1));
-                pageCards += (qty > 0 ? qty : 1);
+                const m = slotMetrics(s);
+                pageSale += m.saleTotal;
+                pageCost += m.costTotal;
+                pageCards += m.qty;
             });
 
             binderTotalSale += pageSale;
@@ -973,36 +1050,48 @@ function renderInversionesSummary(binders, pages, slots) {
         overallGrandTotalCost += binderTotalCost;
         overallTotalCards += binderTotalCards;
 
+        const binderProfit = binderTotalSale - binderTotalCost;
+        const isActive = !!invBinderFilter && String(invBinderFilter) === String(b.id);
+
         const $binderCard = $(`
-            <div style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 14px; padding: 18px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between;">
+            <div class="inv-binder-card${isActive ? ' inv-binder-active' : ''}" data-binder-id="${invEsc(b.id)}" title="Ver solo las cartas de este binder" style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 14px; padding: 18px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between;">
                 <div>
                     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 12px;">
-                        <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: #ffffff !important;">${b.title || 'Binder'}</h3>
+                        <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: #ffffff !important;">${invEsc(b.title || 'Binder')}</h3>
                         <span style="background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid #a855f7; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 800;">
                             ${binderPages.length} Hoja${binderPages.length !== 1 ? 's' : ''}
                         </span>
                     </div>
 
-                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
-                        <thead>
-                            <tr style="color: #94a3b8; font-size: 0.75rem; text-transform: uppercase;">
-                                <th style="text-align: left; padding: 4px 10px;">Hoja</th>
-                                <th style="text-align: center; padding: 4px 10px;">Cartas</th>
-                                <th style="text-align: right; padding: 4px 10px;">Costo</th>
-                                <th style="text-align: right; padding: 4px 10px;">Venta</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${pageRowsHtml || '<tr><td colspan="4" style="text-align: center; color: #64748b; padding: 10px;">Sin hojas</td></tr>'}
-                        </tbody>
-                    </table>
+                    <div class="inv-pages-scroll">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="color: #94a3b8; font-size: 0.75rem; text-transform: uppercase;">
+                                    <th style="text-align: left; padding: 4px 10px;">Hoja</th>
+                                    <th style="text-align: center; padding: 4px 10px;">Cartas</th>
+                                    <th style="text-align: right; padding: 4px 10px;">Costo</th>
+                                    <th style="text-align: right; padding: 4px 10px;">Venta</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${pageRowsHtml || '<tr><td colspan="4" style="text-align: center; color: #64748b; padding: 10px;">Sin hojas</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
-                <div style="background: rgba(0,0,0,0.4); border-radius: 8px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-weight: 700; color: #e2e8f0; font-size: 0.88rem;">Total Binder:</span>
-                    <div style="text-align: right;">
-                        <div style="font-size: 1rem; font-weight: 900; color: #00ff88;">$${binderTotalSale.toFixed(2)}</div>
-                        <div style="font-size: 0.72rem; color: #f59e0b; font-weight: 700;">Costo: $${binderTotalCost.toFixed(2)}</div>
+                <div class="inv-binder-totals">
+                    <div class="inv-binder-total-item">
+                        <span class="inv-binder-total-label">Valor total</span>
+                        <span class="inv-binder-total-value inv-sale">$${binderTotalSale.toFixed(2)}</span>
+                    </div>
+                    <div class="inv-binder-total-item">
+                        <span class="inv-binder-total-label">Invertí</span>
+                        <span class="inv-binder-total-value inv-cost">$${binderTotalCost.toFixed(2)}</span>
+                    </div>
+                    <div class="inv-binder-total-item">
+                        <span class="inv-binder-total-label">Ganancia</span>
+                        <span class="inv-binder-total-value inv-profit${binderProfit < 0 ? ' negative' : ''}">${invMoney(binderProfit)}</span>
                     </div>
                 </div>
             </div>
@@ -1011,20 +1100,25 @@ function renderInversionesSummary(binders, pages, slots) {
     });
 
     // Tarjeta destacada de Gran Total de todos los Binders
+    const overallProfit = overallGrandTotalSale - overallGrandTotalCost;
     const $grandTotalCard = $(`
-        <div style="grid-column: 1 / -1; background: linear-gradient(135deg, rgba(88, 28, 135, 0.4), rgba(15, 23, 42, 0.9)); border: 1px solid #a855f7; border-radius: 14px; padding: 18px 25px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-            <div>
+        <div class="inv-grand-total" style="grid-column: 1 / -1; background: linear-gradient(135deg, rgba(88, 28, 135, 0.4), rgba(15, 23, 42, 0.9)); border: 1px solid #a855f7; border-radius: 14px; padding: 18px 25px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; box-sizing: border-box; min-width: 0;">
+            <div style="min-width: 0;">
                 <div style="font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; color: #c084fc; font-weight: 800;">Gran Total de Todos los Binders Creados</div>
                 <div style="font-size: 1.1rem; color: #ffffff; font-weight: 700; margin-top: 2px;">${binders.length} Binders &bull; ${overallTotalCards} Cartas en Stock</div>
             </div>
-            <div style="display: flex; gap: 25px; align-items: center;">
+            <div class="inv-grand-total-metrics" style="display: flex; gap: 25px; align-items: center; flex-wrap: wrap;">
                 <div style="text-align: right;">
-                    <div style="font-size: 0.75rem; color: #f59e0b; font-weight: 700; text-transform: uppercase;">Inversión Total (Costo)</div>
+                    <div style="font-size: 0.75rem; color: #f59e0b; font-weight: 700; text-transform: uppercase;">Inversión Total</div>
                     <div style="font-size: 1.25rem; font-weight: 900; color: #f59e0b;">$${overallGrandTotalCost.toFixed(2)}</div>
                 </div>
                 <div style="text-align: right;">
                     <div style="font-size: 0.75rem; color: #00ff88; font-weight: 700; text-transform: uppercase;">Valor Total en Venta</div>
                     <div style="font-size: 1.5rem; font-weight: 900; color: #00ff88;">$${overallGrandTotalSale.toFixed(2)}</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 0.75rem; color: #00d2ff; font-weight: 700; text-transform: uppercase;">Ganancia Total</div>
+                    <div style="font-size: 1.5rem; font-weight: 900; color: ${overallProfit < 0 ? '#ff4757' : '#00d2ff'};">${invMoney(overallProfit)}</div>
                 </div>
             </div>
         </div>
@@ -1032,40 +1126,55 @@ function renderInversionesSummary(binders, pages, slots) {
     $container.prepend($grandTotalCard);
 }
 
+
 function renderInversionesTable(slots) {
     const $tbody = $('#inversiones-table-body').empty();
+    $('#inv-table-totals').empty();
 
     if (!slots || slots.length === 0) {
-        $tbody.html('<tr><td colspan="9" style="text-align: center; padding: 30px; color: #94a3b8;">No se encontraron cartas en tus binders.</td></tr>');
+        $tbody.html('<tr><td colspan="12" style="text-align: center; padding: 30px; color: #94a3b8;">No se encontraron cartas en tus binders.</td></tr>');
         return;
     }
 
+    let totalQty = 0;
+    let totalCost = 0;
+    let totalSale = 0;
+    let totalProfit = 0;
+
     slots.forEach(slot => {
-        const qty = slot.quantity !== undefined && slot.quantity !== null && slot.quantity !== '' ? parseInt(slot.quantity) : 1;
-        const isSoldOut = qty <= 0;
-        const costPrice = parseFloat(slot.cost_price || 0) || 0;
-        const salePrice = parseFloat(slot.price || 0) || 0;
+        const m = slotMetrics(slot);
+        const isSoldOut = m.qty <= 0;
+
+        totalQty += m.qty;
+        totalCost += m.costTotal;
+        totalSale += m.saleTotal;
+        totalProfit += m.profit;
+
+        const profitColor = m.profit < 0 ? '#ff4757' : '#00d2ff';
 
         const $row = $(`
-            <tr style="border-bottom: 1px solid rgba(255,255,255,0.06); transition: background 0.2s;" data-slot-id="${slot.id}">
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.06); transition: background 0.2s;" data-slot-id="${invEsc(slot.id)}">
                 <td style="padding: 10px; text-align: center;">
-                    <img src="${slot.image_url}" style="width: 36px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid rgba(255,255,255,0.15); display: inline-block;">
+                    <img src="${invEsc(slot.image_url)}" style="width: 36px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid rgba(255,255,255,0.15); display: inline-block;">
                 </td>
-                <td style="padding: 10px 12px; font-weight: 700; color: #cbd5e1;">${slot.binder_title}</td>
-                <td style="padding: 10px 12px; font-weight: 800; color: #fff;">${slot.name || 'Sin nombre'}</td>
-                <td style="padding: 10px; color: #94a3b8;">${slot.rarity || '-'}</td>
-                <td style="padding: 10px; color: #94a3b8;">${slot.expansion || '-'}</td>
+                <td style="padding: 10px 12px; font-weight: 700; color: #cbd5e1;">${invEsc(slot.binder_title)}</td>
+                <td style="padding: 10px 12px; font-weight: 800; color: #fff;">${invEsc(slot.name || 'Sin nombre')}</td>
+                <td style="padding: 10px; color: #94a3b8;">${invEsc(slot.rarity || '-')}</td>
+                <td style="padding: 10px; color: #94a3b8;">${invEsc(slot.expansion || '-')}</td>
                 <td style="padding: 10px; text-align: right;">
-                    <input type="number" step="0.01" class="inv-input-cost" data-id="${slot.id}" value="${costPrice > 0 ? costPrice.toFixed(2) : ''}" placeholder="0.00" style="width: 90px; text-align: right; background: rgba(0,0,0,0.4); border: 1px solid rgba(245,158,11,0.3); color: #f59e0b; font-weight: 700; border-radius: 6px; padding: 4px 6px;">
+                    <input type="number" step="0.01" class="inv-input-cost" data-id="${invEsc(slot.id)}" value="${m.costUnit > 0 ? m.costUnit.toFixed(2) : ''}" placeholder="0.00" style="width: 90px; text-align: right; background: rgba(0,0,0,0.4); border: 1px solid rgba(245,158,11,0.3); color: #f59e0b; font-weight: 700; border-radius: 6px; padding: 4px 6px;">
                 </td>
                 <td style="padding: 10px; text-align: right;">
-                    <input type="number" step="0.01" class="inv-input-price" data-id="${slot.id}" value="${salePrice > 0 ? salePrice.toFixed(2) : ''}" placeholder="0.00" style="width: 90px; text-align: right; background: rgba(0,0,0,0.4); border: 1px solid rgba(0,255,136,0.3); color: #00ff88; font-weight: 700; border-radius: 6px; padding: 4px 6px;">
+                    <input type="number" step="0.01" class="inv-input-price" data-id="${invEsc(slot.id)}" value="${m.saleUnit > 0 ? m.saleUnit.toFixed(2) : ''}" placeholder="0.00" style="width: 90px; text-align: right; background: rgba(0,0,0,0.4); border: 1px solid rgba(0,255,136,0.3); color: #00ff88; font-weight: 700; border-radius: 6px; padding: 4px 6px;">
                 </td>
                 <td style="padding: 10px; text-align: center;">
-                    <input type="number" min="0" class="inv-input-qty" data-id="${slot.id}" value="${qty}" style="width: 70px; text-align: center; background: rgba(0,0,0,0.4); border: 1px solid rgba(0,210,255,0.3); color: #00d2ff; font-weight: 800; border-radius: 6px; padding: 4px 6px;">
+                    <input type="number" min="0" class="inv-input-qty" data-id="${invEsc(slot.id)}" value="${m.qty}" style="width: 70px; text-align: center; background: rgba(0,0,0,0.4); border: 1px solid rgba(0,210,255,0.3); color: #00d2ff; font-weight: 800; border-radius: 6px; padding: 4px 6px;">
                 </td>
+                <td class="inv-cell-cost-total" data-id="${invEsc(slot.id)}" style="padding: 10px 12px; text-align: right; color: #f59e0b; font-weight: 700;">${invMoney(m.costTotal)}</td>
+                <td class="inv-cell-sale-total" data-id="${invEsc(slot.id)}" style="padding: 10px 12px; text-align: right; color: #00ff88; font-weight: 800;">${invMoney(m.saleTotal)}</td>
+                <td class="inv-cell-profit" data-id="${invEsc(slot.id)}" style="padding: 10px 12px; text-align: right; color: ${profitColor}; font-weight: 800;">${invMoney(m.profit)}</td>
                 <td style="padding: 10px; text-align: center;">
-                    <span class="status-badge-${slot.id}" style="display: inline-block; padding: 3px 8px; border-radius: 12px; font-weight: 800; font-size: 0.75rem; ${isSoldOut ? 'background: rgba(239,68,68,0.2); color: #ff4757; border: 1px solid #ff4757;' : 'background: rgba(0,255,136,0.2); color: #00ff88; border: 1px solid #00ff88;'}">
+                    <span class="status-badge-${invEsc(slot.id)}" style="display: inline-block; padding: 3px 8px; border-radius: 12px; font-weight: 800; font-size: 0.75rem; ${isSoldOut ? 'background: rgba(239,68,68,0.2); color: #ff4757; border: 1px solid #ff4757;' : 'background: rgba(0,255,136,0.2); color: #00ff88; border: 1px solid #00ff88;'}">
                         ${isSoldOut ? 'AGOTADO' : 'DISPONIBLE'}
                     </span>
                 </td>
@@ -1073,23 +1182,61 @@ function renderInversionesTable(slots) {
         `);
         $tbody.append($row);
     });
+
+    renderInvTotalsFooter({ totalQty, totalCost, totalSale, totalProfit });
+}
+
+function renderInvTotalsFooter(totals) {
+    const $bar = $('#inv-table-totals').empty();
+    if (!totals) return;
+
+    const scopeLabel = invBinderFilter
+        ? invEsc((allUserBinders.find(b => String(b.id) === String(invBinderFilter)) || {}).title || 'Binder')
+        : 'Todos los binders';
+
+    $bar.html(`
+        <div>
+            <div class="inv-totals-scope">Totales &bull; ${scopeLabel}</div>
+            <div class="inv-totals-cards">${totals.totalQty} cartas</div>
+        </div>
+        <div class="inv-totals-metrics">
+            <div class="inv-totals-item cost">
+                <span class="inv-totals-label">Costo total</span>
+                <span class="inv-totals-value">${invMoney(totals.totalCost)}</span>
+            </div>
+            <div class="inv-totals-item sale">
+                <span class="inv-totals-label">Venta total</span>
+                <span class="inv-totals-value">${invMoney(totals.totalSale)}</span>
+            </div>
+            <div class="inv-totals-item profit${totals.totalProfit < 0 ? ' negative' : ''}">
+                <span class="inv-totals-label">Ganancia</span>
+                <span class="inv-totals-value">${invMoney(totals.totalProfit)}</span>
+            </div>
+        </div>
+    `);
 }
 
 // Búsqueda en vivo en la tabla de inversiones
 $(document).on('input', '#inv-table-search', function() {
-    const term = $(this).val().toLowerCase().trim();
-    if (!term) {
-        renderInversionesTable(allUserBinderSlots);
-        return;
-    }
-    const filtered = allUserBinderSlots.filter(s =>
-        (s.name && s.name.toLowerCase().includes(term)) ||
-        (s.binder_title && s.binder_title.toLowerCase().includes(term)) ||
-        (s.expansion && s.expansion.toLowerCase().includes(term)) ||
-        (s.rarity && s.rarity.toLowerCase().includes(term))
-    );
-    renderInversionesTable(filtered);
+    renderInversionesTable(getFilteredInvSlots());
 });
+
+// Filtro por binder (select o click en la tarjeta del binder)
+$(document).on('change', '#inv-binder-filter', function() {
+    invBinderFilter = $(this).val() || '';
+    applyInvFilters();
+});
+
+$(document).on('click', '.inv-binder-card', function() {
+    const id = String($(this).data('binder-id'));
+    invBinderFilter = (invBinderFilter === id) ? '' : id;
+    applyInvFilters();
+    const $scroll = $('.inv-table-scroll');
+    if ($scroll.length) {
+        $scroll[0].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+});
+
 
 // Guardar cambios en lote de la tabla de Inversiones / Stock
 $(document).on('change', '.inv-input-qty, .inv-input-cost, .inv-input-price', function() {
@@ -1113,7 +1260,33 @@ $(document).on('change', '.inv-input-qty, .inv-input-cost, .inv-input-price', fu
     } else if ($(this).hasClass('inv-input-price')) {
         pendingInvChanges[slotId].price = $(this).val();
     }
+    refreshInvRowTotals(slotId);
 });
+
+function refreshInvRowTotals(slotId) {
+    const slot = allUserBinderSlots.find(s => String(s.id) === String(slotId));
+    if (!slot) return;
+    const merged = Object.assign({}, slot, pendingInvChanges[slotId] || {});
+    const m = slotMetrics(merged);
+    $('.inv-cell-cost-total[data-id="' + slotId + '"]').text(invMoney(m.costTotal));
+    $('.inv-cell-sale-total[data-id="' + slotId + '"]').text(invMoney(m.saleTotal));
+    $('.inv-cell-profit[data-id="' + slotId + '"]')
+        .text(invMoney(m.profit))
+        .css('color', m.profit < 0 ? '#ff4757' : '#00d2ff');
+    refreshInvTotalsFooter();
+}
+
+function refreshInvTotalsFooter() {
+    let totalQty = 0, totalCost = 0, totalSale = 0, totalProfit = 0;
+    getFilteredInvSlots().forEach(slot => {
+        const m = slotMetrics(Object.assign({}, slot, pendingInvChanges[slot.id] || {}));
+        totalQty += m.qty;
+        totalCost += m.costTotal;
+        totalSale += m.saleTotal;
+        totalProfit += m.profit;
+    });
+    renderInvTotalsFooter({ totalQty, totalCost, totalSale, totalProfit });
+}
 
 $(document).on('click', '#btn-save-inv-table', async function(e) {
     e.preventDefault();
@@ -1142,6 +1315,8 @@ $(document).on('click', '#btn-save-inv-table', async function(e) {
         });
 
         pendingInvChanges = {};
+        renderInversionesSummary(allUserBinders, allUserBinderPages, allUserBinderSlots);
+        applyInvFilters();
         Swal.fire({ icon: 'success', title: '¡Inventario Actualizado!', text: 'Los cambios de stock y precios se han guardado con éxito.', timer: 1500, showConfirmButton: false });
     } catch (err) {
         Swal.fire('Error', 'No se pudieron guardar los cambios: ' + err.message, 'error');
