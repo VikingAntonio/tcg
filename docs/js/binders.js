@@ -889,7 +889,7 @@ async function loadInversionesStockTable() {
     const $tbody = $('#inversiones-table-body');
     const emptyRow = msg => `<tr><td colspan="12" style="text-align: center; padding: 30px; color: #94a3b8;">${msg}</td></tr>`;
     $tbody.html(emptyRow('<i class="fas fa-spinner fa-spin"></i> Cargando inventario de cartas...'));
-    $('#inv-table-totals').empty();
+    $('#inv-table-totals').empty().hide();
     pendingInvChanges = {};
 
     try {
@@ -1069,7 +1069,7 @@ function renderInversionesSummary(binders, pages, slots) {
                                 <tr style="color: #94a3b8; font-size: 0.75rem; text-transform: uppercase;">
                                     <th style="text-align: left; padding: 4px 10px;">Hoja</th>
                                     <th style="text-align: center; padding: 4px 10px;">Cartas</th>
-                                    <th style="text-align: right; padding: 4px 10px;">Costo</th>
+                                    <th style="text-align: right; padding: 4px 10px;">Inversión</th>
                                     <th style="text-align: right; padding: 4px 10px;">Venta</th>
                                 </tr>
                             </thead>
@@ -1086,7 +1086,7 @@ function renderInversionesSummary(binders, pages, slots) {
                         <span class="inv-binder-total-value inv-sale">$${binderTotalSale.toFixed(2)}</span>
                     </div>
                     <div class="inv-binder-total-item">
-                        <span class="inv-binder-total-label">Invertí</span>
+                        <span class="inv-binder-total-label">Inversión</span>
                         <span class="inv-binder-total-value inv-cost">$${binderTotalCost.toFixed(2)}</span>
                     </div>
                     <div class="inv-binder-total-item">
@@ -1129,7 +1129,7 @@ function renderInversionesSummary(binders, pages, slots) {
 
 function renderInversionesTable(slots) {
     const $tbody = $('#inversiones-table-body').empty();
-    $('#inv-table-totals').empty();
+    $('#inv-table-totals').empty().hide();
 
     if (!slots || slots.length === 0) {
         $tbody.html('<tr><td colspan="12" style="text-align: center; padding: 30px; color: #94a3b8;">No se encontraron cartas en tus binders.</td></tr>');
@@ -1190,9 +1190,14 @@ function renderInvTotalsFooter(totals) {
     const $bar = $('#inv-table-totals').empty();
     if (!totals) return;
 
-    const scopeLabel = invBinderFilter
-        ? invEsc((allUserBinders.find(b => String(b.id) === String(invBinderFilter)) || {}).title || 'Binder')
-        : 'Todos los binders';
+    // Sin filtro, el "Gran Total" de arriba ya muestra estos mismos números.
+    if (!invBinderFilter) {
+        $bar.hide();
+        return;
+    }
+    $bar.show();
+
+    const scopeLabel = invEsc((allUserBinders.find(b => String(b.id) === String(invBinderFilter)) || {}).title || 'Binder');
 
     $bar.html(`
         <div>
@@ -1201,7 +1206,7 @@ function renderInvTotalsFooter(totals) {
         </div>
         <div class="inv-totals-metrics">
             <div class="inv-totals-item cost">
-                <span class="inv-totals-label">Costo total</span>
+                <span class="inv-totals-label">Inversión total</span>
                 <span class="inv-totals-value">${invMoney(totals.totalCost)}</span>
             </div>
             <div class="inv-totals-item sale">
