@@ -1,4 +1,4 @@
-const STATIC_CACHE = 'viking-static-v241';
+const STATIC_CACHE = 'viking-static-v242';
 const IMAGE_CACHE = 'viking-images-v1';
 const DATA_CACHE = 'viking-data-v1';
 
@@ -50,11 +50,15 @@ const URLS_TO_CACHE = [
   './css/inversiones.css',
   './css/public-inversiones.css',
   './css/public-binders.css',
+  './css/duel-ai.css',
   './css/barajaryg.css',
   './css/build.css',
   './css/global.css',
   './js/app.js',
   './js/public-binders.js',
+  './js/duel-ai-cards.js',
+  './js/duel-ai-engine.js',
+  './js/duel-ai-ui.js',
   './js/admin.js',
   './js/utils.js',
   './js/supabase-config.js',

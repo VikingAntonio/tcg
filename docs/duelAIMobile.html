@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duelo contra la Máquina · VikingDev TCG (Móvil)</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/duel-ai.css">
+</head>
+<body class="duel-body dai-mobile">
+    <div class="dai-app" id="dai-app">
+        <header class="dai-topbar">
+            <a class="dai-back" href="configDuelMobile.html">
+                <i class="fas fa-arrow-left"></i> Configuración
+            </a>
+            <span class="dai-title">CONTRA LA MÁQUINA</span>
+            <span class="dai-spacer"></span>
+            <span class="dai-chip" id="dai-turn-badge">—</span>
+            <span class="dai-chip" id="dai-phase-chip">—</span>
+            <span class="dai-chip turn-me" id="dai-turn-chip">—</span>
+            <button class="dai-btn small danger" type="button" id="dai-surrender" title="Rendirse">
+                <i class="fas fa-flag"></i> Rendirse
+            </button>
+        </header>
+
+        <main class="dai-board" id="dai-board" style="display:none;">
+            <section class="dai-side is-ai" id="dai-side-top"></section>
+            <div class="dai-hand-label" id="dai-hand-label">Tu mano</div>
+            <div class="dai-hand" id="dai-hand"></div>
+            <section class="dai-side is-me" id="dai-side-bottom"></section>
+        </main>
+
+        <div class="dai-rail">
+            <section class="dai-actions" id="dai-actions" style="display:none;"></section>
+            <section class="dai-log" id="dai-log" aria-live="polite"></section>
+        </div>
+
+        <section class="dai-setup" id="dai-setup" style="display:none;"></section>
+    </div>
+
+    <div class="dai-overlay" id="dai-chain-overlay">
+        <div class="dai-modal">
+            <h3>Ventana de cadena</h3>
+            <p>Puedes encadenar una de tus cartas preparadas o dejar pasar para que se resuelva la cadena.</p>
+            <div id="dai-chain-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+            <div class="dai-modal-actions">
+                <button class="dai-btn" type="button" id="dai-chain-pass">Dejar pasar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="dai-winner" id="dai-winner">
+        <div class="dai-winner-box">
+            <i class="fas fa-trophy" id="dai-winner-icon"></i>
+            <h2 id="dai-winner-title">Fin del duelo</h2>
+            <p id="dai-winner-desc"></p>
+            <div class="dai-modal-actions" style="justify-content:center;">
+                <button class="dai-btn primary" type="button" id="dai-winner-again">Jugar otra vez</button>
+                <button class="dai-btn" type="button" id="dai-winner-config">Cambiar decks</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/duel-ai-cards.js"></script>
+    <script src="js/duel-ai-engine.js"></script>
+    <script src="js/duel-ai-ui.js"></script>
+</body>
+</html>
