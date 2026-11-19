@@ -1,0 +1,543 @@
+/* VikingDev TCG — Modo Contra la Máquina.
+   Estilos propios y acotados: todo va bajo .dai-app, así que no
+   afecta a duel.html / duelmobile.html ni a sus CSS. */
+
+.dai-app {
+    --dai-bg: #080c12;
+    --dai-panel: rgba(17, 24, 34, 0.92);
+    --dai-line: rgba(255, 255, 255, 0.09);
+    --dai-c1: #00d2ff;
+    --dai-c2: #ff1b6b;
+    --dai-gold: #ffd32d;
+    --dai-text: #eef3f9;
+    --dai-muted: #8fa3b8;
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at 15% 0%, rgba(0, 210, 255, 0.14), transparent 45%),
+        radial-gradient(circle at 85% 100%, rgba(255, 27, 107, 0.14), transparent 45%),
+        var(--dai-bg);
+    color: var(--dai-text);
+    font-family: 'Montserrat', 'Segoe UI', sans-serif;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+}
+
+.dai-app *,
+.dai-app *::before,
+.dai-app *::after { box-sizing: border-box; }
+
+/* ---------------- Top bar ---------------- */
+.dai-topbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    background: var(--dai-panel);
+    border: 1px solid var(--dai-line);
+    border-radius: 14px;
+    padding: 8px 12px;
+}
+
+.dai-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--dai-text);
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding: 6px 10px;
+    border-radius: 9px;
+    border: 1px solid var(--dai-line);
+    background: rgba(255, 255, 255, 0.04);
+}
+.dai-back:hover { border-color: var(--dai-c1); color: var(--dai-c1); }
+
+.dai-title {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+    font-size: clamp(0.85rem, 2.2vw, 1.05rem);
+    letter-spacing: 0.04em;
+    background: linear-gradient(90deg, var(--dai-c1), var(--dai-gold));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.dai-spacer { flex: 1 1 auto; }
+
+.dai-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 5px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--dai-line);
+    background: rgba(255, 255, 255, 0.04);
+    white-space: nowrap;
+}
+.dai-chip.turn-me { border-color: var(--dai-c1); color: var(--dai-c1); box-shadow: 0 0 14px rgba(0, 210, 255, 0.25); }
+.dai-chip.turn-ai { border-color: var(--dai-c2); color: var(--dai-c2); box-shadow: 0 0 14px rgba(255, 27, 107, 0.25); }
+
+/* ---------------- Board ---------------- */
+.dai-board {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.dai-side {
+    border: 1px solid var(--dai-line);
+    border-radius: 14px;
+    background: var(--dai-panel);
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: relative;
+}
+.dai-side.is-ai { border-color: rgba(255, 27, 107, 0.3); }
+.dai-side.is-me { border-color: rgba(0, 210, 255, 0.3); }
+.dai-side.is-active { box-shadow: 0 0 0 1px currentColor inset, 0 0 22px rgba(0, 210, 255, 0.16); }
+.dai-side.is-ai.is-active { box-shadow: 0 0 0 1px var(--dai-c2) inset, 0 0 22px rgba(255, 27, 107, 0.18); }
+
+.dai-side-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+.dai-side-head .dai-name { color: var(--dai-muted); }
+.dai-life {
+    margin-left: auto;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+.dai-life b {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.95rem;
+}
+.dai-life.low b { color: var(--dai-c2); }
+
+.dai-rows {
+    display: grid;
+    grid-template-columns: 86px minmax(0, 1fr) 86px;
+    gap: 8px;
+    align-items: stretch;
+}
+
+.dai-piles {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.dai-pile {
+    position: relative;
+    border: 1px dashed var(--dai-line);
+    border-radius: 8px;
+    min-height: 44px;
+    display: grid;
+    place-items: center;
+    font-size: 0.56rem;
+    font-weight: 800;
+    color: var(--dai-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    text-align: center;
+    padding: 2px;
+    overflow: hidden;
+}
+.dai-pile img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.85;
+}
+.dai-pile .dai-pile-badge {
+    position: relative;
+    z-index: 2;
+    background: rgba(0, 0, 0, 0.72);
+    border-radius: 999px;
+    padding: 1px 7px;
+    font-size: 0.6rem;
+    color: var(--dai-text);
+}
+
+.dai-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+.dai-slot-row {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 80px));
+    justify-content: center;
+    gap: 6px;
+}
+.dai-slot {
+    position: relative;
+    aspect-ratio: 59 / 86;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.02);
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    min-height: 0;
+}
+.dai-slot.empty::after {
+    content: '';
+    width: 22%;
+    height: 22%;
+    border-radius: 50%;
+    border: 1px dashed rgba(255, 255, 255, 0.12);
+}
+
+.dai-card {
+    position: absolute;
+    inset: 0;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #0a0f16;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    display: block;
+    padding: 0;
+    cursor: default;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.dai-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dai-card.face-down img { visibility: hidden; }
+.dai-card.face-down { background-image: url('../img/bocabajo.jpg'); background-size: cover; background-position: center; }
+.dai-app.is-pokemon .dai-card.face-down { background-image: url('../img/pokeBocaAbajo.jpg'); }
+.dai-card.tapped { transform: rotate(90deg) scale(0.72); }
+.dai-card.selectable { cursor: pointer; border-color: var(--dai-c1); box-shadow: 0 0 12px rgba(0, 210, 255, 0.4); }
+.dai-card.selectable:hover { transform: translateY(-2px); }
+.dai-card.is-target.selectable { border-color: var(--dai-gold); box-shadow: 0 0 12px rgba(255, 211, 45, 0.5); }
+
+.dai-card-tag {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    z-index: 3;
+    font-size: 0.5rem;
+    font-weight: 900;
+    padding: 1px 4px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.78);
+    color: var(--dai-c1);
+    pointer-events: none;
+}
+.dai-card-tag.def { color: var(--dai-gold); }
+.dai-card-dmg {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    z-index: 3;
+    font-size: 0.6rem;
+    font-weight: 900;
+    padding: 1px 5px;
+    border-radius: 999px;
+    background: var(--dai-c2);
+    color: #fff;
+    pointer-events: none;
+}
+.dai-card-energy {
+    position: absolute;
+    bottom: 2px;
+    left: 2px;
+    z-index: 3;
+    font-size: 0.55rem;
+    font-weight: 800;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.75);
+    color: var(--dai-gold);
+    pointer-events: none;
+}
+
+/* ---------------- Hand ---------------- */
+.dai-hand {
+    display: flex;
+    gap: 5px;
+    overflow-x: auto;
+    padding: 4px 2px;
+    min-height: 62px;
+    scrollbar-width: thin;
+}
+.dai-hand .dai-hand-card {
+    position: relative;
+    flex: 0 0 auto;
+    width: 46px;
+    aspect-ratio: 59 / 86;
+    border-radius: 7px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: #0a0f16;
+}
+.dai-hand .dai-hand-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dai-hand .dai-hand-card.face-down { background-image: url('../img/bocabajo.jpg'); background-size: cover; }
+.dai-app.is-pokemon .dai-hand .dai-hand-card.face-down { background-image: url('../img/pokeBocaAbajo.jpg'); }
+.dai-hand-label {
+    font-size: 0.6rem;
+    font-weight: 800;
+    color: var(--dai-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* ---------------- Action bar ---------------- */
+.dai-actions {
+    border: 1px solid var(--dai-line);
+    border-radius: 14px;
+    background: var(--dai-panel);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.dai-action-group { display: flex; flex-direction: column; gap: 6px; }
+.dai-action-group-title {
+    font-size: 0.6rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--dai-muted);
+}
+.dai-action-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.dai-btn {
+    font-family: inherit;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 7px 12px;
+    border-radius: 9px;
+    border: 1px solid var(--dai-line);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--dai-text);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.14s ease;
+    max-width: 100%;
+}
+.dai-btn:hover:not(:disabled) { border-color: var(--dai-c1); color: var(--dai-c1); transform: translateY(-1px); }
+.dai-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.dai-btn.primary {
+    background: linear-gradient(135deg, var(--dai-c1), #0090b8);
+    border-color: transparent;
+    color: #04121a;
+    font-weight: 900;
+}
+.dai-btn.primary:hover { color: #04121a; filter: brightness(1.1); }
+.dai-btn.danger { border-color: var(--dai-c2); color: var(--dai-c2); }
+.dai-btn.small { font-size: 0.64rem; padding: 5px 9px; }
+
+.dai-hint {
+    font-size: 0.68rem;
+    color: var(--dai-muted);
+    line-height: 1.4;
+}
+.dai-hint b { color: var(--dai-gold); }
+
+/* ---------------- Log ---------------- */
+.dai-rail { display: contents; }
+
+.dai-log {
+    min-height: 96px;
+    border: 1px solid var(--dai-line);
+    border-radius: 14px;
+    background: rgba(8, 12, 18, 0.9);
+    padding: 8px 10px;
+    max-height: 168px;
+    overflow-y: auto;
+    font-size: 0.7rem;
+    line-height: 1.5;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 2px;
+    scrollbar-width: thin;
+}
+.dai-log-entry { color: var(--dai-muted); }
+.dai-log-entry.pc { color: #7fdcff; }
+.dai-log-entry.ai { color: #ff9bbd; }
+.dai-log-entry.battle { color: var(--dai-gold); }
+.dai-log-entry.turn { color: #fff; font-weight: 800; }
+.dai-log-entry.phase { color: #6f8497; font-style: italic; }
+.dai-log-entry.win { color: #3bf0a8; font-weight: 900; }
+
+/* ---------------- Overlays ---------------- */
+.dai-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(4, 8, 12, 0.82);
+    backdrop-filter: blur(4px);
+    padding: 16px;
+}
+.dai-overlay.show { display: flex; }
+.dai-modal {
+    width: min(520px, 100%);
+    max-height: 88vh;
+    overflow-y: auto;
+    background: #101823;
+    border: 1px solid var(--dai-line);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+}
+.dai-modal h3 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.95rem;
+    margin: 0;
+    color: var(--dai-gold);
+}
+.dai-modal p { margin: 0; font-size: 0.8rem; color: var(--dai-muted); line-height: 1.5; }
+.dai-modal-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.dai-chain-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid var(--dai-line);
+    border-radius: 10px;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.03);
+}
+.dai-chain-card img { width: 40px; height: 58px; object-fit: cover; border-radius: 5px; }
+.dai-chain-card div { font-size: 0.76rem; font-weight: 700; }
+
+/* ---------------- Setup screen ---------------- */
+.dai-setup {
+    width: min(680px, 100%);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    background: var(--dai-panel);
+    border: 1px solid var(--dai-line);
+    border-radius: 16px;
+    padding: 18px;
+}
+.dai-setup h2 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1rem;
+    margin: 0;
+    color: var(--dai-text);
+}
+.dai-setup p { margin: 0; font-size: 0.76rem; color: var(--dai-muted); line-height: 1.5; }
+.dai-field-group { display: flex; flex-direction: column; gap: 6px; }
+.dai-field-group label {
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--dai-muted);
+}
+.dai-select,
+.dai-input {
+    font-family: inherit;
+    font-size: 0.8rem;
+    padding: 9px 11px;
+    border-radius: 9px;
+    border: 1px solid var(--dai-line);
+    background: #0b1219;
+    color: var(--dai-text);
+    width: 100%;
+}
+.dai-select:focus, .dai-input:focus { outline: none; border-color: var(--dai-c1); }
+
+.dai-winner {
+    position: fixed;
+    inset: 0;
+    z-index: 9500;
+    display: none;
+    place-items: center;
+    background: rgba(4, 8, 12, 0.9);
+    backdrop-filter: blur(6px);
+    padding: 20px;
+}
+.dai-winner.show { display: grid; }
+.dai-winner-box {
+    text-align: center;
+    background: #111a26;
+    border: 1px solid var(--dai-line);
+    border-radius: 18px;
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 420px;
+}
+.dai-winner-box i { font-size: 2.4rem; color: var(--dai-gold); }
+.dai-winner-box h2 {
+    font-family: 'Orbitron', sans-serif;
+    margin: 0;
+    font-size: 1.15rem;
+}
+.dai-winner-box p { margin: 0; color: var(--dai-muted); font-size: 0.8rem; }
+
+/* ---------------- Escritorio: tablero + riel lateral ---------------- */
+@media (min-width: 1000px) {
+    .dai-app {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 340px;
+        grid-template-areas:
+            'top top'
+            'board rail';
+        align-items: start;
+        align-content: start;
+        gap: 10px;
+    }
+    .dai-topbar { grid-area: top; }
+    .dai-board { grid-area: board; }
+    .dai-setup { grid-area: board; }
+    .dai-rail {
+        grid-area: rail;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 0;
+    }
+    .dai-rail .dai-log { max-height: 260px; margin-top: 0; }
+    .dai-side { min-width: 0; }
+}
+
+/* ---------------- Mobile page ---------------- */
+body.dai-mobile .dai-app { padding: 6px; gap: 7px; }
+body.dai-mobile .dai-rows { grid-template-columns: 64px minmax(0, 1fr) 64px; gap: 5px; }
+body.dai-mobile .dai-slot-row { gap: 3px; }
+body.dai-mobile .dai-hand { min-height: 54px; }
+body.dai-mobile .dai-hand .dai-hand-card { width: 40px; }
+body.dai-mobile .dai-log { max-height: 118px; font-size: 0.66rem; }
+body.dai-mobile .dai-btn { font-size: 0.68rem; padding: 7px 10px; }
+body.dai-mobile .dai-title { font-size: 0.8rem; }
+body.dai-mobile .dai-side { padding: 6px; }
+body.dai-mobile .dai-card-tag { font-size: 0.44rem; }
+body.dai-mobile .dai-pile { min-height: 36px; font-size: 0.48rem; }
+
+@media (max-width: 520px) {
+    .dai-topbar { gap: 6px; padding: 6px 8px; }
+    .dai-title { flex: 1 1 100%; order: 3; }
+    .dai-rows { grid-template-columns: 56px minmax(0, 1fr) 56px; }
+    .dai-card-tag { font-size: 0.42rem; padding: 0 3px; }
+    .dai-card-dmg { font-size: 0.5rem; padding: 0 4px; }
+}

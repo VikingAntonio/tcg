@@ -719,6 +719,14 @@
                 padding: 20px !important;
                 gap: 12px !important;
             }
+            .vs-machine-grid {
+                grid-template-columns: 1fr !important;
+                gap: 10px !important;
+            }
+            .vs-machine-note {
+                font-size: 0.74rem !important;
+                padding: 8px 10px !important;
+            }
             .card-header-icon {
                 font-size: 1.8rem !important;
             }
@@ -920,6 +928,56 @@
                         </button>
                     </div>
                 </div>
+            </div>
+
+            <!-- Modo Contra la Máquina (vista independiente: duelAI.html) -->
+            <div class="mode-card vs-machine">
+                <div style="text-align: center;">
+                    <h2><i class="fas fa-robot card-header-icon"></i> Contra la Máquina</h2>
+                </div>
+
+                <p class="vs-machine-note">
+                    La máquina conoce las cartas de los decks (ATK/DEF, niveles, PS, ataques y energías),
+                    respeta turnos, fases, cadenas de trampas y reglas de Yu-Gi-Oh! / Pokémon, y juega sola.
+                </p>
+
+                <div class="vs-machine-grid">
+                    <div class="form-group">
+                        <label>Tipo de Tablero <span>*</span></label>
+                        <select id="ai-layout" class="select-input">
+                            <option value="yugioh">Yu-Gi-Oh! Clásico</option>
+                            <option value="yugioh_advanced">Yu-Gi-Oh! Avanzado</option>
+                            <option value="pokemon">Pokémon TCG</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Dificultad de la Máquina <span>*</span></label>
+                        <select id="ai-difficulty" class="select-input">
+                            <option value="easy">Fácil</option>
+                            <option value="normal" selected>Normal</option>
+                            <option value="hard">Difícil</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Tu Deck <span>*</span></label>
+                        <select id="ai-deck1" class="select-input">
+                            <option value="">Cargando decks...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Deck de la Máquina <span>*</span></label>
+                        <select id="ai-deck2" class="select-input">
+                            <option value="">Cargando decks...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button id="btn-start-ai" class="btn-play btn-play-vs-machine">
+                    <i class="fas fa-robot"></i> JUGAR CONTRA LA MÁQUINA
+                </button>
             </div>
         </section>
     </main>
@@ -1162,6 +1220,7 @@
                     userDecks = decks || [];
                     populatePracticeDecks(userDecks);
                     populateMultiplayerDecks(userDecks);
+                    if (typeof refreshAiModeDecks === 'function') refreshAiModeDecks();
                 } catch (err) {
                     console.error("Error fetching decks:", err);
                 }
@@ -1492,6 +1551,82 @@
                 $(`.theme-btn-small[data-theme="${theme}"]`).addClass('active');
             }
         });
+
+            // ---------------------------------------------------------------
+            // Modo Contra la Máquina
+            // ---------------------------------------------------------------
+            (function initAiMode() {
+                const AI_PAGE = 'duelAIMobile.html';
+                const presetsByLayout = {
+                    yugioh: [
+                        { key: 'dragon', label: 'Preestablecido · Dragón Azul (clásico)' },
+                        { key: 'magician', label: 'Preestablecido · Mago Oscuro (clásico)' }
+                    ],
+                    yugioh_advanced: [
+                        { key: 'dragon', label: 'Preestablecido · Dragón Azul (avanzado)' },
+                        { key: 'magician', label: 'Preestablecido · Mago Oscuro (avanzado)' }
+                    ],
+                    pokemon: [
+                        { key: 'electric', label: 'Preestablecido · Rayo Veloz' },
+                        { key: 'fire', label: 'Preestablecido · Fuego Ardiente' }
+                    ]
+                };
+
+                function layoutGroup(layout) {
+                    return presetsByLayout[layout === 'pokemon' ? 'pokemon'
+                        : (layout === 'yugioh_advanced' ? 'yugioh_advanced' : 'yugioh')];
+                }
+
+                function fillAiDecks() {
+                    const layout = $('#ai-layout').val();
+                    const presets = layoutGroup(layout);
+                    const decks = (typeof userDecks !== 'undefined' && Array.isArray(userDecks)) ? userDecks : [];
+                    const options = [];
+                    decks.forEach(function (d) {
+                        options.push({ value: 'deck:' + d.id, label: d.name + (d.format_tag ? ' · ' + d.format_tag : '') });
+                    });
+                    presets.forEach(function (p) {
+                        options.push({ value: 'preset:' + p.key, label: p.label });
+                    });
+
+                    ['#ai-deck1', '#ai-deck2'].forEach(function (sel) {
+                        const $sel = $(sel);
+                        const previous = $sel.val();
+                        $sel.empty();
+                        options.forEach(function (o) {
+                            $sel.append($('<option>').val(o.value).text(o.label));
+                        });
+                        if (previous && options.some(function (o) { return o.value === previous; })) {
+                            $sel.val(previous);
+                        }
+                    });
+
+                    if ($('#ai-deck1').val() === $('#ai-deck2').val() && options.length > 1) {
+                        const other = options.find(function (o) { return o.value !== $('#ai-deck1').val(); });
+                        if (other) $('#ai-deck2').val(other.value);
+                    }
+                }
+
+                $('#ai-layout').on('change', fillAiDecks);
+                $('#btn-start-ai').on('click', function () {
+                    const deck1 = $('#ai-deck1').val();
+                    const deck2 = $('#ai-deck2').val();
+                    if (!deck1 || !deck2) {
+                        Swal.fire('Atención', 'Debes elegir tu deck y el deck de la máquina.', 'warning');
+                        return;
+                    }
+                    const layout = $('#ai-layout').val();
+                    const difficulty = $('#ai-difficulty').val();
+                    window.location.href = AI_PAGE + '?layout=' + encodeURIComponent(layout)
+                        + '&difficulty=' + encodeURIComponent(difficulty)
+                        + '&deck1=' + encodeURIComponent(deck1)
+                        + '&deck2=' + encodeURIComponent(deck2) + '&side=p1';
+                });
+
+                fillAiDecks();
+                window.refreshAiModeDecks = fillAiDecks;
+                setTimeout(fillAiDecks, 2500);
+            })();
     </script>
     <script src="js/michatbot-mobile3d.js"></script>
     <script src="js/michatbot.js"></script>
