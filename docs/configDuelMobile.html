@@ -968,6 +968,15 @@
                     </select>
                 </div>
 
+                <div class="form-group">
+                    <label>¿Quién empieza? <span>*</span></label>
+                    <select id="ai-first" class="select-input">
+                        <option value="human" selected>Empiezo yo</option>
+                        <option value="ai">Empieza la IA</option>
+                        <option value="coin">Lanzar moneda</option>
+                    </select>
+                </div>
+
                 <button id="btn-start-ai" class="btn-play btn-play-vs-machine">
                     <i class="fas fa-play"></i> JUGAR CONTRA LA IA
                 </button>
@@ -1609,10 +1618,12 @@
                     }
                     const layout = $('#ai-layout').val();
                     const difficulty = $('#ai-difficulty').val();
+                    const first = $('#ai-first').val() || 'human';
                     window.location.href = AI_PAGE + '?layout=' + encodeURIComponent(layout)
                         + '&difficulty=' + encodeURIComponent(difficulty)
                         + '&deck1=' + encodeURIComponent(deck1)
                         + '&deck2=' + encodeURIComponent(deck2)
+                        + '&first=' + encodeURIComponent(first)
                         + '&mode=practice&side=p1';
                 });
 
