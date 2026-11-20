@@ -47,39 +47,10 @@
         return 'ygo';
     }
 
-    // Nombres de Magias/Trampas habituales en español. Sin esto, cualquier
-    // carta fuera del mapa ES_TO_EN caía en la heurística de monstruo y el
-    // motor la dejaba invocar (una Magia acababa en el campo como 1600 ATK).
-    const YGO_TRAPS_ES = [
-        'cilindro magico', 'fuerza de espejo', 'espejo de fuerza', 'agujero trampa',
-        'armadura sakuretsu', 'dispositivo de evacuacion', 'ataque negado',
-        'drenaje de habilidad', 'barrera de reflejo', 'pared de revelacion',
-        'regreso del heroe', 'golpe de gracia', 'juicio solemne', 'aviso solemne',
-        'advertencia solemne', 'trampa de fondo', 'trampa de foso', 'hoyo trampa',
-        'micro rayo', 'anillo de destruccion', 'cura milagrosa', 'falsa alarma',
-        'reclutamiento forzoso', 'espia de la oscuridad', 'muro de espejos',
-        'contraataque magico', 'negacion de ataque', 'escudo de espejo'
-    ];
-    const YGO_SPELLS_ES = [
-        'olla de la codicia', 'tifon del espacio', 'agujero oscuro', 'monstruo renacido',
-        'cambio de corazon', 'polimerizacion', 'libro de la luna', 'libro de la ley',
-        'gracia del juez', 'recolector de polvo', 'lanza de luz', 'luz reveladora',
-        'hacha del desespero', 'escudo de la luz', 'fuerza de la magia',
-        'control de la mente', 'reanimacion', 'resurreccion', 'carta de la generosidad',
-        'carta de la santidad', 'sello de la oracion', 'corazon de las cartas',
-        'doble ataque', 'cuchilla del alba', 'flecha de la luz', 'huevo de monstruo',
-        'espejo oscuro', 'reino de los monstruos', 'viento divino', 'teletransporte',
-        'futuro incierto', 'limite de la verdad', 'espadas de luz', 'fisura',
-        'hechizo', 'magia'
-    ];
-
-    // Una carta que no es monstruo casi nunca tiene ATK ni DEF en el texto.
     function guessYgoKind(name, desc) {
         const text = normalizeName(`${name} ${desc || ''}`);
-        if (YGO_TRAPS_ES.some(function (k) { return text.indexOf(k) !== -1; })) return 'trap';
-        if (YGO_SPELLS_ES.some(function (k) { return text.indexOf(k) !== -1; })) return 'spell';
-        if (/trampa|\btrap\b|\bcontra trampa\b/.test(text)) return 'trap';
-        if (/magia|\bspell\b|\bhechizo\b/.test(text)) return 'spell';
+        if (/trampa|\btrap\b|agujero trampa|cilindro magico|fuerza de espejo|espejo de fuerza|ataque negado|armadura sakuretsu|dispositivo de evacuacion/.test(text)) return 'trap';
+        if (/magia|\bspell\b|\bhechizo\b|polimerizacion|olla de la codicia|tifon del espacio|agujero oscuro|fisura|monstruo renacido|cambio de corazon|espadas de luz/.test(text)) return 'spell';
         return 'monster';
     }
 
@@ -538,24 +509,9 @@
                 name: c.name,
                 img: c.img || meta.img || '',
                 section: c.section,
-                rarity: c.rarity,
-                meta: applySectionKind(meta, c.section)
+                rarity: c.rarity
             });
         });
-    }
-
-    // La `section` del mazo (Main/Spell/Trap/Extra...) es la única señal
-    // fiable del tipo cuando la API no responde: sin esto, una Magia cuyo
-    // nombre no está en las listas acababa siendo invocable como monstruo.
-    function applySectionKind(meta, section) {
-        const out = Object.assign({}, meta);
-        const s = normalizeName(section);
-        if (!s) return out;
-        if (/^(trap|trampas?)$/.test(s)) out.kind = 'trap';
-        else if (/^(spell|magia|magias|hechizo)$/.test(s)) out.kind = 'spell';
-        else if (/^(energy|energia|energias)$/.test(s)) out.kind = 'energy';
-        else if (/^(trainer|entrenador|entrenadores)$/.test(s)) out.kind = 'trainer';
-        return out;
     }
 
     // ---------------------------------------------------------------

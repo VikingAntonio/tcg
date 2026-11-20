@@ -262,7 +262,7 @@
             } else {
                 this.draw('p1', 5, { silent: true });
                 this.draw('p2', 5, { silent: true });
-                this.pushLog('¡Comienza el duelo!', 'sys');
+                this.pushLog('¡Comienza el duelo! Turno de ' + this.player('p1').name + '.', 'sys');
                 this.turnNumber = 1;
             }
             return this;
