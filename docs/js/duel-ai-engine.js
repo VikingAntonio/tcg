@@ -129,9 +129,16 @@
         'bill': { desc: 'Roba 2 cartas', run: function (g, ctx) { g.draw(ctx.owner, 2); } }
     };
 
+    // Las tablas de efectos están en inglés; los mazos guardan nombres en
+    // español. meta.canonical trae el nombre inglés cuando se conoce.
+    function effectName(card) {
+        const canonical = card && card.meta && card.meta.canonical;
+        return norm(canonical || (card && card.name));
+    }
+
     function effectFor(card) {
         if (!card || !card.meta) return null;
-        const n = norm(card.name);
+        const n = effectName(card);
         if (card.meta.kind === 'spell' || card.meta.kind === 'trap') {
             return YGO_EFFECTS[n] || deriveYgoEffect(card);
         }
@@ -1397,7 +1404,7 @@
 
         responseScore(opt, contextType) {
             const g = this.game;
-            const name = norm(opt.card.name);
+            const name = effectName(opt.card);
             const root = g.chain[0];
             if (contextType === 'attack' && root && root.attack) {
                 const attackerP = g.player(root.attack.attackerKey);
@@ -1498,7 +1505,7 @@
             spellActions.forEach(function (a) {
                 const card = g.player('p1').hand.concat(g.player('p2').hand).find(function (c) { return c.uid === a.cardUid; });
                 if (!card) return;
-                const n = norm(card.name);
+                const n = effectName(card);
                 let score = 0;
                 if (n === 'pot of greed' || n === 'graceful charity' || n === 'card of sanctity') score = 90;
                 else if (n === 'dark hole' && oppMonsters > myMonsters) score = 85;
