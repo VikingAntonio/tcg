@@ -20,15 +20,6 @@
     const AI_KEY = 'p2';
     const HUMAN_KEY = 'p1';
 
-    // Quién mueve primero: 'human', 'ai' o 'coin' (aleatorio).
-    const FIRST = (function () {
-        const v = String(params.get('first') || 'human').toLowerCase();
-        return (v === 'ai' || v === 'coin') ? v : 'human';
-    })();
-
-    // Marca el body para que el CSS de este modo no afecte a las demás vistas.
-    document.body.classList.add('duel-ai-mode');
-
     const ui = {
         game: null,
         brain: null,
@@ -60,9 +51,7 @@
     }
 
     function log(text, kind) {
-        // duel.html y duelmobile.html usan #game-log-box; otros ids quedan
-        // como respaldo por si cambia el markup.
-        const box = $('#game-log-box') || $('#game-log-list') || $('#game-log');
+        const box = $('#game-log-list') || $('#game-log');
         if (box) {
             const row = el('div', 'dai-log-row ' + (kind || 'sys'), text);
             box.appendChild(row);
@@ -109,30 +98,7 @@
             p2: { name: 'Máquina', isAI: true, cards: cards2 }
         });
         game.setup();
-        applyFirstTurn(game);
         return game;
-    }
-
-    // El motor reparte y deja el turno 1 a p1. Si empieza la IA se le cede
-    // el turno (sin robo extra: startTurn del turno 1 no roba).
-    function applyFirstTurn(game) {
-        let starter = FIRST;
-        if (starter === 'coin') starter = Math.random() < 0.5 ? 'human' : 'ai';
-        if (starter === 'ai') {
-            game.turn = AI_KEY;
-            game.turnNumber = 0;
-            game.startTurn(AI_KEY);
-            // En Pokémon startTurn siempre roba; en el primer turno nadie
-            // debe robar, así que se devuelve la carta al mazo.
-            if (game.isPokemon) {
-                const p = game.player(AI_KEY);
-                const drawn = p.hand.pop();
-                if (drawn) p.deck.unshift(drawn);
-            }
-            game.pushLog('La IA empieza la partida.', 'sys');
-        } else {
-            game.pushLog('Empiezas tú la partida.', 'sys');
-        }
     }
 
     // ---------------------------------------------------------------
@@ -156,13 +122,6 @@
         return 'deck_' + suffix;
     }
 
-    // El tablero compara `owner` con "player1"/"player2" (duel.js). Si se
-    // guarda "p1"/"p2" las cartas de la IA se pintan como del humano y los
-    // botones de la mano actúan sobre el jugador equivocado.
-    function ownerFor(playerKey) {
-        return playerKey === HUMAN_KEY ? 'player1' : 'player2';
-    }
-
     function uidFor(playerKey, card, kind, index) {
         return 'ai_' + playerKey + '_' + kind + '_' + index + '_' + (card ? card.uid : 'x');
     }
@@ -181,8 +140,8 @@
                 instanceId: uidFor(playerKey, card, kind, index),
                 name: card.name,
                 imageUrl: card.img || meta.img || 'https://vikingtcg.xyz/favi.png',
-                owner: ownerFor(playerKey),
-                controller: ownerFor(playerKey),
+                owner: playerKey,
+                controller: playerKey,
                 zone: zoneFor(playerKey, kind, index),
                 faceDown: !!opts.faceDown,
                 tapped: !!opts.tapped,
@@ -337,22 +296,6 @@
         }
 
         renderActions();
-        syncLog();
-    }
-
-    // Vuelca al panel de registro las entradas del motor que aún no se han
-    // mostrado. El motor es la fuente de verdad de lo que pasó en el duelo.
-    let logCursor = 0;
-    function syncLog() {
-        const g = ui.game;
-        const box = $('#game-log-box');
-        if (!g || !box) return;
-        if (logCursor > g.log.length) logCursor = 0;
-        g.log.slice(logCursor).forEach(function (entry) {
-            box.appendChild(el('div', 'dai-log-row ' + (entry.cls || 'sys'), entry.text));
-        });
-        logCursor = g.log.length;
-        box.scrollTop = box.scrollHeight;
     }
 
     // ---------------------------------------------------------------
@@ -395,9 +338,7 @@
         }
 
         if (g.turn !== HUMAN_KEY) {
-            panel.appendChild(el('div', 'dai-banner dai-banner-ai', 'Turno de la IA...'));
-            const last = (g.log || []).filter(function (r) { return r.cls === 'ai'; }).pop();
-            if (last) panel.appendChild(el('div', 'dai-ai-last', 'IA: ' + last.text));
+            panel.appendChild(el('div', 'dai-banner', 'Turno de la IA...'));
             return;
         }
 
@@ -408,30 +349,10 @@
             (groups[group] = groups[group] || []).push(a);
         });
 
-        const GROUP_LABELS = {
-            summon: 'Invocar de tu mano',
-            spell: 'Magias y trampas de tu mano',
-            attack: 'Atacar',
-            flow: 'Fase',
-            other: 'Otras'
-        };
-
         const order = ['summon', 'spell', 'energy', 'pokemon', 'trainer', 'retreat', 'attack', 'flow', 'other'];
         order.forEach(function (name) {
             const list = groups[name];
             if (!list || !list.length) return;
-
-            const label = GROUP_LABELS[name];
-            if (label) panel.appendChild(el('div', 'dai-action-group-label', label));
-
-            // Invocar/DEF/boca abajo son la misma carta: se agrupan en un
-            // bloque con un botón corto por posición en vez de 3 botones
-            // largos por cada monstruo de la mano.
-            if (name === 'summon') {
-                renderSummonGroup(panel, list);
-                return;
-            }
-
             const wrap = el('div', 'dai-action-group');
             list.forEach(function (a) {
                 const btn = el('button', 'dai-action' + (a.primary ? ' dai-action-primary' : '') + (a.secondary ? ' dai-action-secondary' : ''), a.label);
@@ -446,49 +367,6 @@
         }
     }
 
-    // Un monstruo de la mano ofrece invocar en ATK, en DEF o boca abajo.
-    // Se muestran juntos, con el nombre una sola vez.
-    function renderSummonGroup(panel, list) {
-        const byCard = [];
-        const index = {};
-        list.forEach(function (a) {
-            const k = a.cardUid || a.label;
-            if (index[k] === undefined) {
-                index[k] = byCard.length;
-                byCard.push({ name: cardNameForAction(a), actions: [] });
-            }
-            byCard[index[k]].actions.push(a);
-        });
-
-        const wrap = el('div', 'dai-action-group dai-summon-group');
-        byCard.forEach(function (entry) {
-            const row = el('div', 'dai-summon-row');
-            row.appendChild(el('div', 'dai-summon-name', entry.name));
-            const opts = el('div', 'dai-summon-opts');
-            entry.actions.forEach(function (a) {
-                const label = a.type === 'set' ? 'BOCA ABAJO'
-                    : (a.position === 'def' ? 'DEF' : 'ATK');
-                const btn = el('button', 'dai-action dai-summon-opt', label);
-                btn.title = a.label;
-                btn.addEventListener('click', function () { playAction(a); });
-                opts.appendChild(btn);
-            });
-            row.appendChild(opts);
-            wrap.appendChild(row);
-        });
-        panel.appendChild(wrap);
-    }
-
-    function cardNameForAction(a) {
-        const c = actionCard(a);
-        if (c && c.name) return c.name;
-        // Respaldo: quitar el prefijo de la etiqueta del motor.
-        return String(a.label || '')
-            .replace(/^Invocar en DEF /, '')
-            .replace(/^Invocar /, '')
-            .replace(/^Colocar boca abajo /, '');
-    }
-
     // ---------------------------------------------------------------
     // Botones nativos del tablero: en este modo no mueven cartas por su
     // cuenta, se traducen a acciones del motor (que valida las reglas).
@@ -499,35 +377,17 @@
         '.btn-set': function (card) { return findAction('set', card); },
         '.btn-field-flip': function (card) { return findAction('set', card); },
         '.btn-field-attack': function (card) { return findAttackAction(card); },
-        '.btn-field-direct': function (card) { return findDirectAttack(card); },
+        '.btn-field-direct': function (card) { return findAction('attackDirect', card); },
         '.btn-pokemon-set': function (card) { return findPlayBasic(card); },
         '.btn-activate': function (card) { return findAction('activate', card); },
-        '.btn-pokemon-field': function (card) { return findPlayBasic(card); },
-        '.btn-energy': function (card) { return findAction('attachEnergy', card); },
-        '.btn-retreat': function (card) { return findAction('retreat', card); },
-        '.btn-trainer': function (card) { return findAction('playTrainer', card); },
-        '.btn-play-trainer': function (card) { return findAction('playTrainer', card); },
-        '.btn-evolve': function (card) { return findAction('evolve', card); }
+        '.btn-pokemon-field': function (card) { return findPlayBasic(card); }
     };
-
-    // Los botones que el motor no gobierna (mover cartas a mano, contadores,
-    // acoplar...) no tienen equivalente en las reglas. En este modo no se
-    // dejan al tablero: moverían cartas que la proyección revierte en el
-    // siguiente pintado, y el usuario veía "no hace nada".
-    const UNSUPPORTED_NOTE = 'En el modo vs IA esa acción la controlan las reglas.';
 
     function actionCard(action) {
         const g = ui.game;
         if (!g || !action) return null;
-        const p = g.player(HUMAN_KEY);
-        // `retreat` no lleva cardUid: el botón vive en la banca y la acción
-        // se identifica por benchIndex.
-        if (action.type === 'retreat' && Number.isInteger(action.benchIndex)) {
-            const slot = (p.bench || [])[action.benchIndex];
-            if (slot && slot.card) return slot.card;
-        }
-        const pool = p.hand.concat(
-            p.monsters.filter(Boolean).map(function (s) { return s.card; })
+        const pool = g.player(HUMAN_KEY).hand.concat(
+            g.player(HUMAN_KEY).monsters.filter(Boolean).map(function (s) { return s.card; })
         );
         return pool.find(function (c) { return c.uid === action.cardUid; }) || null;
     }
@@ -558,32 +418,13 @@
         return acts.find(function (a) { return matchesCard(a, card); }) || null;
     }
 
-    // Las acciones de ataque del motor no llevan cardUid: identifican al
-    // atacante por su slot. Se resuelve el slot de la carta para elegir la
-    // acción correcta (antes se devolvía la primera y atacaba otro monstruo).
     function findAttackAction(card) {
         const g = ui.game;
         if (!g) return null;
-        const slots = g.player(HUMAN_KEY).monsters;
-        const slotIndex = slots.findIndex(function (s) { return s && s.card === card; });
-        if (slotIndex < 0) return null;
         const acts = g.getActions(HUMAN_KEY).filter(function (a) {
-            return (a.type === 'attack' || a.type === 'attackDirect' || a.type === 'attackPokemon') && a.slotIndex === slotIndex;
+            return a.type === 'attack' || a.type === 'attackDirect' || a.type === 'attackPokemon';
         });
         return acts[0] || null;
-    }
-
-    // "Atk Directo" del tablero solo debe declarar ataque directo; si no es
-    // legal (la IA tiene monstruos) no se sustituye por un ataque dirigido.
-    function findDirectAttack(card) {
-        const g = ui.game;
-        if (!g) return null;
-        const slotIndex = g.player(HUMAN_KEY).monsters
-            .findIndex(function (s) { return s && s.card === card; });
-        if (slotIndex < 0) return null;
-        return g.getActions(HUMAN_KEY).find(function (a) {
-            return a.type === 'attackDirect' && a.slotIndex === slotIndex;
-        }) || null;
     }
 
     function cardFromButton(btn) {
@@ -621,9 +462,8 @@
             const btn = ev.target.closest && ev.target.closest('.hand-action-btn, .field-action-btn');
             if (!btn) return;
 
-            // Todos los botones de carta quedan bajo las reglas en este modo:
-            // si no hay acción legal, se avisa en vez de dejar que el tablero
-            // mueva la carta y la proyección la revierta sin explicación.
+            // Los botones que no son de reglas (Cementerio, Remover, Deck,
+            // Acoplar, Efecto, Control, Atacar...) se dejan al tablero.
             let action = null;
             Object.keys(NATIVE_MAP).forEach(function (sel) {
                 if (action || !btn.matches(sel)) return;
@@ -631,15 +471,11 @@
                 if (!card) return;
                 action = NATIVE_MAP[sel](card);
             });
+            if (!action) return;
 
             ev.preventDefault();
             ev.stopPropagation();
             ev.stopImmediatePropagation();
-
-            if (!action) {
-                toast(ui.game.turn !== HUMAN_KEY ? 'Espera tu turno.' : UNSUPPORTED_NOTE);
-                return;
-            }
             playAction(action);
         }, true);
     }
@@ -649,10 +485,7 @@
     // ---------------------------------------------------------------
     function playAction(action) {
         const g = ui.game;
-        if (!g) return;
-        if (ui.busy) { toast('La IA está jugando, espera un momento.'); return; }
-        if (g.turn !== HUMAN_KEY) { toast('Espera tu turno.'); return; }
-        if (g.pendingResponse) { toast('Resuelve la cadena primero.'); return; }
+        if (!g || ui.busy || g.turn !== HUMAN_KEY) return;
         const res = g.applyAction(action, HUMAN_KEY);
         if (res && res.ok === false) {
             toast(res.error || 'Acción no válida');
@@ -738,7 +571,7 @@
         if ($('#ai-actions-panel')) return;
         const panel = el('aside', 'dai-panel');
         panel.id = 'ai-actions-panel';
-        const title = el('div', 'dai-panel-title', 'Tus acciones');
+        const title = el('div', 'dai-panel-title', 'vs IA');
         const toggle = el('button', 'dai-toggle', '–');
         toggle.title = 'Ocultar / mostrar acciones';
         toggle.addEventListener('click', function () {
@@ -747,9 +580,12 @@
         });
         title.appendChild(toggle);
         panel.appendChild(title);
-        // El panel arranca abierto: en móvil es la única forma de jugar
-        // (los botones del tablero se traducen a acciones, pero sin panel
-        // no se ve qué se puede hacer). El usuario puede plegarlo.
+        // En móvil el tablero ocupa toda la pantalla: el panel arranca
+        // plegado y se abre al tocar el botón.
+        if (window.innerWidth <= 768) {
+            panel.classList.add('dai-collapsed');
+            toggle.textContent = '+';
+        }
         const slot = el('div', 'dai-actions-slot');
         slot.id = 'dai-actions-slot';
         panel.appendChild(slot);
@@ -777,42 +613,13 @@
             'border-radius:10px;font-size:.8rem;z-index:99999;transition:all .25s ease}',
             '.dai-toast-in{opacity:1;transform:translateX(-50%) translateY(0)}',
             '.dai-log-row,.dai-chat-row{font-size:.74rem;line-height:1.35;color:#cfdae6;padding:2px 0}',
-            '.dai-log-row.ai{color:#ffb3c7}.dai-log-row.pc,.dai-log-row.human{color:#8fd3ff}',
-            '.dai-log-row.sys{color:#8fe0b0}.dai-log-row.turn{color:#ffd32d;font-weight:800;margin-top:6px}',
-            '.dai-log-row.phase{color:#7f93a8}.dai-log-row.win{color:#ffd32d;font-weight:800}',
-            '.dai-banner-ai{color:#ffb3c7}',
-            '.dai-ai-last{font-size:.72rem;color:#ffb3c7;opacity:.85;line-height:1.3}',
-            '.dai-summon-group{gap:8px}',
-            '.dai-summon-row{display:flex;align-items:center;justify-content:space-between;gap:8px;',
-            'padding:6px 8px;border-radius:8px;background:rgba(255,255,255,.04)}',
-            '.dai-summon-name{font-size:.72rem;color:#e6eef7;line-height:1.2;overflow:hidden;',
-            'text-overflow:ellipsis;white-space:nowrap;min-width:0}',
-            '.dai-summon-opts{display:flex;gap:4px;flex:0 0 auto}',
-            '.dai-summon-opt{padding:5px 7px!important;font-size:.62rem!important;letter-spacing:.04em;',
-            'font-weight:800;min-width:0}',
-            '.dai-action-group-label{font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;',
-            'color:#7f93a8;font-weight:800}',
+            '.dai-log-row.ai{color:#ffb3c7}.dai-log-row.pc{color:#8fd3ff}.dai-log-row.sys{color:#8fe0b0}',
             '.dai-panel-title{display:flex;align-items:center;justify-content:space-between;gap:8px}',
             '.dai-toggle{cursor:pointer;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);',
             'color:#ffd32d;border-radius:6px;width:22px;height:22px;line-height:1;font-size:.85rem;font-weight:700}',
             '.dai-actions-slot{display:flex;flex-direction:column;gap:8px;overflow-y:auto}',
             '.dai-panel.dai-collapsed .dai-actions-slot{display:none}',
-            '@media(max-width:768px){.dai-panel{right:6px;left:6px;width:auto;top:auto;bottom:8px;max-height:44vh}}',
-
-            // --- Ajustes SOLO del modo IA (body.duel-ai-mode) ---
-            // En móvil la bandeja de mano flota sobre el tablero y tapaba las
-            // dos filas de monstruos. Se ancla al fondo de la pantalla (debajo
-            // del playmat) y el panel de acciones pasa arriba, así el campo
-            // queda despejado.
-            'body.duel-ai-mode #hand-tray-p1{pointer-events:auto}',
-            '@media(max-width:768px){',
-            'body.duel-ai-mode .hand-tray{top:auto!important;bottom:4px!important;max-height:88px!important}',
-            'body.duel-ai-mode .hand-cards-wrapper{padding-bottom:0!important}',
-            'body.duel-ai-mode .hand-cards-container{padding:2px 8px!important;max-width:94vw!important}',
-            'body.duel-ai-mode .hand-tray .duel-card{width:44px!important;height:62px!important}',
-            'body.duel-ai-mode .dai-panel{top:8px!important;bottom:auto!important;left:6px!important;right:6px!important;',
-            'width:auto!important;max-height:23vh!important}',
-            '}'
+            '@media(max-width:768px){.dai-panel{right:6px;left:6px;width:auto;top:auto;bottom:8px;max-height:44vh}}'
         ].join('');
         document.head.appendChild(style);
     }
@@ -836,7 +643,7 @@
         interceptNativeButtons();
         interceptFlowButtons();
 
-        logCursor = 0;
+        log('¡Comienza el duelo! Turno de ' + ui.game.player(ui.game.turn).name, 'sys');
         advanceIdlePhases();
         syncBoard();
         maybeRunAI();
