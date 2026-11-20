@@ -2758,14 +2758,16 @@ function detachAllChildren(parentId) {
     if (!parent) return;
     const playerSuffix = parent.owner === "player1" ? 1 : 2;
     const pileId = `grave_${playerSuffix}`;
-    state.cards.forEach(c => {
-        if (c.attachedTo === parentId) {
-            c.attachedTo = null;
-            c.zone = pileId;
-            c.faceDown = false;
-            c.tapped = false;
-            c.movedToPileAt = Date.now() + Math.random();
-        }
+    const children = state.cards
+        .filter(c => c.attachedTo === parentId)
+        .sort((a, b) => (a.attachedAt || 0) - (b.attachedAt || 0));
+    const baseTime = Date.now();
+    children.forEach((c, index) => {
+        c.attachedTo = null;
+        c.zone = pileId;
+        c.faceDown = false;
+        c.tapped = false;
+        c.movedToPileAt = baseTime + index;
     });
 }
 
@@ -2800,7 +2802,14 @@ function moveAllAttachedTo(parentId, targetType) {
     const attached = state.cards.filter(c => c.attachedTo === parentId);
     if (attached.length === 0) return;
 
-    attached.forEach(cardObj => {
+    // En cementerio/removido el orden importa: sin marca de tiempo las cartas caían al fondo de la pila
+    const toPile = targetType === "grave" || targetType === "banished";
+    if (toPile) {
+        attached.sort((a, b) => (a.attachedAt || 0) - (b.attachedAt || 0));
+    }
+    const baseTime = Date.now();
+
+    attached.forEach((cardObj, index) => {
         cardObj.attachedTo = null;
         const playerSuffix = cardObj.owner === "player1" ? 1 : 2;
 
@@ -2812,10 +2821,12 @@ function moveAllAttachedTo(parentId, targetType) {
             cardObj.zone = `grave_${playerSuffix}`;
             cardObj.faceDown = false;
             cardObj.tapped = false;
+            cardObj.movedToPileAt = baseTime + index;
         } else if (targetType === "banished") {
             cardObj.zone = `banished_${playerSuffix}`;
             cardObj.faceDown = false;
             cardObj.tapped = false;
+            cardObj.movedToPileAt = baseTime + index;
         } else if (targetType === "deck") {
             cardObj.zone = `deck_${playerSuffix}`;
             delete cardObj.movedToPileAt;

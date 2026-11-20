@@ -231,3 +231,18 @@ Vista `#view-inversiones` (pestaña "Inversiones" de `binders.html`). Todo el c�
 Se eliminó por completo: `docs/duelAI.html`, `docs/duelAIMobile.html`, `docs/js/duel-ai-board.js`, `docs/js/duel-ai-cards.js`, `docs/js/duel-ai-engine.js`, `docs/js/duel-ai-ui.js`, `docs/css/duel-ai.css` y la tarjeta `.vs-machine` de `configDuel.html` y `configDuelMobile.html`.
 
 Quedan solo los modos **1 Jugador** y **2 Jugadores**. No reintroducir este modo sin pedirlo explícitamente.
+
+## Duelo de escritorio (`docs/duel.html`) — el tinte del GLTF se quedaba pegado
+Síntoma: al sumar o restar LP, el `model-viewer` del espíritu se quedaba verde (o rojo) para siempre.
+- **Causa:** `triggerSpiritReaction` compartía un solo timer (`activeBubbleTimers`) para el burbuja de texto y para quitar la clase de tinte (`.spirit-viewer-heal` / `.spirit-viewer-damage`). Cualquier `showSpiritThought` (invocar, atacar, activar efecto…) limpiaba ese timer y programaba otro que **solo** ocultaba el burbuja, así que la clase de tinte nunca se removía.
+- **Arreglo:** `activeTintTimers` + `clearSpiritTint(playerIdx)` (scope de módulo, junto a `activeBubbleTimers`). `triggerSpiritReaction` limpia el tinte previo, aplica el nuevo y programa su propio `setTimeout` de 2500 ms; el timer del burbuja ya solo hace `fadeOut`.
+- El tinte y el burbuja van por separado a propósito: un pensamiento no debe cortar la animación de LP, pero tampoco puede dejarla pegada.
+- `duelmobile.html` no tiene espíritus 3D, así que ahí no aplica.
+- Verificado con Playwright (practice y multiplayer, P1 y P2): heal/damage/÷2, reacciones remotas del rival, heals seguidos y heal+pensamiento solapados → clase vacía y `filter: none` a los ~3 s.
+
+## Duelo — cartas acopladas enviadas al Cementerio/Removido caían al fondo de la pila
+Síntoma: enviar cartas acopladas al cementerio/removido (botones masivos "Todas a Cementerio" / "Todas a Removido" del modal de acopladas, o el flujo de campo→pila) las metía **debajo** de todo, mientras que las enviadas a mano sí quedaban arriba.
+- **Causa:** `moveAllAttachedTo()` (bulk) y `detachAllChildren()` (usada por devolver a mano/deck, cambio de control, etc.) movían las cartas al `grave_*`/`banished_*` **sin** asignar `movedToPileAt`. La pila se ordena por `movedToPileAt` descendente (`openPileModal` y el render del tope), así que `undefined || 0` las dejaba siempre al final.
+- **Arreglo** (idéntico en `docs/js/duel.js` y `docs/js/duelmobile.js`): ordenar las acopladas por `attachedAt` ascendente y asignar `movedToPileAt = baseTime + index` para grave/banish, de modo que la última acoplada quede arriba y todas por encima de lo que ya estaba en la pila. `sendAttachedCardsToPile()` (padre al campo→pila) ya lo hacía bien y no se tocó.
+- **No cambia nada más:** `deck` sigue borrando `movedToPileAt` (va boca abajo), `hand` no lo toca, y el orden de `state.cards` no se altera (el `sort` es sobre el array filtrado).
+- Verificado con Playwright en `duel.html` y `duelmobile.html`, P1 y P2: bulk a cementerio, bulk a removido, acción individual de una acoplada y flujo campo→cementerio; la carta pintada en la zona coincide con el tope real.
