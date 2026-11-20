@@ -204,26 +204,6 @@
             border-color: var(--secondary-color);
         }
 
-        /* Modo Contra la Máquina: misma caja que 1 Jugador, sin iconos ni notas */
-        .mode-card.vs-machine {
-            border-color: rgba(255, 211, 45, 0.2);
-        }
-        .mode-card.vs-machine:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(255, 211, 45, 0.15), 0 0 30px rgba(255, 211, 45, 0.05);
-            border-color: #ffd32d;
-        }
-        .btn-play-vs-machine {
-            background: linear-gradient(135deg, #ffd32d, #e0a800);
-            color: #1a1400;
-            box-shadow: 0 4px 15px rgba(255, 211, 45, 0.3);
-        }
-        .btn-play-vs-machine:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(255, 211, 45, 0.5);
-            filter: brightness(1.1);
-        }
-
         .card-header-icon {
             font-size: 2.5rem;
             margin-bottom: 5px;
@@ -932,56 +912,6 @@
                 </div>
             </div>
 
-            <!-- Modo Contra la Máquina (vista independiente: duelAI.html) -->
-            <div class="mode-card vs-machine">
-                <div style="text-align: center;">
-                    <h2>vs IA</h2>
-                </div>
-
-                <div class="form-group">
-                    <label>Tipo de Tablero <span>*</span></label>
-                    <select id="ai-layout" class="select-input">
-                        <option value="yugioh">Yu-Gi-Oh! Time Wizard</option>
-                        <option value="yugioh_advanced">Yu-Gi-Oh! Avanzado</option>
-                        <option value="pokemon">Pokémon Arena</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Tu Deck <span>*</span></label>
-                    <div id="btn-select-ai-deck1" class="deck-picker-trigger" data-target="#ai-deck1">
-                        <span id="label-ai-deck1">Cargando decks...</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <select id="ai-deck1" class="select-input" style="display: none;">
-                        <option value="">Cargando decks...</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Deck de la IA <span>*</span></label>
-                    <div id="btn-select-ai-deck2" class="deck-picker-trigger" data-target="#ai-deck2">
-                        <span id="label-ai-deck2">Cargando decks...</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <select id="ai-deck2" class="select-input" style="display: none;">
-                        <option value="">Cargando decks...</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Dificultad <span>*</span></label>
-                    <select id="ai-difficulty" class="select-input">
-                        <option value="easy">Fácil</option>
-                        <option value="normal" selected>Normal</option>
-                        <option value="hard">Difícil</option>
-                    </select>
-                </div>
-
-                <button id="btn-start-ai" class="btn-play btn-play-vs-machine">
-                    <i class="fas fa-play"></i> JUGAR CONTRA LA IA
-                </button>
-            </div>
         </section>
     </main>
 
@@ -1229,7 +1159,6 @@
                     userDecks = decks || [];
                     populatePracticeDecks(userDecks);
                     populateMultiplayerDecks(userDecks);
-                    if (typeof refreshAiModeDecks === 'function') refreshAiModeDecks();
                 } catch (err) {
                     console.error("Error fetching decks:", err);
                 }
@@ -1563,84 +1492,6 @@
                 $(`.theme-btn-small[data-theme="${theme}"]`).addClass('active');
             }
 
-            // ---------------------------------------------------------------
-            // Modo Contra la Máquina
-            // ---------------------------------------------------------------
-            (function initAiMode() {
-                const AI_PAGE = 'duelAI.html';
-
-                function aiDecks() {
-                    return (typeof userDecks !== 'undefined' && Array.isArray(userDecks)) ? userDecks : [];
-                }
-
-                // Igual que 1 Jugador: los selects se llenan con MIS decks y el
-                // picker modal (deck-picker-trigger) los muestra con buscador.
-                function fillAiDecks() {
-                    const decks = aiDecks();
-                    ['#ai-deck1', '#ai-deck2'].forEach(function (sel) {
-                        const $sel = $(sel);
-                        const previous = $sel.val();
-                        $sel.empty();
-                        if (!decks.length) {
-                            $sel.append('<option value="">No tienes ningún deck configurado</option>');
-                            return;
-                        }
-                        $sel.append('<option value="">Selecciona un deck...</option>');
-                        if (preselectedDeck && !decks.some(function (d) { return d.id == preselectedDeck.id; })) {
-                            $sel.append($('<option>').val(preselectedDeck.id).text(preselectedDeck.name));
-                        }
-                        decks.forEach(function (d) {
-                            $sel.append($('<option>').val(d.id).text(d.name + (d.format_tag ? ' · ' + d.format_tag : '')));
-                        });
-                        if (previous && $sel.find('option[value="' + previous + '"]').length) {
-                            $sel.val(previous);
-                        }
-                    });
-
-                    const hasDecks = decks.length > 0 || !!preselectedDeck;
-                    $('#label-ai-deck1').text(hasDecks ? 'Selecciona un deck...' : 'No tienes ningún deck configurado');
-                    $('#label-ai-deck2').text(hasDecks ? 'Selecciona un deck...' : 'No tienes ningún deck configurado');
-                }
-
-                // El picker escribe el id en el select oculto; aquí solo
-                // reflejamos el nombre elegido en la etiqueta visible.
-                $('#ai-deck1').on('change', function () {
-                    const txt = $(this).find('option:selected').text();
-                    if ($(this).val()) $('#label-ai-deck1').text(txt);
-                });
-                $('#ai-deck2').on('change', function () {
-                    const txt = $(this).find('option:selected').text();
-                    if ($(this).val()) $('#label-ai-deck2').text(txt);
-                });
-
-                $('#btn-start-ai').on('click', function () {
-                    const deck1 = $('#ai-deck1').val();
-                    const deck2 = $('#ai-deck2').val();
-                    if (!deck1) {
-                        Swal.fire('Atención', 'Debes seleccionar tu deck.', 'warning');
-                        return;
-                    }
-                    if (!deck2) {
-                        Swal.fire('Atención', 'Debes seleccionar el deck de la IA.', 'warning');
-                        return;
-                    }
-                    if (deck1 === deck2) {
-                        Swal.fire('Atención', 'Elige dos decks distintos: uno para ti y otro para la IA.', 'warning');
-                        return;
-                    }
-                    const layout = $('#ai-layout').val();
-                    const difficulty = $('#ai-difficulty').val();
-                    window.location.href = AI_PAGE + '?layout=' + encodeURIComponent(layout)
-                        + '&difficulty=' + encodeURIComponent(difficulty)
-                        + '&deck1=' + encodeURIComponent(deck1)
-                        + '&deck2=' + encodeURIComponent(deck2)
-                        + '&mode=practice&side=p1';
-                });
-
-                fillAiDecks();
-                window.refreshAiModeDecks = fillAiDecks;
-                setTimeout(fillAiDecks, 2500);
-            })();
         });
     </script>
     <script src="js/michatbot-mobile3d.js"></script>
