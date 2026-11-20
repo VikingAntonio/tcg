@@ -395,7 +395,9 @@
         }
 
         if (g.turn !== HUMAN_KEY) {
-            panel.appendChild(el('div', 'dai-banner', 'Turno de la IA...'));
+            panel.appendChild(el('div', 'dai-banner dai-banner-ai', 'Turno de la IA...'));
+            const last = (g.log || []).filter(function (r) { return r.cls === 'ai'; }).pop();
+            if (last) panel.appendChild(el('div', 'dai-ai-last', 'IA: ' + last.text));
             return;
         }
 
@@ -406,10 +408,30 @@
             (groups[group] = groups[group] || []).push(a);
         });
 
+        const GROUP_LABELS = {
+            summon: 'Invocar de tu mano',
+            spell: 'Magias y trampas de tu mano',
+            attack: 'Atacar',
+            flow: 'Fase',
+            other: 'Otras'
+        };
+
         const order = ['summon', 'spell', 'energy', 'pokemon', 'trainer', 'retreat', 'attack', 'flow', 'other'];
         order.forEach(function (name) {
             const list = groups[name];
             if (!list || !list.length) return;
+
+            const label = GROUP_LABELS[name];
+            if (label) panel.appendChild(el('div', 'dai-action-group-label', label));
+
+            // Invocar/DEF/boca abajo son la misma carta: se agrupan en un
+            // bloque con un botón corto por posición en vez de 3 botones
+            // largos por cada monstruo de la mano.
+            if (name === 'summon') {
+                renderSummonGroup(panel, list);
+                return;
+            }
+
             const wrap = el('div', 'dai-action-group');
             list.forEach(function (a) {
                 const btn = el('button', 'dai-action' + (a.primary ? ' dai-action-primary' : '') + (a.secondary ? ' dai-action-secondary' : ''), a.label);
@@ -422,6 +444,49 @@
         if (!actions.length) {
             panel.appendChild(el('div', 'dai-banner', 'Sin acciones disponibles'));
         }
+    }
+
+    // Un monstruo de la mano ofrece invocar en ATK, en DEF o boca abajo.
+    // Se muestran juntos, con el nombre una sola vez.
+    function renderSummonGroup(panel, list) {
+        const byCard = [];
+        const index = {};
+        list.forEach(function (a) {
+            const k = a.cardUid || a.label;
+            if (index[k] === undefined) {
+                index[k] = byCard.length;
+                byCard.push({ name: cardNameForAction(a), actions: [] });
+            }
+            byCard[index[k]].actions.push(a);
+        });
+
+        const wrap = el('div', 'dai-action-group dai-summon-group');
+        byCard.forEach(function (entry) {
+            const row = el('div', 'dai-summon-row');
+            row.appendChild(el('div', 'dai-summon-name', entry.name));
+            const opts = el('div', 'dai-summon-opts');
+            entry.actions.forEach(function (a) {
+                const label = a.type === 'set' ? 'BOCA ABAJO'
+                    : (a.position === 'def' ? 'DEF' : 'ATK');
+                const btn = el('button', 'dai-action dai-summon-opt', label);
+                btn.title = a.label;
+                btn.addEventListener('click', function () { playAction(a); });
+                opts.appendChild(btn);
+            });
+            row.appendChild(opts);
+            wrap.appendChild(row);
+        });
+        panel.appendChild(wrap);
+    }
+
+    function cardNameForAction(a) {
+        const c = actionCard(a);
+        if (c && c.name) return c.name;
+        // Respaldo: quitar el prefijo de la etiqueta del motor.
+        return String(a.label || '')
+            .replace(/^Invocar en DEF /, '')
+            .replace(/^Invocar /, '')
+            .replace(/^Colocar boca abajo /, '');
     }
 
     // ---------------------------------------------------------------
@@ -673,7 +738,7 @@
         if ($('#ai-actions-panel')) return;
         const panel = el('aside', 'dai-panel');
         panel.id = 'ai-actions-panel';
-        const title = el('div', 'dai-panel-title', 'vs IA');
+        const title = el('div', 'dai-panel-title', 'Tus acciones');
         const toggle = el('button', 'dai-toggle', '–');
         toggle.title = 'Ocultar / mostrar acciones';
         toggle.addEventListener('click', function () {
@@ -712,7 +777,21 @@
             'border-radius:10px;font-size:.8rem;z-index:99999;transition:all .25s ease}',
             '.dai-toast-in{opacity:1;transform:translateX(-50%) translateY(0)}',
             '.dai-log-row,.dai-chat-row{font-size:.74rem;line-height:1.35;color:#cfdae6;padding:2px 0}',
-            '.dai-log-row.ai{color:#ffb3c7}.dai-log-row.pc{color:#8fd3ff}.dai-log-row.sys{color:#8fe0b0}',
+            '.dai-log-row.ai{color:#ffb3c7}.dai-log-row.pc,.dai-log-row.human{color:#8fd3ff}',
+            '.dai-log-row.sys{color:#8fe0b0}.dai-log-row.turn{color:#ffd32d;font-weight:800;margin-top:6px}',
+            '.dai-log-row.phase{color:#7f93a8}.dai-log-row.win{color:#ffd32d;font-weight:800}',
+            '.dai-banner-ai{color:#ffb3c7}',
+            '.dai-ai-last{font-size:.72rem;color:#ffb3c7;opacity:.85;line-height:1.3}',
+            '.dai-summon-group{gap:8px}',
+            '.dai-summon-row{display:flex;align-items:center;justify-content:space-between;gap:8px;',
+            'padding:6px 8px;border-radius:8px;background:rgba(255,255,255,.04)}',
+            '.dai-summon-name{font-size:.72rem;color:#e6eef7;line-height:1.2;overflow:hidden;',
+            'text-overflow:ellipsis;white-space:nowrap;min-width:0}',
+            '.dai-summon-opts{display:flex;gap:4px;flex:0 0 auto}',
+            '.dai-summon-opt{padding:5px 7px!important;font-size:.62rem!important;letter-spacing:.04em;',
+            'font-weight:800;min-width:0}',
+            '.dai-action-group-label{font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;',
+            'color:#7f93a8;font-weight:800}',
             '.dai-panel-title{display:flex;align-items:center;justify-content:space-between;gap:8px}',
             '.dai-toggle{cursor:pointer;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);',
             'color:#ffd32d;border-radius:6px;width:22px;height:22px;line-height:1;font-size:.85rem;font-weight:700}',
@@ -758,7 +837,6 @@
         interceptFlowButtons();
 
         logCursor = 0;
-        log('¡Comienza el duelo! Turno de ' + ui.game.player(ui.game.turn).name, 'sys');
         advanceIdlePhases();
         syncBoard();
         maybeRunAI();
