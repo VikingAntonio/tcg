@@ -5560,6 +5560,7 @@
             let availableSpirits = [];
             let playerSpirits = [null, null];
             let activeBubbleTimers = [null, null];
+            let activeTintTimers = [null, null];
             let currentUserProfile = null;
 
             async function initSpirits() {
@@ -5734,6 +5735,16 @@
                 }
             };
 
+            // El tinte del visor (verde/rojo) tiene su propio temporizador: el burbuja de texto
+            // se reutiliza para pensamientos y, si se comparte el timer, el tinte nunca se quita.
+            function clearSpiritTint(playerIdx) {
+                if (activeTintTimers[playerIdx - 1]) {
+                    clearTimeout(activeTintTimers[playerIdx - 1]);
+                    activeTintTimers[playerIdx - 1] = null;
+                }
+                $(`#viewer-p${playerIdx}`).removeClass('spirit-viewer-heal spirit-viewer-damage');
+            }
+
             // Trigger reactions (glow tint + speech bubble in plain text)
             window.triggerSpiritReaction = function(playerIdx, type, diffVal, currentLP, shouldBroadcast = true) {
                 const $bubble = $(`#bubble-p${playerIdx}`);
@@ -5756,8 +5767,13 @@
 
                 if (message) {
                     $bubble.text(message).stop(true, true).fadeIn(200);
+
+                    clearSpiritTint(playerIdx);
                     if (animClass) {
                         $viewer.addClass(animClass);
+                        activeTintTimers[playerIdx - 1] = setTimeout(() => {
+                            clearSpiritTint(playerIdx);
+                        }, 2500);
                     }
 
                     if (activeBubbleTimers[playerIdx - 1]) {
@@ -5766,9 +5782,6 @@
 
                     activeBubbleTimers[playerIdx - 1] = setTimeout(() => {
                         $bubble.fadeOut(300);
-                        if (animClass) {
-                            $viewer.removeClass(animClass);
-                        }
                     }, 2500);
 
                     if (shouldBroadcast && state.mode === 'multiplayer' && typeof commChannel !== 'undefined' && commChannel && typeof commChannel.send === 'function') {
