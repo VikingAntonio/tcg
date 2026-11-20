@@ -6,7 +6,7 @@
 (function () {
     'use strict';
 
-    const CACHE_KEY = 'tcg_ai_cardmeta_v3';
+    const CACHE_KEY = 'tcg_ai_cardmeta_v4';
     const CACHE_TTL = 1000 * 60 * 60 * 24 * 30;
     const memory = new Map();
     let cache = null;
@@ -48,9 +48,9 @@
     }
 
     function guessYgoKind(name, desc) {
-        const text = `${name} ${desc || ''}`.toLowerCase();
-        if (/trampa|\btrap\b/.test(text)) return 'trap';
-        if (/magia|\bspell\b/.test(text)) return 'spell';
+        const text = normalizeName(`${name} ${desc || ''}`);
+        if (/trampa|\btrap\b|agujero trampa|cilindro magico|fuerza de espejo|espejo de fuerza|ataque negado|armadura sakuretsu|dispositivo de evacuacion/.test(text)) return 'trap';
+        if (/magia|\bspell\b|\bhechizo\b|polimerizacion|olla de la codicia|tifon del espacio|agujero oscuro|fisura|monstruo renacido|cambio de corazon|espadas de luz/.test(text)) return 'spell';
         return 'monster';
     }
 
@@ -106,6 +106,7 @@
             desc: card.desc || '',
             img: (card.card_images && card.card_images[0] && card.card_images[0].image_url) || '',
             apiId: card.id || null,
+            apiName: card.name || '',
             subtype: card.humanReadableCardType || type,
             isExtra: /fusion|synchro|xyz|link/i.test(type)
         };
@@ -153,8 +154,30 @@
         };
     }
 
+    // Las cartas guardadas traen la imagen de YGOPRODeck, cuyo nombre de
+    // archivo ES el id de la carta (…/cards/89631139.jpg). Consultar por id
+    // resuelve la carta sin depender del idioma del mazo.
+    function ygoIdFromCard(card) {
+        const url = String((card && (card.image_url || card.img)) || '');
+        const match = url.match(/ygoprodeck\.com\/images\/cards\/(\d+)\.(?:jpg|jpeg|png)/i) ||
+            url.match(/ygoprodeck\.com\/images\/cards\/[^/]*\/(\d+)\.(?:jpg|jpeg|png)/i);
+        return match ? match[1] : null;
+    }
+
+    async function fetchYgoMetaById(id) {
+        try {
+            const res = await withTimeout(`https://db.ygoprodeck.com/api/v7/cardinfo.php?id=${encodeURIComponent(id)}`);
+            if (!res.ok) return null;
+            const json = await res.json();
+            if (!json || !Array.isArray(json.data) || !json.data.length) return null;
+            return mapYgoApiCard(json.data[0]);
+        } catch (e) {
+            return null;
+        }
+    }
+
     async function fetchYgoMeta(name) {
-        const clean = stripParens(name);
+        const clean = canonicalName(name);
         const urls = [
             `https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodeURIComponent(clean)}`,
             `https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(clean)}`
@@ -189,6 +212,98 @@
             } catch (e) { /* siguiente idioma */ }
         }
         return null;
+    }
+
+    // Los mazos guardados usan nombres en español ("Fuerza de Espejo",
+    // "Tifón del Espacio Místico"), pero las APIs solo entienden el nombre
+    // inglés. Sin este mapa la búsqueda falla y la heurística convierte
+    // trampas y magias en monstruos 1600/1280: la IA jugaba a ciegas.
+    const ES_TO_EN = {
+        'dragon blanco de ojos azules': 'Blue-Eyes White Dragon',
+        'dragon blanco de ojos azules (alt)': 'Blue-Eyes White Dragon',
+        'mago oscuro': 'Dark Magician',
+        'chica maga oscura': 'Dark Magician Girl',
+        'dragon negro de ojos rojos': 'Red-Eyes Black Dragon',
+        'kuriboh': 'Kuriboh',
+        'exodia el prohibido': 'Exodia the Forbidden One',
+        'polimerizacion': 'Polymerization',
+        'fuerza de espejo': 'Mirror Force',
+        'tifon del espacio mistiko': 'Mystical Space Typhoon',
+        'tifon del espacio misti': 'Mystical Space Typhoon',
+        'tifon del espacio mitico': 'Mystical Space Typhoon',
+        'tifon del espacio mistico': 'Mystical Space Typhoon',
+        'olla de la codicia': 'Pot of Greed',
+        'agujero oscuro': 'Dark Hole',
+        'fisura': 'Fissure',
+        'monstruo renacido': 'Monster Reborn',
+        'cambio de corazon': 'Change of Heart',
+        'espadas de luz reveladora': 'Swords of Revealing Light',
+        'cilindro magico': 'Magic Cylinder',
+        'ataque negado': 'Negate Attack',
+        'armadura sakuretsu': 'Sakuretsu Armor',
+        'agujero trampa': 'Trap Hole',
+        'dispositivo de evacuacion obligatoria': 'Compulsory Evacuation Device',
+        'tierra aplastante': 'Smashing Ground',
+        'caridad graciosa': 'Graceful Charity',
+        'dragon de la flama espada': 'Flame Swordsman',
+        'mago de la tempestad': 'Magician of Black Chaos',
+        'dragon de la rosa negra': 'Black Rose Dragon',
+        'duende gemelo': 'Gemini Elf',
+        'maga de la fe': 'Magician of Faith',
+        'rompehechizos': 'Breaker the Magical Warrior',
+        'sangan': 'Sangan',
+        'kaibaman': 'Kaibaman',
+        'dragon de luster': 'Luster Dragon',
+        'dragon alejandrita': 'Alexandrite Dragon',
+        'elfo mistiko': 'Mystical Elf',
+        'energia de rayo': 'Lightning Energy',
+        'energia de fuego': 'Fire Energy',
+        'energia de agua': 'Water Energy',
+        'energia de planta': 'Grass Energy',
+        'energia de lucha': 'Fighting Energy',
+        'energia psiquica': 'Psychic Energy',
+        'investigacion del profesor': 'Professor\'s Research',
+        'ultra ball': 'Ultra Ball',
+        'nido ball': 'Nest Ball',
+        'ordenes del jefe': 'Boss\'s Orders',
+        'cambio': 'Switch',
+        'pocion': 'Potion',
+        'factura': 'Bill'
+    };
+
+    function canonicalName(name) {
+        const key = normalizeName(stripParens(name));
+        return ES_TO_EN[key] || stripParens(name);
+    }
+
+    // Estadísticas de los monstruos que aparecen en los mazos del repo.
+    // Permiten jugar bien sin red: sin esto todos valían 1600/1280.
+    const KNOWN_YGO_MONSTER = {
+        'blue-eyes white dragon': { atk: 3000, def: 2500, level: 8 },
+        'dark magician': { atk: 2500, def: 2100, level: 7 },
+        'dark magician girl': { atk: 2000, def: 1700, level: 6 },
+        'red-eyes black dragon': { atk: 2400, def: 2000, level: 7 },
+        'exodia the forbidden one': { atk: 1000, def: 1000, level: 3 },
+        'summoned skull': { atk: 2500, def: 1200, level: 6 },
+        'gemini elf': { atk: 1900, def: 900, level: 4 },
+        'luster dragon': { atk: 1900, def: 1600, level: 4 },
+        'alexandrite dragon': { atk: 2000, def: 100, level: 4 },
+        'mystical elf': { atk: 800, def: 2000, level: 4 },
+        'kuriboh': { atk: 300, def: 200, level: 1 },
+        'sangan': { atk: 1000, def: 600, level: 3 },
+        'kaibaman': { atk: 200, def: 700, level: 3 },
+        'magician of faith': { atk: 300, def: 400, level: 1 },
+        'breaker the magical warrior': { atk: 1600, def: 1000, level: 4 },
+        'skilled dark magician': { atk: 1900, def: 1700, level: 4 },
+        'flame swordsman': { atk: 1800, def: 1600, level: 5 },
+        'magician of black chaos': { atk: 2800, def: 2600, level: 8 },
+        'black rose dragon': { atk: 2400, def: 1800, level: 7 }
+    };
+
+    function knownYgoMonster(name) {
+        const entry = KNOWN_YGO_MONSTER[normalizeName(canonicalName(name))];
+        if (!entry) return null;
+        return Object.assign({ game: 'ygo', kind: 'monster', attribute: 'DARK', race: 'Unknown', typeLine: 'Monster', desc: '' }, entry, { known: true });
     }
 
     // ---------------------------------------------------------------
@@ -234,8 +349,12 @@
     }
 
     function knownTrainerMeta(name) {
+        // "Professor's Research" y "Professor s Research" deben coincidir:
+        // normalizeName conserva el apóstrofo, así que se prueba sin signos.
         const key = normalizeName(name);
-        const entry = KNOWN_TRAINERS[key] || KNOWN_TRAINERS[key.replace(/\s+/g, '')];
+        const plain = key.replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+        const entry = KNOWN_TRAINERS[key] || KNOWN_TRAINERS[plain] ||
+            KNOWN_TRAINERS[key.replace(/\s+/g, '')] || KNOWN_TRAINERS[plain.replace(/\s+/g, '')];
         if (!entry) return null;
         return {
             game: 'pokemon', kind: 'trainer', desc: entry.desc,
@@ -256,7 +375,7 @@
     };
 
     function knownYgoKind(name) {
-        return KNOWN_YGO_NONMONSTER[normalizeName(stripParens(name))] || null;
+        return KNOWN_YGO_NONMONSTER[normalizeName(canonicalName(name))] || null;
     }
 
     function knownEnergyMeta(name) {
@@ -275,16 +394,34 @@
         if (ygoKind) {
             const meta = {
                 game: 'ygo', kind: ygoKind, desc: '', name: name,
+                canonical: canonicalName(name),
                 img: card.image_url || card.img || '', known: true
             };
             memory.set(key, meta);
             return meta;
         }
 
+        if (game === 'ygo') {
+            const monster = knownYgoMonster(name);
+            if (monster) {
+                monster.name = name;
+                monster.canonical = canonicalName(name);
+                monster.img = card.image_url || card.img || '';
+                memory.set(key, monster);
+                return monster;
+            }
+        }
+
         if (game === 'pokemon') {
-            const known = knownPokemonMeta(name) || knownTrainerMeta(name) || knownEnergyMeta(name);
+            // Los entrenadores conocidos están en inglés; el mazo puede traer
+            // el nombre en español ("Poción", "Cambio").
+            const en = canonicalName(name);
+            const known = knownPokemonMeta(name) || knownPokemonMeta(en) ||
+                knownTrainerMeta(name) || knownTrainerMeta(en) ||
+                knownEnergyMeta(name) || knownEnergyMeta(en);
             if (known) {
                 known.name = name;
+                known.canonical = en;
                 known.img = card.image_url || card.img || '';
                 memory.set(key, known);
                 return known;
@@ -298,7 +435,11 @@
 
         let meta = null;
         try {
-            meta = game === 'pokemon' ? await fetchPokemonMeta(name) : await fetchYgoMeta(name);
+            if (game === 'ygo') {
+                const apiId = ygoIdFromCard(card);
+                if (apiId) meta = await fetchYgoMetaById(apiId);
+            }
+            if (!meta) meta = game === 'pokemon' ? await fetchPokemonMeta(name) : await fetchYgoMeta(name);
         } catch (e) {
             meta = null;
         }
@@ -310,6 +451,7 @@
         }
 
         meta.name = name;
+        if (game === 'ygo') meta.canonical = meta.apiName || canonicalName(name);
         meta.img = meta.img || card.image_url || card.img || '';
         memory.set(key, meta);
         loadCache()[key] = { meta, savedAt: Date.now() };
@@ -482,6 +624,7 @@
         listPresets,
         normalizeName,
         stripParens,
-        guessGame
+        guessGame,
+        canonicalName
     };
 })();
