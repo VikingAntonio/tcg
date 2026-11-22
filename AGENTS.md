@@ -246,3 +246,13 @@ Síntoma: enviar cartas acopladas al cementerio/removido (botones masivos "Todas
 - **Arreglo** (idéntico en `docs/js/duel.js` y `docs/js/duelmobile.js`): ordenar las acopladas por `attachedAt` ascendente y asignar `movedToPileAt = baseTime + index` para grave/banish, de modo que la última acoplada quede arriba y todas por encima de lo que ya estaba en la pila. `sendAttachedCardsToPile()` (padre al campo→pila) ya lo hacía bien y no se tocó.
 - **No cambia nada más:** `deck` sigue borrando `movedToPileAt` (va boca abajo), `hand` no lo toca, y el orden de `state.cards` no se altera (el `sort` es sobre el array filtrado).
 - Verificado con Playwright en `duel.html` y `duelmobile.html`, P1 y P2: bulk a cementerio, bulk a removido, acción individual de una acoplada y flujo campo→cementerio; la carta pintada en la zona coincide con el tope real.
+
+## Consumo de cuota Supabase — "Cached Egress" (modelos 3D)
+Síntoma: el panel de Supabase marcaba **Cached Egress 6.1 / 5 GB (122 %)** mientras que `Egress` (base de datos) solo iba al 9 %. El "Cached Egress" es el CDN de **Storage**, no la BD.
+- **Causa 1:** cada asistente pesa ~2.7 MB (`models/<ts>_<rand>/<Nombre>.bin`) + texturas JPG (~0.3–1 MB). Los objetos se sirven con `cache-control: private, no-cache` y `cf-cache-status: DYNAMIC`.
+- **Causa 2:** el Service Worker solo se registraba en 15 de 45 vistas, así que en el resto el modelo se bajaba completo en cada navegación. Ahora se registra desde `js/supabase-config.js` (lo cargan 37 vistas).
+- **Causa 3:** las rejillas de asistentes montaban un `<model-viewer>` por asistente (`admin.js` → `#spirits-grid`, `app.js` → `loadPublicSpirits`, `play.html`, `duel.html`). Con 41 asistentes eso son ~150 MB por visita. Ahora pintan el póster (`poster_url`, en Cloudinary) y el modelo se monta solo al abrirlo: en admin con `.btn-preview-spirit-3d` → `#gltf-overlay`; en público el click de `.spirit-card` ya abría ese overlay y lee `data-poster`.
+- `sw.js`: el cache-first ya no depende de la extensión; cualquier ruta con `/storage/v1/object/public/spirits/` se guarda en `IMAGE_CACHE` (por eso `STATIC_CACHE` v253 no la borra al subir de versión).
+- `docs/J_storage_cache_control.sql` (opcional) marca los objetos con `Cache-Control: public, max-age=31536000, immutable`; los nombres de archivo son únicos por subida, así que es seguro.
+- **No** volver a montar un `model-viewer` por elemento de una lista: con `loading="lazy"` igual descarga varios modelos al hacer scroll.
+- Notificaciones (`js/notifications.js`): sondeo cada 60 s (antes 15 s), se detiene con `document.hidden` y se refresca en `visibilitychange`/`focus`; los `select` piden solo las columnas usadas.

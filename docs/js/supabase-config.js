@@ -13,3 +13,14 @@ if (typeof Swal !== 'undefined') {
         showConfirmButton: true
     });
 }
+
+// El Service Worker se registra desde aquí porque este script lo cargan casi
+// todas las vistas. Antes solo lo hacían 15 de 45, así que en el resto el
+// modelo 3D (~2.7 MB en Supabase Storage) se volvía a descargar en cada visita.
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register('./sw.js').catch(function(err) {
+            console.warn('Service Worker no registrado:', err && err.message);
+        });
+    });
+}

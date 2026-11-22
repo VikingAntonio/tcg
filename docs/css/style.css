@@ -3607,12 +3607,18 @@ body.theme-light .amazon-orig-strikethrough {
     box-shadow: 0 15px 40px rgba(0, 210, 255, 0.2);
 }
 
-.spirit-card model-viewer {
+.spirit-card model-viewer,
+.spirit-card .spirit-poster {
     width: 100%;
     height: 250px;
     background: radial-gradient(circle, #1a1a1a 0%, #000 100%);
     border-radius: 15px;
     margin-bottom: 15px;
+}
+
+.spirit-card .spirit-poster {
+    object-fit: cover;
+    display: block;
 }
 
 .spirit-card h3 {
