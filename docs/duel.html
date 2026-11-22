@@ -5809,7 +5809,7 @@
                 availableSpirits.forEach((sp, idx) => {
                     optionsHtml += `
                         <div class="spirit-option-card" data-idx="${idx}">
-                            <model-viewer src="${sp.gltf_url}" style="width: 70px; height: 70px;" loading="lazy" shadow-intensity="0" auto-rotate interaction-prompt="none" disable-zoom disable-pan></model-viewer>
+                            <img src="${sp.poster_url || sp.texture_url || ''}" alt="${sp.name}" loading="lazy" style="width: 70px; height: 70px; object-fit: cover; border-radius: 8px;">
                             <span>${sp.name}</span>
                         </div>
                     `;

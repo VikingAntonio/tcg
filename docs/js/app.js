@@ -503,7 +503,7 @@ $(document).ready(async function() {
     $(document).on('click', '.spirit-card', function() {
         const gltf = $(this).data('gltf');
         const name = $(this).data('name');
-        const poster = $(this).find('model-viewer').attr('poster');
+        const poster = $(this).attr('data-poster') || $(this).find('model-viewer').attr('poster');
 
         if (gltf) {
             $('#expanded-gltf-viewer').attr('src', gltf);
@@ -2890,17 +2890,10 @@ async function loadPublicSpirits() {
             <div class="spirit-card ${isSelected ? 'selected' : ''}"
                  data-id="${spirit.id}"
                  data-gltf="${spirit.gltf_url}"
-                 data-name="${spirit.name}">
+                 data-name="${spirit.name}"
+                 data-poster="${spirit.poster_url || ''}">
                 <div class="badge-selected">Actual</div>
-                <model-viewer
-                    src="${spirit.gltf_url}"
-                    poster="${spirit.poster_url || ''}"
-                    loading="lazy"
-                    camera-controls
-                    shadow-intensity="1"
-                    environment-image="neutral"
-                    exposure="1.2">
-                </model-viewer>
+                <img class="spirit-poster" src="${spirit.poster_url || ''}" alt="${spirit.name}" loading="lazy">
                 <h3>${spirit.name}</h3>
                 <div class="zoom-btn" style="display: flex;"><i class="fas fa-search-plus"></i></div>
             </div>

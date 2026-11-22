@@ -4168,16 +4168,16 @@ async function loadSpirits() {
             ? '¡GRATIS!'
             : `$${priceMxn} MXN`;
 
+        // Se muestra el póster (imagen ya cacheada) en vez de montar un
+        // model-viewer por asistente: cada .bin pesa ~2.7 MB y la rejilla
+        // descargaba decenas de modelos por visita (egress de Storage).
         const modelViewerHTML = `
-            <model-viewer
-                src="${spirit.gltf_url}"
-                poster="${spirit.poster_url || ''}"
-                loading="lazy"
-                camera-controls
-                shadow-intensity="1"
-                environment-image="neutral"
-                exposure="1.2">
-            </model-viewer>
+            <div class="spirit-card-media" style="position: relative; width: 100%; height: 250px; border-radius: 15px; overflow: hidden; margin-bottom: 15px; background: radial-gradient(circle, #1a1a1a 0%, #000 100%);">
+                <img class="spirit-poster" src="${spirit.poster_url || spirit.texture_url || ''}" alt="${spirit.name}" loading="lazy" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                <button type="button" class="btn-preview-spirit-3d" title="Ver en 3D" style="position: absolute; right: 8px; bottom: 8px; width: 34px; height: 34px; border-radius: 50%; border: none; background: rgba(0,0,0,0.65); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-cube"></i>
+                </button>
+            </div>
         `;
 
         const wrappedModelViewer = isForSale
@@ -4267,6 +4267,16 @@ async function loadSpirits() {
                     await purchaseSpiritViaStripe(Object.assign({}, spirit, { price_mxn: rawEffective }));
                 }
             });
+        });
+
+        $card.find('.btn-preview-spirit-3d').click(function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $('#expanded-gltf-viewer').attr('src', spirit.gltf_url);
+            $('#expanded-gltf-viewer').attr('poster', spirit.poster_url || '');
+            $('#expanded-gltf-name').text(spirit.name || 'Asistente');
+            $('#gltf-overlay').addClass('active');
+            $('body').addClass('modal-open');
         });
 
         $card.find('.btn-select').click(async function() {

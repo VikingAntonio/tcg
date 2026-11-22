@@ -4,6 +4,9 @@
 // ====================================================================
 
 (function() {
+    // Un sondeo cada minuto, y solo con la pestaña visible. Cada ciclo son 6
+    // consultas: a 15 s y con la pestaña en segundo plano se comía la cuota.
+    const NOTIF_POLL_MS = 60000;
     let knownSalesCount = 0;
     let initialLoadDone = false;
     let salesPollingInterval = null;
@@ -403,14 +406,14 @@
             // 1. Fetch Store Sales & Binder Sales Notifications
             const salesPromise = _supabase
                 .from('sealed_product_sales')
-                .select('*')
+                .select('id, items, buyer_name, total_amount, payment_status, is_read, created_at')
                 .eq('seller_id', user.id)
                 .order('created_at', { ascending: false })
                 .limit(15);
 
             const binderSalesPromise = _supabase
                 .from('binder_sales')
-                .select('*')
+                .select('id, items, buyer_username, total_amount, status, is_read, created_at')
                 .eq('seller_id', user.id)
                 .order('created_at', { ascending: false })
                 .limit(15);
@@ -419,7 +422,7 @@
             const targetFilter = (user.role === 'admin' || user.role === 'admin_store') ? 'all' : (user.role || 'starter');
             const broadcastPromise = _supabase
                 .from('app_notifications')
-                .select('*')
+                .select('id, title, messages, images, created_at')
                 .or(`target_role.eq.all,target_role.eq.${targetFilter}`)
                 .order('created_at', { ascending: false })
                 .limit(15);
@@ -429,7 +432,8 @@
                 .from('gift_campaigns')
                 .select('*')
                 .eq('status', 'active')
-                .order('created_at', { ascending: false });
+                .order('created_at', { ascending: false })
+                .limit(20);
 
             const giftClaimsPromise = _supabase
                 .from('gift_claims')
@@ -439,7 +443,7 @@
             // 4. Fetch User States (read / deleted)
             const statesPromise = _supabase
                 .from('user_notification_states')
-                .select('*')
+                .select('notification_id, is_read, is_deleted')
                 .eq('user_id', user.id);
 
             const [salesRes, binderSalesRes, broadcastRes, giftsRes, giftClaimsRes, statesRes] = await Promise.all([
@@ -806,10 +810,41 @@
         });
 
         checkNotifications();
+        startNotificationsPolling();
+    }
+
+    // El sondeo se detiene con la pestaña oculta y se reanuda (con un refresco
+    // inmediato) al volver, para no gastar consultas en segundo plano.
+    function startNotificationsPolling() {
         if (!salesPollingInterval) {
-            salesPollingInterval = setInterval(checkNotifications, 15000);
+            salesPollingInterval = setInterval(() => {
+                if (!document.hidden) checkNotifications();
+            }, NOTIF_POLL_MS);
         }
     }
+
+    function stopNotificationsPolling() {
+        if (salesPollingInterval) {
+            clearInterval(salesPollingInterval);
+            salesPollingInterval = null;
+        }
+    }
+
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            stopNotificationsPolling();
+        } else {
+            checkNotifications();
+            startNotificationsPolling();
+        }
+    });
+
+    window.addEventListener('focus', function() {
+        if (!salesPollingInterval) {
+            checkNotifications();
+            startNotificationsPolling();
+        }
+    });
 
     function escapeHtml(str) {
         if (!str) return '';

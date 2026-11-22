@@ -1,4 +1,4 @@
-const STATIC_CACHE = 'viking-static-v251';
+const STATIC_CACHE = 'viking-static-v253';
 const IMAGE_CACHE = 'viking-images-v1';
 const DATA_CACHE = 'viking-data-v1';
 
@@ -142,12 +142,17 @@ self.addEventListener('fetch', event => {
   // so the heavy assistant model re-downloaded on every navigation (very slow on
   // mobile). Caching them here keeps the companion instant after first load.
   const isModelAsset = /\.(jpg|jpeg|png|gif|webp|svg|glb|gltf|bin|ktx2|basis|drc)$/.test(url.pathname);
+  // Los modelos del asistente viven en el bucket `spirits` y pesan ~2.7 MB
+  // (.bin) + texturas. Sin cache-first se re-descargaban en cada navegación y
+  // eso inflaba el "Cached Egress" de Storage en Supabase.
+  const isSpiritModel = url.pathname.includes('/storage/v1/object/public/spirits/');
   if (
     url.hostname.includes('cloudinary.com') ||
     url.hostname.includes('tcgplayer-cdn.tcgplayer.com') ||
     url.hostname.includes('images.tcgplayer.com') ||
     url.hostname.includes('tcgdex.net') ||
     url.hostname.includes('github.io') ||
+    isSpiritModel ||
     isModelAsset
   ) {
     event.respondWith(

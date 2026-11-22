@@ -1034,7 +1034,7 @@
                 const opt = document.createElement('div');
                 opt.className = 'spirit-option';
                 opt.innerHTML = `
-                    <model-viewer src="${spirit.gltf_url}" style="width: 80px; height: 80px;" loading="lazy" shadow-intensity="0" auto-rotate interaction-prompt="none"></model-viewer>
+                    <img src="${spirit.poster_url || spirit.texture_url || ''}" alt="${spirit.name}" loading="lazy" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">
                     <span>${spirit.name}</span>
                 `;
                 opt.onclick = () => {
