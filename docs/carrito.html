@@ -375,6 +375,9 @@
                 Total: <span class="total-amount" id="cart-total-display">$0.00</span>
             </div>
             <div class="checkout-actions">
+                <button class="btn btn-checkout" id="btn-pay-stripe" style="border: none; border-radius: 12px; cursor: pointer; font-weight: 700; background: linear-gradient(135deg, #635bff, #7c3aed); color: #fff; margin-bottom: 10px;">
+                    <i class="fab fa-stripe-s"></i> Pagar con tarjeta
+                </button>
                 <button class="btn btn-checkout btn-whatsapp" id="send-whatsapp" style="border: none; border-radius: 12px; cursor: pointer; font-weight: 700;">
                     <i class="fab fa-whatsapp"></i> Enviar por WhatsApp
                 </button>
@@ -506,6 +509,53 @@
             renderCart();
             await loadStoreContact();
 
+            // Regreso desde Stripe Checkout
+            const payParams = new URLSearchParams(window.location.search);
+            const payStatus = payParams.get('payment');
+            const payType = payParams.get('type');
+            const paySession = payParams.get('session_id');
+
+            if (payStatus && payType === 'cart') {
+                // Limpiar la URL conservando ?store=...
+                const keep = new URLSearchParams(window.location.search);
+                keep.delete('payment');
+                keep.delete('type');
+                keep.delete('session_id');
+                keep.delete('order_id');
+                const qs = keep.toString();
+                window.history.replaceState({}, document.title, window.location.pathname + (qs ? '?' + qs : ''));
+
+                if (payStatus === 'success') {
+                    if (paySession && window.TCGPurchase?.confirmCheckoutSession) {
+                        try {
+                            await window.TCGPurchase.confirmCheckoutSession(
+                                paySession,
+                                { id: (await _supabase.auth.getSession()).data?.session?.user?.id },
+                                { expectEntitlement: false }
+                            );
+                        } catch (_) {}
+                    }
+                    Cart.clear();
+                    renderCart();
+                    Swal.fire({
+                        title: '¡Pago confirmado!',
+                        text: 'Tu pago se procesó correctamente. El vendedor ya recibió la notificación de tu pedido.',
+                        icon: 'success',
+                        confirmButtonColor: '#635bff',
+                        background: '#0f172a',
+                        color: '#fff'
+                    });
+                } else if (payStatus === 'canceled') {
+                    Swal.fire({
+                        title: 'Pago cancelado',
+                        text: 'No se realizó ningún cargo. Puedes intentarlo de nuevo cuando quieras.',
+                        icon: 'info',
+                        background: '#0f172a',
+                        color: '#fff'
+                    });
+                }
+            }
+
             $('#btn-clear-cart').click(function() {
                 Swal.fire({
                     title: '¿Vaciar carrito?',
@@ -528,6 +578,10 @@
 
             $('#send-messenger').click(function() {
                 sendMessage('messenger');
+            });
+
+            $('#btn-pay-stripe').click(function() {
+                payWithStripe();
             });
         });
 
@@ -753,6 +807,27 @@
             const items = Cart.getAll();
             if (items.length === 0) return;
 
+            // Para que la compra quede en la cuenta del comprador se exige sesión.
+            let session = null;
+            if (typeof _supabase !== 'undefined') {
+                try {
+                    const res = await _supabase.auth.getSession();
+                    session = res.data?.session || null;
+                } catch (_) {}
+            }
+
+            if (!session?.user) {
+                Swal.fire({
+                    title: 'Inicia Sesión',
+                    text: 'Debes iniciar sesión para pagar con tarjeta. Así tu compra queda guardada en tu cuenta.',
+                    icon: 'info',
+                    confirmButtonText: 'Ir a iniciar sesión',
+                    background: '#0f172a',
+                    color: '#fff'
+                }).then(() => { window.location.href = 'index.html'; });
+                return;
+            }
+
             const { value: buyerDetails } = await Swal.fire({
                 title: 'Pago con Tarjeta via Stripe',
                 html: `
@@ -787,63 +862,57 @@
             if (!buyerDetails) return;
 
             const sellerId = storeOwnerLinks.seller_id || window.currentStoreId;
-            const totalAmount = Cart.getTotal();
 
             Swal.fire({ title: 'Conectando con Stripe...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
             try {
-                if (sellerId && typeof _supabase !== 'undefined') {
-                    await _supabase.from('sealed_product_sales').insert([{
-                        seller_id: sellerId,
+                // Los precios los valida el servidor contra el catálogo real.
+                // La venta y el descuento de stock se registran cuando Stripe
+                // confirma el pago (webhook), nunca antes de cobrar.
+                const payloadItems = items.map(it => ({
+                    id: it.id || it.preorder_id,
+                    name: it.name,
+                    quantity: parseInt(it.cart_quantity) || 1,
+                    type: it.type || null,
+                    is_preorder: !!it.is_preorder,
+                    preorder_id: it.preorder_id || null
+                }));
+
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/create-checkout-session`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${session.access_token || SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        purchase_type: 'cart',
+                        items: payloadItems,
                         buyer_name: buyerDetails.name,
-                        buyer_contact: buyerDetails.contact,
-                        items: items,
-                        total_amount: totalAmount,
-                        payment_status: 'Pagado con Tarjeta (Stripe)',
-                        is_read: false
-                    }]);
+                        buyer_email: buyerDetails.contact,
+                        seller_id: sellerId || null,
+                        return_url: window.location.origin + window.location.pathname
+                    })
+                });
 
-                    for (const item of items) {
-                        if (item.id) {
-                            const qty = parseInt(item.cart_quantity) || 1;
-                            const { data: prod } = await _supabase.from('sealed_products').select('stock, quantity, status').eq('id', item.id).maybeSingle();
-                            if (prod) {
-                                const currentStock = prod.stock !== undefined ? parseInt(prod.stock) : (parseInt(prod.quantity) || 1);
-                                const newStock = Math.max(0, currentStock - qty);
-                                const newStatus = newStock === 0 ? 'Agotado' : (prod.status || 'Disponible');
-                                await _supabase.from('sealed_products').update({ stock: newStock, quantity: newStock, status: newStatus }).eq('id', item.id);
-                            }
-                        }
-                    }
-                }
+                const data = await response.json().catch(() => ({}));
 
-                let checkoutUrl = null;
-                if (typeof _supabase !== 'undefined') {
-                    try {
-                        const { data } = await _supabase.functions.invoke('create-checkout-session', {
-                            body: { items, buyer_name: buyerDetails.name, buyer_email: buyerDetails.contact, total_amount: totalAmount }
-                        });
-                        if (data && data.url) checkoutUrl = data.url;
-                    } catch(e) {}
+                if (!response.ok || !data.url) {
+                    throw new Error(data.error || 'No se pudo generar la sesión de pago.');
                 }
 
                 Cart.clear();
                 renderCart();
+                window.location.href = data.url;
 
-                if (checkoutUrl) {
-                    window.location.href = checkoutUrl;
-                } else {
-                    Swal.fire({
-                        title: '¡Pago y Notificación Registrados!',
-                        text: `Se registró la orden de ${buyerDetails.name} por $${totalAmount.toFixed(2)} (Stripe). Notificación enviada al vendedor.`,
-                        icon: 'success',
-                        confirmButtonColor: '#635bff',
-                        background: '#0f172a',
-                        color: '#fff'
-                    });
-                }
             } catch(e) {
-                Swal.fire('Error', 'No se pudo iniciar el pago: ' + e.message, 'error');
+                Swal.fire({
+                    title: 'No se pudo iniciar el pago',
+                    text: e.message || 'Inténtalo de nuevo o contacta al vendedor.',
+                    icon: 'error',
+                    background: '#0f172a',
+                    color: '#fff'
+                });
             }
         }
 

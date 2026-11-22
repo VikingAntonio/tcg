@@ -934,15 +934,14 @@ async function loadAndRenderAccessories() {
     }
     try {
         let accessories = [];
-        // First try accessories table
+        // Catálogo vivo
         const { data: accData, error: accErr } = await _supabase
             .from('accessories')
             .select('*')
             .order('created_at', { ascending: false });
+        accessories = (!accErr && accData) ? accData : [];
 
-        if (!accErr && accData && accData.length > 0) {
-            accessories = accData;
-        } else {
+        if (!accessories || accessories.length === 0) {
             // Fallback to viking_data
             const { data: vikData } = await _supabase
                 .from('viking_data')
@@ -969,6 +968,12 @@ async function loadAndRenderAccessories() {
                     target_roles: ['starter', 'premium', 'tienda']
                 };
             });
+        }
+
+        // Sumar lo que el usuario ya pagó (aunque el admin lo haya borrado)
+        if (window.TCGPurchase) {
+            await window.TCGPurchase.loadEntitlements(currentUser);
+            accessories = window.TCGPurchase.mergeOwnedIntoCatalog(accessories, 'accessory', currentUser);
         }
 
         const userRole = (currentUser?.role || 'starter').toLowerCase();

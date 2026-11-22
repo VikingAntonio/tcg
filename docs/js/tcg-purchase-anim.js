@@ -321,8 +321,10 @@
         },
 
         /**
-         * Checks if the user already owns the given item
-         * @param {string} type 'accessory' | 'sticker' | 'spirit'
+         * Checks if the user already owns the given item.
+         * Consulta las columnas CSV históricas y el libro de compras permanente
+         * (`user_entitlements`), que sobrevive aunque el artículo se borre del catálogo.
+         * @param {string} type 'accessory' | 'sticker' | 'spirit' | 'pack'
          * @param {string|number} itemId
          * @param {object} user
          */
@@ -330,100 +332,254 @@
             if (!user || !itemId) return false;
             const strId = String(itemId);
             const userRole = (user.role || '').toLowerCase();
-            if (userRole === 'admin') return true;
+            if (userRole === 'admin' || userRole === 'superadmin' || userRole === 'admin_store') return true;
 
-            if (type === 'accessory') {
-                const list = (user.purchased_accessory_ids || '').split(',').map(s => s.trim()).filter(Boolean);
-                return list.includes(strId);
-            } else if (type === 'sticker') {
-                const list = (user.purchased_sticker_ids || '').split(',').map(s => s.trim()).filter(Boolean);
-                return list.includes(strId);
-            } else if (type === 'spirit') {
-                const list = (user.purchased_spirit_ids || '').split(',').map(s => s.trim()).filter(Boolean);
-                return list.includes(strId);
+            const columns = {
+                accessory: 'purchased_accessory_ids',
+                sticker: 'purchased_sticker_ids',
+                spirit: 'purchased_spirit_ids',
+                pack: 'purchased_pack_ids'
+            };
+            const col = columns[type];
+            if (!col) return false;
+
+            const list = (user[col] || '').split(',').map(s => s.trim()).filter(Boolean);
+            if (list.includes(strId)) return true;
+
+            const owned = this.getEntitlements(user.id);
+            return owned.some(e => e.item_type === type && String(e.item_id) === strId);
+        },
+
+        /** Cache en memoria de los entitlements del usuario */
+        _entitlements: { userId: null, items: [], loadedAt: 0, promise: null },
+
+        /**
+         * Carga (una sola vez por sesión) el libro de compras del usuario.
+         */
+        async loadEntitlements(user, force = false) {
+            const userId = user?.id || window.currentUser?.id || window.CustomStoreState?.currentUser?.id;
+            if (!userId) return [];
+
+            const cache = this._entitlements;
+            const freshMs = 30000;
+            if (!force && cache.userId === userId && cache.loadedAt && (Date.now() - cache.loadedAt) < freshMs) {
+                return cache.items;
             }
-            return false;
+            if (!force && cache.userId === userId && cache.promise) return cache.promise;
+
+            const sb = window._supabase || (typeof _supabase !== 'undefined' ? _supabase : null);
+            if (!sb) return [];
+
+            cache.userId = userId;
+            cache.promise = (async () => {
+                try {
+                    const { data, error } = await sb
+                        .from('user_entitlements')
+                        .select('item_type, item_id, item_snapshot, source, granted_at')
+                        .eq('user_id', userId);
+                    if (error) {
+                        // La migración puede no estar aplicada todavía: no romper la vista.
+                        console.warn('No se pudieron cargar los entitlements:', error.message);
+                        cache.items = [];
+                    } else {
+                        cache.items = data || [];
+                    }
+                    cache.loadedAt = Date.now();
+                } catch (e) {
+                    console.warn('Error cargando entitlements:', e);
+                    cache.items = [];
+                }
+                cache.promise = null;
+                return cache.items;
+            })();
+
+            return cache.promise;
+        },
+
+        getEntitlements(userId) {
+            const cache = this._entitlements;
+            if (!userId || cache.userId !== userId) return [];
+            return cache.items || [];
         },
 
         /**
-         * Records purchase in Supabase & memory immediately
+         * Devuelve los artículos comprados/regalados que ya NO existen en el
+         * catálogo, reconstruidos desde el snapshot guardado al pagar.
+         */
+        getOwnedSnapshots(type, user) {
+            const items = this.getEntitlements(user?.id);
+            return items
+                .filter(e => e.item_type === type && e.item_snapshot && typeof e.item_snapshot === 'object')
+                .map(e => {
+                    const snap = Object.assign({}, e.item_snapshot);
+                    const id = String(e.item_id);
+                    const image = snap.image_url || snap.url || snap.gltf_url || snap.poster_url || '';
+                    return Object.assign(snap, {
+                        id,
+                        name: snap.name || snap.card_name || 'Artículo comprado',
+                        image_url: image,
+                        url: snap.url || image,
+                        sale_status: 'disponible',
+                        price_mxn: Number(snap.price_mxn) || 0,
+                        target_roles: ['starter', 'premium', 'tienda'],
+                        _owned_snapshot: true,
+                        _entitlement_source: e.source
+                    });
+                });
+        },
+
+        /**
+         * Une el catálogo vivo con los artículos que el usuario ya pagó y que
+         * el admin pudo haber eliminado. Así "lo comprado" nunca desaparece.
+         */
+        mergeOwnedIntoCatalog(catalog, type, user) {
+            const list = Array.isArray(catalog) ? catalog.slice() : [];
+            const known = new Set(list.map(it => String(it.id)));
+            const owned = this.getOwnedSnapshots(type, user);
+
+            owned.forEach(it => {
+                if (!known.has(String(it.id))) {
+                    list.push(it);
+                    known.add(String(it.id));
+                }
+            });
+
+            return list;
+        },
+
+        /**
+         * Carga el catálogo de un tipo desde Supabase y lo fusiona con lo comprado.
          * @param {string} type 'accessory' | 'sticker' | 'spirit'
-         * @param {string|number} itemId
-         * @param {object} user
+         */
+        async fetchCatalog(type, user, options = {}) {
+            const sb = window._supabase || (typeof _supabase !== 'undefined' ? _supabase : null);
+            if (!sb) return this.getOwnedSnapshots(type, user);
+
+            const table = type === 'accessory' ? 'accessories' : type === 'sticker' ? 'stickers' : type === 'spirit' ? 'spirits' : null;
+            if (!table) return [];
+
+            const owner = user || await this.getCurrentUser();
+            await this.loadEntitlements(owner);
+
+            let data = [];
+            try {
+                let query = sb.from(table).select('*');
+                if (options.orderBy) query = query.order(options.orderBy, { ascending: options.ascending !== false });
+                const res = await query;
+                if (!res.error && Array.isArray(res.data)) data = res.data;
+            } catch (e) {
+                console.warn(`Error cargando catálogo ${table}:`, e);
+            }
+
+            return this.mergeOwnedIntoCatalog(data, type, owner);
+        },
+
+        /**
+         * Refresca en memoria / localStorage el perfil del usuario y los
+         * entitlements. No escribe nada en la base de datos.
+         */
+        async refreshUserFromDb(user) {
+            const sb = window._supabase || (typeof _supabase !== 'undefined' ? _supabase : null);
+            const current = user || window.currentUser || window.CustomStoreState?.currentUser || null;
+            const userId = current?.id;
+            if (!sb || !userId) return current;
+
+            try {
+                const { data } = await sb.from('usuarios').select('*').eq('id', userId).maybeSingle();
+                if (data) {
+                    if (window.currentUser) Object.assign(window.currentUser, data);
+                    if (window.CustomStoreState?.currentUser) Object.assign(window.CustomStoreState.currentUser, data);
+                    try {
+                        const cached = JSON.parse(localStorage.getItem('tcg_session') || '{}');
+                        localStorage.setItem('tcg_session', JSON.stringify(Object.assign({}, cached, data)));
+                    } catch (_) {}
+                }
+            } catch (e) {
+                console.warn('No se pudo refrescar el usuario:', e);
+            }
+
+            await this.loadEntitlements({ id: userId }, true);
+
+            try {
+                window.dispatchEvent(new CustomEvent('tcg_item_unlocked', {
+                    detail: { type: 'refresh', itemId: null }
+                }));
+            } catch (_) {}
+
+            return window.currentUser || current;
+        },
+
+        /**
+         * Aplica en memoria/localStorage los artículos que el SERVIDOR ya
+         * confirmó (respuesta de `verify-checkout-session`).
+         * No escribe en la base de datos: eso lo hace exclusivamente el backend.
+         */
+        applyGrantedEntitlements(entitlements, user) {
+            if (!Array.isArray(entitlements) || entitlements.length === 0) return;
+
+            const columns = {
+                accessory: 'purchased_accessory_ids',
+                sticker: 'purchased_sticker_ids',
+                spirit: 'purchased_spirit_ids',
+                pack: 'purchased_pack_ids'
+            };
+
+            const cache = this._entitlements;
+            const userId = user?.id || cache.userId;
+            if (userId && cache.userId !== userId) {
+                cache.userId = userId;
+                cache.items = [];
+            }
+            const known = new Set(cache.items.map(e => `${e.item_type}:${e.item_id}`));
+
+            entitlements.forEach(e => {
+                const type = e.item_type || e.type;
+                const id = String(e.item_id || e.id || '');
+                if (!type || !id) return;
+
+                if (!known.has(`${type}:${id}`)) {
+                    cache.items.push({
+                        item_type: type,
+                        item_id: id,
+                        item_snapshot: e.item_snapshot || e.snapshot || {},
+                        source: e.source || 'purchase'
+                    });
+                    known.add(`${type}:${id}`);
+                }
+
+                const col = columns[type];
+                if (col && user) {
+                    const list = (user[col] || '').split(',').map(s => s.trim()).filter(Boolean);
+                    if (!list.includes(id)) {
+                        list.push(id);
+                        user[col] = list.join(',');
+                        if (window.currentUser) window.currentUser[col] = user[col];
+                        if (window.CustomStoreState?.currentUser) window.CustomStoreState.currentUser[col] = user[col];
+                        try {
+                            const cached = JSON.parse(localStorage.getItem('tcg_session') || '{}');
+                            cached[col] = user[col];
+                            localStorage.setItem('tcg_session', JSON.stringify(cached));
+                        } catch (_) {}
+                    }
+                }
+            });
+
+            try {
+                window.dispatchEvent(new CustomEvent('tcg_item_unlocked', {
+                    detail: { type: 'entitlements', items: entitlements }
+                }));
+            } catch (_) {}
+        },
+
+        /**
+         * Compatibilidad: antes esta función escribía las compras directamente
+         * en `usuarios` desde el navegador (cualquiera podía regalarse artículos
+         * desde la consola). Ahora solo se usa para refrescar la memoria tras
+         * una confirmación del servidor.
          */
         async recordUnlockInDatabase(type, itemId, user) {
             if (!user?.id || !itemId) return;
-            const strId = String(itemId);
-
-            let colName = '';
-            if (type === 'accessory') colName = 'purchased_accessory_ids';
-            else if (type === 'sticker') colName = 'purchased_sticker_ids';
-            else if (type === 'spirit') colName = 'purchased_spirit_ids';
-            if (!colName) return;
-
-            // Consultar datos actualizados de Supabase si es posible para no perder compras previas
-            let remoteList = [];
-            const sbClient = window._supabase || (typeof _supabase !== 'undefined' ? _supabase : null);
-            if (sbClient) {
-                try {
-                    const { data: dbUser } = await sbClient
-                        .from('usuarios')
-                        .select(colName)
-                        .eq('id', user.id)
-                        .maybeSingle();
-                    if (dbUser && dbUser[colName]) {
-                        remoteList = (dbUser[colName] || '').split(',').map(s => s.trim()).filter(Boolean);
-                    }
-                } catch (_) {}
-            }
-
-            const localList = (user[colName] || '').split(',').map(s => s.trim()).filter(Boolean);
-            const mergedList = Array.from(new Set([...remoteList, ...localList]));
-
-            if (!mergedList.includes(strId)) {
-                mergedList.push(strId);
-            }
-
-            user[colName] = mergedList.join(',');
-
-            // Sincronizar en memoria global de la app
-            if (window.currentUser) window.currentUser[colName] = user[colName];
-            if (window.CustomStoreState?.currentUser) window.CustomStoreState.currentUser[colName] = user[colName];
-
-            try {
-                // Actualizar cache local asegurando que tcg_session conserve el campo
-                let cachedObj = {};
-                try {
-                    cachedObj = JSON.parse(localStorage.getItem('tcg_session') || '{}');
-                } catch (_) {}
-                const updatedSession = Object.assign({}, cachedObj, user);
-                updatedSession[colName] = user[colName];
-                localStorage.setItem('tcg_session', JSON.stringify(updatedSession));
-            } catch (_) {}
-
-            // Guardar en Supabase
-            try {
-                if (sbClient) {
-                    const updateObj = {};
-                    updateObj[colName] = user[colName];
-                    if (type === 'spirit') {
-                        updateObj.selected_spirit_id = itemId;
-                    }
-                    await sbClient
-                        .from('usuarios')
-                        .update(updateObj)
-                        .eq('id', user.id);
-                }
-            } catch (e) {
-                console.warn(`Notice updating ${colName}:`, e);
-            }
-
-            // Notificar a todos los escuchadores y pestañas en tiempo real
-            try {
-                window.dispatchEvent(new CustomEvent('tcg_item_unlocked', {
-                    detail: { type, itemId: strId, list: user[colName] }
-                }));
-            } catch (_) {}
+            await this.refreshUserFromDb(user);
         },
 
         /**
@@ -529,8 +685,9 @@
         },
 
         /**
-         * Initiates Stripe checkout for an item (Accessory, Sticker, or Spirit)
-         * If the user is admin or running in test/demo, handles direct unlock.
+         * Inicia el Checkout de Stripe para un artículo (accesorio, sticker,
+         * asistente 3D o pack). El precio SIEMPRE lo resuelve el servidor: aquí
+         * solo se usa para mostrarlo en la confirmación.
          */
         async purchaseItemViaStripe(type, item, options = {}) {
             const user = await this.getCurrentUser();
@@ -539,18 +696,22 @@
                 return;
             }
 
-            const itemName = item.name || 'Accesorio TCG';
-            const price = Math.max(5, Number(item.price_mxn) || 25);
+            const isPack = type === 'pack';
+            const itemName = item.name || (isPack ? 'Pack TCG' : 'Accesorio TCG');
+            const price = isPack
+                ? (Number(item.promo_price || item.normal_price) || 0)
+                : (Number(item.price_mxn) || 0);
             const returnUrl = window.location.origin + window.location.pathname;
 
             // Confirm intent with a clean, pastel purple TCG modal
             const displayImg = item.image_url || item.url || item.poster_url || '';
             const { isConfirmed } = await Swal.fire({
-                title: `Desbloquear ${itemName}`,
+                title: `${isPack ? 'Comprar' : 'Desbloquear'} ${itemName}`,
                 html: `
                     <div style="text-align: center; margin: 12px 0;">
                         ${displayImg ? `<img src="${displayImg}" style="max-height: 130px; border-radius: 12px; margin-bottom: 12px; object-fit: contain;">` : ''}
                         <div style="font-size: 1.5rem; font-weight: 900; color: #c084fc;">$${price} MXN</div>
+                        <p style="font-size: 0.75rem; color: #94a3b8; margin: 6px 0 0;">El cargo final lo confirma el servidor con el precio oficial.</p>
                     </div>
                 `,
                 showCancelButton: true,
@@ -591,6 +752,7 @@
                 if (type === 'accessory') bodyPayload.accessory_id = item.id;
                 else if (type === 'sticker') bodyPayload.sticker_id = item.id;
                 else if (type === 'spirit') bodyPayload.spirit_id = item.id;
+                else if (type === 'pack') bodyPayload.pack_id = item.id;
 
                 const response = await fetch(`${SUPABASE_URL}/functions/v1/create-checkout-session`, {
                     method: 'POST',
@@ -618,66 +780,87 @@
         },
 
         /**
-         * Checks URL search params for payment=success and executes instant animation + unlock without reloading
+         * Confirma el pago del lado servidor (`verify-checkout-session`).
+         * El navegador solo aporta el session_id; el backend valida contra Stripe
+         * y entrega los artículos. Si la función aún no está desplegada, se
+         * reintenta leyendo los entitlements (el webhook ya los habrá creado).
+         */
+        async confirmCheckoutSession(sessionId, user, opts = {}) {
+            const sb = window._supabase || (typeof _supabase !== 'undefined' ? _supabase : null);
+            let token = '';
+            if (sb?.auth) {
+                const { data } = await sb.auth.getSession();
+                token = data?.session?.access_token || '';
+            }
+
+            await this.loadEntitlements(user, true);
+            const ownedBefore = this.getEntitlements(user?.id).length;
+
+            for (let attempt = 0; attempt < 3; attempt++) {
+                try {
+                    const res = await fetch(`${SUPABASE_URL}/functions/v1/verify-checkout-session`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'apikey': SUPABASE_KEY,
+                            'Authorization': `Bearer ${token || SUPABASE_KEY}`
+                        },
+                        body: JSON.stringify({ session_id: sessionId })
+                    });
+
+                    if (res.status === 404) {
+                        // Función no desplegada todavía: se usa el webhook como fuente
+                        break;
+                    }
+
+                    const data = await res.json().catch(() => ({}));
+
+                    if (res.ok && data.ok) {
+                        if (Array.isArray(data.entitlements)) {
+                            this.applyGrantedEntitlements(data.entitlements, user);
+                        }
+                        await this.refreshUserFromDb(user);
+                        return true;
+                    }
+
+                    // Pago aún no confirmado por Stripe: reintentar
+                    if (res.status === 409) {
+                        await new Promise(r => setTimeout(r, 2500));
+                        continue;
+                    }
+
+                    console.warn('verify-checkout-session:', data.error || res.status);
+                    break;
+                } catch (e) {
+                    console.warn('No se pudo verificar la sesión de pago:', e);
+                    break;
+                }
+            }
+
+            if (opts.expectEntitlement === false) return false;
+
+            // Fallback: el webhook pudo haber entregado ya los artículos
+            for (let attempt = 0; attempt < 5; attempt++) {
+                await this.refreshUserFromDb(user);
+                await this.loadEntitlements(user, true);
+                if (this.getEntitlements(user?.id).length > ownedBefore) return true;
+                await new Promise(r => setTimeout(r, 2000));
+            }
+
+            return false;
+        },
+
+        /**
+         * Detecta `?payment=success` al volver de Stripe, confirma el pago con
+         * el servidor y lanza la animación. Nunca desbloquea nada por sí solo.
          */
         async checkPostPaymentCallback(callbackMap = {}) {
             const params = new URLSearchParams(window.location.search);
             const paymentStatus = params.get('payment');
             const paymentType = params.get('type');
+            const sessionId = params.get('session_id') || '';
 
-            if (paymentStatus === 'success') {
-                const user = await this.getCurrentUser();
-                if (!user) return;
-
-                let itemId = null;
-                let itemCategory = 'Accesorio';
-                let itemData = null;
-
-                if (paymentType === 'accessory') {
-                    itemId = params.get('accessory_id');
-                    itemCategory = 'Accesorio';
-                    if (itemId && window._supabase) {
-                        const { data } = await window._supabase.from('accessories').select('*').eq('id', itemId).maybeSingle();
-                        itemData = data;
-                    }
-                } else if (paymentType === 'sticker') {
-                    itemId = params.get('sticker_id');
-                    itemCategory = 'Sticker';
-                    if (itemId && window._supabase) {
-                        const { data } = await window._supabase.from('stickers').select('*').eq('id', itemId).maybeSingle();
-                        itemData = data;
-                    }
-                } else if (paymentType === 'spirit') {
-                    itemId = params.get('spirit_id');
-                    itemCategory = 'Asistente 3D';
-                    if (itemId && window._supabase) {
-                        const { data } = await window._supabase.from('spirits').select('*').eq('id', itemId).maybeSingle();
-                        itemData = data;
-                    }
-                }
-
-                if (itemId && user) {
-                    await this.recordUnlockInDatabase(paymentType, itemId, user);
-
-                    // Clean URL without reloading page
-                    window.history.replaceState({}, document.title, window.location.pathname);
-
-                    // Execute acquisition animation
-                    const displayImg = itemData?.image_url || itemData?.url || itemData?.poster_url || '';
-                    const displayName = itemData?.name || `${itemCategory} Desbloqueado`;
-
-                    await this.playAcquisitionAnimation({
-                        imageUrl: displayImg,
-                        name: displayName,
-                        category: itemCategory,
-                        onComplete: () => {
-                            if (typeof callbackMap[paymentType] === 'function') {
-                                callbackMap[paymentType](itemData || { id: itemId });
-                            }
-                        }
-                    });
-                }
-            } else if (paymentStatus === 'canceled') {
+            if (paymentStatus === 'canceled') {
                 window.history.replaceState({}, document.title, window.location.pathname);
                 Swal.fire({
                     title: 'Pago Cancelado',
@@ -686,7 +869,102 @@
                     background: '#0d1527',
                     color: '#fff'
                 });
+                return;
             }
+
+            if (paymentStatus !== 'success') return;
+
+            const user = await this.getCurrentUser();
+            if (!user) return;
+
+            // Carrito / suscripción: los maneja cada vista con su propio callback
+            if (paymentType === 'cart' || paymentType === 'subscription' || !paymentType) {
+                if (sessionId) {
+                    await this.confirmCheckoutSession(sessionId, user, {
+                        expectEntitlement: paymentType !== 'subscription'
+                    });
+                }
+                window.history.replaceState({}, document.title, window.location.pathname);
+                if (typeof callbackMap[paymentType] === 'function') {
+                    callbackMap[paymentType]({ session_id: sessionId });
+                } else if (typeof callbackMap.default === 'function') {
+                    callbackMap.default({ session_id: sessionId });
+                }
+                return;
+            }
+
+            let itemId = null;
+            let itemCategory = 'Accesorio';
+            let table = null;
+
+            if (paymentType === 'accessory') {
+                itemId = params.get('accessory_id');
+                itemCategory = 'Accesorio';
+                table = 'accessories';
+            } else if (paymentType === 'sticker') {
+                itemId = params.get('sticker_id');
+                itemCategory = 'Sticker';
+                table = 'stickers';
+            } else if (paymentType === 'spirit') {
+                itemId = params.get('spirit_id');
+                itemCategory = 'Asistente 3D';
+                table = 'spirits';
+            } else if (paymentType === 'pack') {
+                itemId = params.get('pack_id');
+                itemCategory = 'Pack';
+                table = 'product_packs';
+            }
+
+            // Confirmar contra el servidor (nunca escribir compras desde aquí)
+            let verified = false;
+            if (sessionId) {
+                verified = await this.confirmCheckoutSession(sessionId, user);
+            } else {
+                // Sin session_id (URL antigua): solo se acepta si el webhook ya lo registró
+                await this.refreshUserFromDb(user);
+                await this.loadEntitlements(user, true);
+                verified = itemId
+                    ? this.hasUserPurchased(paymentType, itemId, user)
+                    : this.getEntitlements(user.id).length > 0;
+            }
+
+            window.history.replaceState({}, document.title, window.location.pathname);
+
+            if (!verified) {
+                Swal.fire({
+                    title: 'Pago en proceso',
+                    text: 'Tu pago se está confirmando. Si ya se cobró, el artículo aparecerá en tu cuenta en unos segundos; recarga la página si no lo ves.',
+                    icon: 'info',
+                    background: '#0d1527',
+                    color: '#fff'
+                });
+                return;
+            }
+
+            let itemData = null;
+            if (itemId && table && window._supabase) {
+                const { data } = await window._supabase.from(table).select('*').eq('id', itemId).maybeSingle();
+                itemData = data;
+            }
+            if (!itemData && itemId) {
+                // Artículo borrado del catálogo: se usa el snapshot del entitlement
+                const owned = this.getOwnedSnapshots(paymentType, user);
+                itemData = owned.find(it => String(it.id) === String(itemId)) || null;
+            }
+
+            const displayImg = itemData?.image_url || itemData?.url || itemData?.poster_url || itemData?.gltf_url || '';
+            const displayName = itemData?.name || `${itemCategory} Desbloqueado`;
+
+            await this.playAcquisitionAnimation({
+                imageUrl: displayImg,
+                name: displayName,
+                category: itemCategory,
+                onComplete: () => {
+                    if (typeof callbackMap[paymentType] === 'function') {
+                        callbackMap[paymentType](itemData || { id: itemId });
+                    }
+                }
+            });
         }
     };
 
