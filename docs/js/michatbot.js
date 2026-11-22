@@ -1128,7 +1128,7 @@ async function initMichatbot(forceRefresh = false) {
 
                 <!-- 3D GLTF Stage inside Chat -->
                 <div id="chat-gltf-stage">
-                    <div id="chat-gltf-bubble">¡Hola! ¿En qué puedo ayudarte?</div>
+                    <div id="chat-gltf-bubble">¡Hola!</div>
                     <div id="chat-gltf-viewer-wrapper" style="width: 100%; height: 100%;"></div>
                 </div>
 
@@ -1759,6 +1759,77 @@ function getActiveStoreId() {
     return user ? user.id : null;
 }
 
+// El contexto de la tienda se consulta solo cuando el mensaje tiene que ver con
+// el negocio. Así una pregunta general (clima, matemáticas, charla) no toca la
+// base de datos. Se cachea unos minutos para no repetir las mismas consultas.
+const STORE_CONTEXT_TTL_MS = 2 * 60 * 1000;
+let storeContextCache = null; // { key, text, ts, names }
+
+const BUSINESS_CONTEXT_KEYWORDS = [
+    'carta', 'cartas', 'carpeta', 'carpetas', 'album', 'albumes', 'binder', 'binders',
+    'inversion', 'inversiones', 'coleccion', 'colecciones', 'inventario',
+    'precio', 'precios', 'cuesta', 'cuestan', 'stock', 'disponible', 'disponibilidad',
+    'agotado', 'agotada', 'vender', 'venta', 'ventas', 'vendido', 'vendidos',
+    'compra', 'comprar', 'pedido', 'pedidos', 'apartado', 'apartar', 'reserva', 'reservas',
+    'envio', 'envios', 'guia', 'guias', 'rastreo', 'tracking', 'paqueteria',
+    'horario', 'horarios', 'ubicacion', 'direccion', 'contacto', 'whatsapp', 'messenger',
+    'entrega', 'entregas', 'pago', 'pagos', 'subasta', 'subastas',
+    'cliente', 'clientes', 'proveedor', 'proveedores', 'preventa', 'preventas',
+    'sellado', 'sellados', 'sobre', 'sobres', 'booster', 'etb', 'tcg',
+    'pokemon', 'yugioh', 'magic', 'one piece', 'digimon', 'dragon ball',
+    'mazo', 'mazos', 'deck', 'decks', 'tengo', 'tienes', 'tiene',
+    'producto', 'productos', 'tienda', 'negocio', 'perfil',
+    'ganancia', 'ganancias', 'costo', 'costos', 'invertido', 'reporte',
+    'estadistica', 'estadisticas'
+];
+
+function normalizeForContextMatch(value) {
+    return String(value || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9ñ\s]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function extractContextNames(text) {
+    const names = new Set();
+    const re = /"([^"\n]{3,80})"/g;
+    let match;
+    while ((match = re.exec(text)) !== null) {
+        const name = normalizeForContextMatch(match[1]);
+        if (name.length >= 4) names.add(name);
+    }
+    return names;
+}
+
+function shouldAttachStoreContext(text) {
+    const normalized = normalizeForContextMatch(text);
+    if (!normalized) return false;
+
+    const generalOnly = /^(hola|holi|buenas|hey|hi|hello|que tal|que onda|gracias|muchas gracias|quien eres|como estas|que puedes hacer|ayuda|adios|hasta luego)\b/.test(normalized);
+    if (generalOnly && normalized.split(' ').length <= 6) return false;
+
+    if (BUSINESS_CONTEXT_KEYWORDS.some(keyword => normalized.includes(keyword))) return true;
+
+    if (storeContextCache && storeContextCache.names) {
+        for (const name of storeContextCache.names) {
+            if (normalized.includes(name)) return true;
+        }
+    }
+    return false;
+}
+
+function storeContextCacheKey(targetStoreId, isAdmin) {
+    return `${targetStoreId}:${isAdmin ? 'admin' : 'public'}`;
+}
+
+function invalidateStoreContext() {
+    storeContextCache = null;
+}
+window.invalidateStoreContext = invalidateStoreContext;
+
 async function handleSendAIChatMessage() {
     const $input = $('#michatbot-chat-input');
     const text = $input.val().trim();
@@ -1779,6 +1850,7 @@ async function handleSendAIChatMessage() {
     $c.append($loadingMsg);
     $c.scrollTop($c[0].scrollHeight);
 
+    // checkIsAdminSession() ya devuelve false en public.html y en enlaces ?store=.
     const isAdmin = checkIsAdminSession();
     const targetStoreId = getActiveStoreId();
 
@@ -1788,8 +1860,13 @@ async function handleSendAIChatMessage() {
         }
 
         let dbContext = '';
-        if (targetStoreId && typeof _supabase !== 'undefined') {
-            try {
+        if (shouldAttachStoreContext(text) && targetStoreId && typeof _supabase !== 'undefined') {
+            const cacheKey = storeContextCacheKey(targetStoreId, isAdmin);
+            const cachedContext = storeContextCache;
+            if (cachedContext && cachedContext.key === cacheKey && (Date.now() - cachedContext.ts) < STORE_CONTEXT_TTL_MS) {
+                dbContext = cachedContext.text;
+            } else {
+                try {
                 // 0. Fetch user profile data (perfil.html) including additional info blocks
                 const { data: userProfile } = await _supabase
                     .from('usuarios')
@@ -1882,7 +1959,8 @@ async function handleSendAIChatMessage() {
                     .eq('user_id', targetStoreId);
 
                 if (userBinders && userBinders.length > 0) {
-                    const binderIds = userBinders.map(b => b.id);
+                    const visibleBinders = isAdmin ? userBinders : userBinders.filter(b => b.is_public !== false);
+                    const binderIds = visibleBinders.map(b => b.id);
                     const { data: userPages } = await _supabase
                         .from('binder_pages')
                         .select('id, binder_id')
@@ -1891,20 +1969,21 @@ async function handleSendAIChatMessage() {
                     if (userPages && userPages.length > 0) {
                         const pageMap = {};
                         userPages.forEach(p => {
-                            const foundB = userBinders.find(b => b.id === p.binder_id);
-                            pageMap[p.id] = foundB ? foundB.title : 'Binder';
+                            const foundB = visibleBinders.find(b => b.id === p.binder_id);
+                            if (foundB) pageMap[p.id] = foundB.title;
                         });
 
                         const { data: userSlots } = await _supabase
                             .from('binder_card_slots')
                             .select('*')
-                            .in('page_id', userPages.map(p => p.id))
+                            .in('page_id', Object.keys(pageMap))
                             .not('image_url', 'is', null);
 
                         if (userSlots && userSlots.length > 0) {
                             dbContext += '\n--- INVENTARIO Y STOCK DE CARTAS EN BINDERS ---\n';
                             userSlots.forEach(slot => {
-                                const bTitle = pageMap[slot.page_id] || 'Binder';
+                                if (!pageMap[slot.page_id]) return;
+                                const bTitle = pageMap[slot.page_id];
                                 const qty = slot.quantity !== undefined && slot.quantity !== null && slot.quantity !== '' ? parseInt(slot.quantity) : 1;
                                 const statusStr = qty <= 0 ? 'AGOTADO' : `Disponible (${qty} copias)`;
                                 if (isAdmin) {
@@ -1985,8 +2064,161 @@ async function handleSendAIChatMessage() {
                         dbContext += `- [ID: ${t.id}] Guía: "${guia}" | Tipo: ${dir} | Paquetería: ${paq} | Contacto: "${cliente}" (${t.telefono || 'Sin tel.'}) | Ubicación: "${t.ubicacion || 'N/A'}" | Estado: ${status} | Envío: ${fechaE} | Llegada: ${fechaL} | Detalles: "${detalles}" | URL: ${url}\n`;
                     });
                 }
-            } catch (e) {
-                console.warn("Failed to build store context:", e);
+                // 5. Fetch albums/folders and their card slots
+                const { data: userAlbums } = await _supabase
+                    .from('albums')
+                    .select('id, title, is_public')
+                    .eq('user_id', targetStoreId);
+
+                if (userAlbums && userAlbums.length > 0) {
+                    const visibleAlbums = isAdmin ? userAlbums : userAlbums.filter(a => a.is_public !== false);
+                    const albumIds = visibleAlbums.map(a => a.id);
+                    if (albumIds.length > 0) {
+                        const { data: albumPages } = await _supabase
+                            .from('pages')
+                            .select('id, album_id')
+                            .in('album_id', albumIds);
+
+                        if (albumPages && albumPages.length > 0) {
+                            const albumPageMap = {};
+                            albumPages.forEach(p => {
+                                const found = visibleAlbums.find(a => a.id === p.album_id);
+                                if (found) albumPageMap[p.id] = found.title;
+                            });
+
+                            const { data: albumSlots } = await _supabase
+                                .from('card_slots')
+                                .select('*')
+                                .in('page_id', albumPages.map(p => p.id))
+                                .not('image_url', 'is', null);
+
+                            if (albumSlots && albumSlots.length > 0) {
+                                dbContext += '\n--- CARPETAS / ÁLBUMES Y CARTAS ---\n';
+                                albumSlots.forEach(slot => {
+                                    if (!albumPageMap[slot.page_id]) return;
+                                    const albumTitle = albumPageMap[slot.page_id];
+                                    const qty = slot.quantity !== undefined && slot.quantity !== null && slot.quantity !== '' ? parseInt(slot.quantity) : 1;
+                                    if (!isAdmin && qty <= 0) return;
+                                    const statusStr = qty <= 0 ? 'AGOTADO' : `Disponible (${qty} copias)`;
+                                    if (isAdmin) {
+                                        dbContext += `- [CARPETA] "${slot.name || 'Carta'}" | Carpeta/Álbum: "${albumTitle}" | Rareza: ${slot.rarity || '-'} | Expansión: ${slot.expansion || '-'} | Precio Venta: $${slot.price || 0} | Stock: ${qty} | Estado: ${statusStr}\n`;
+                                    } else {
+                                        dbContext += `- "${slot.name || 'Carta'}" | Carpeta: "${albumTitle}" | Rareza: ${slot.rarity || '-'} | Precio: $${slot.price || 0} | Stock: ${qty}\n`;
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+
+                // 6. Fetch investment vaults and their cards
+                const { data: invCategories } = await _supabase
+                    .from('investment_categories')
+                    .select('*')
+                    .eq('user_id', targetStoreId);
+                const { data: invCards } = await _supabase
+                    .from('investment_cards')
+                    .select('*')
+                    .eq('user_id', targetStoreId);
+
+                if (invCategories && invCategories.length > 0) {
+                    const visibleCategories = isAdmin ? invCategories : invCategories.filter(cat => cat.is_public !== false);
+                    if (visibleCategories.length > 0) {
+                        dbContext += '\n--- INVERSIONES / COLECCIONES ---\n';
+                        visibleCategories.forEach(cat => {
+                            const catCards = (invCards || []).filter(card => card.category_id === cat.id);
+                            const lot = cat.total_purchase_cost ? ` | Lote Total: $${cat.total_purchase_cost}` : '';
+                            dbContext += `- [COLECCIÓN] "${cat.name}"${lot}\n`;
+                            catCards.forEach(card => {
+                                const qty = card.quantity !== undefined && card.quantity !== null && card.quantity !== '' ? parseInt(card.quantity) : 1;
+                                if (!isAdmin && (card.is_public === false || card.is_sold || qty <= 0)) return;
+                                const setStr = card.set_name || card.set || '-';
+                                if (isAdmin) {
+                                    dbContext += `   * [INVERSIÓN] "${card.name}" | Colección: "${cat.name}" | Set: ${setStr} | Rareza: ${card.rarity || '-'} | Cantidad: ${qty} | Costo Compra: $${card.purchase_price || 0} | Valor Mercado: $${card.current_price || 0} | Precio Venta: $${card.sale_price || 0} | Vendida: ${card.is_sold ? 'Sí' : 'No'} | Disponible: ${card.is_available !== false ? 'Sí' : 'No'}\n`;
+                                } else {
+                                    dbContext += `   * "${card.name}" | Set: ${setStr} | Rareza: ${card.rarity || '-'} | Precio: $${card.sale_price || card.current_price || 0} | Stock: ${qty}\n`;
+                                }
+                            });
+                        });
+                    }
+                }
+                // 7. Fetch auctions and events
+                const { data: auctions } = await _supabase
+                    .from('subastas')
+                    .select('*')
+                    .eq('user_id', targetStoreId);
+                if (auctions && auctions.length > 0) {
+                    dbContext += '\n--- SUBASTAS ---\n';
+                    auctions.forEach(a => {
+                        if (!isAdmin && (a.is_public === false || !a.is_live)) return;
+                        dbContext += `- "${a.title || a.name || 'Subasta'}" | Estado: ${a.is_live ? 'En vivo' : 'Cerrada'} | Puja actual: $${a.current_bid || a.current_price || 0} | Termina: ${a.end_date || 'N/A'}\n`;
+                    });
+                }
+
+                const { data: events } = await _supabase
+                    .from('events')
+                    .select('*')
+                    .eq('user_id', targetStoreId);
+                if (events && events.length > 0) {
+                    dbContext += '\n--- EVENTOS ---\n';
+                    events.forEach(e => {
+                        if (!isAdmin && e.is_public === false) return;
+                        dbContext += `- "${e.name || e.title || 'Evento'}" | Fecha: ${e.event_date || e.date || 'N/A'} | Lugar: ${e.location || e.ubicacion || 'N/A'} | ${e.description ? String(e.description).slice(0, 160) : ''}\n`;
+                    });
+                }
+
+                // 8. Fetch decks, wishlist and accessories
+                const { data: decks } = await _supabase
+                    .from('decks')
+                    .select('id, name')
+                    .eq('user_id', targetStoreId);
+                if (decks && decks.length > 0) {
+                    dbContext += '\n--- DECKS / MAZOS ---\n';
+                    decks.forEach(d => { dbContext += `- "${d.name || 'Deck'}"\n`; });
+                }
+
+                const { data: wishlist } = await _supabase
+                    .from('wishlist')
+                    .select('name, rarity, quantity, obtained, list_index')
+                    .eq('user_id', targetStoreId);
+                if (wishlist && wishlist.length > 0) {
+                    dbContext += '\n--- WISHLIST / CARTAS BUSCADAS ---\n';
+                    wishlist.forEach(w => {
+                        dbContext += `- "${w.name || 'Carta'}" | Rareza: ${w.rarity || '-'} | Cantidad: ${w.quantity || 1} | Obtenida: ${w.obtained ? 'Sí' : 'No'}\n`;
+                    });
+                }
+
+                const { data: accessories } = await _supabase
+                    .from('accessories')
+                    .select('*')
+                    .eq('user_id', targetStoreId);
+                if (accessories && accessories.length > 0) {
+                    dbContext += '\n--- ACCESORIOS ---\n';
+                    accessories.forEach(acc => {
+                        if (!isAdmin && acc.is_public === false) return;
+                        dbContext += `- "${acc.name || 'Accesorio'}" | Tipo: ${acc.type || acc.category || '-'} | Precio: $${acc.price || 0} | Stock: ${acc.stock !== undefined ? acc.stock : (acc.quantity !== undefined ? acc.quantity : 1)}\n`;
+                    });
+                }
+
+                // 9. Clients (admin only)
+                if (isAdmin) {
+                    const { data: clientes } = await _supabase
+                        .from('clientes')
+                        .select('nombre, detalles, precio_total, status')
+                        .eq('user_id', targetStoreId);
+                    if (clientes && clientes.length > 0) {
+                        dbContext += '\n--- CLIENTES ---\n';
+                        clientes.forEach(c => {
+                            dbContext += `- "${c.nombre || 'Cliente'}" | Total: $${c.precio_total || 0} | Estado: ${c.status || '-'} | Detalles: ${c.detalles ? String(c.detalles).slice(0, 120) : '-'}\n`;
+                        });
+                    }
+                }
+                } catch (e) {
+                    console.warn("Failed to build store context:", e);
+                }
+                if (dbContext) {
+                    storeContextCache = { key: cacheKey, text: dbContext, ts: Date.now(), names: extractContextNames(dbContext) };
+                }
             }
         }
 
@@ -1996,6 +2228,7 @@ async function handleSendAIChatMessage() {
             is_admin: isAdmin,
             store_id: targetStoreId,
             db_context: dbContext,
+            context_mode: dbContext ? 'store' : 'general',
             conversation_history: window.botConversationHistory
         };
 
@@ -2377,6 +2610,7 @@ function setupProactiveEventObservers() {
 
     // 4. Observe catalog editing / wishlist / sealed products / preorder acquisition interactions
     $(document).on('click', '#btn-add-wishlist, #btn-add-product, .btn-add-sealed-modern, #btn-create-inv-card, .btn-add-preorder-cart', function() {
+        invalidateStoreContext();
         if (window.ProactiveAssistant) {
             const isPreorder = $(this).hasClass('btn-add-preorder-cart');
             window.ProactiveAssistant.trigger(isPreorder ? 'new_preorder_acquired' : 'catalog_editing', {

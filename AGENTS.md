@@ -256,3 +256,28 @@ Síntoma: el panel de Supabase marcaba **Cached Egress 6.1 / 5 GB (122 %)** mien
 - `docs/J_storage_cache_control.sql` (opcional) marca los objetos con `Cache-Control: public, max-age=31536000, immutable`; los nombres de archivo son únicos por subida, así que es seguro.
 - **No** volver a montar un `model-viewer` por elemento de una lista: con `loading="lazy"` igual descarga varios modelos al hacer scroll.
 - Notificaciones (`js/notifications.js`): sondeo cada 60 s (antes 15 s), se detiene con `document.hidden` y se refresca en `visibilitychange`/`focus`; los `select` piden solo las columnas usadas.
+
+## Asistente 3D (GLTF) — solo `admin.html` y `public.html`
+- El asistente de la esquina (`js/michatbot.js` + `js/michatbot-mobile3d.js`) se carga **solo** en `admin.html` (dueño) y `public.html` (link público de la tienda). Se quitó de las otras 23 vistas para no descargar el modelo de ~2.7 MB en cada visita.
+- En las demás vistas no llamar `initMichatbot` sin guardia: `if (typeof initMichatbot === 'function') initMichatbot(true);` (`admin.js`, `app.js`, `binders.js`, `claim.js`, `adminClaim.js`). `window.botInstance` sigue siendo opcional y todos sus usos ya están guardados.
+- `admin.html`: la rejilla de selección pinta pósters; el 3D solo se abre en `#expanded-gltf-viewer` (overlay compartido) al pulsar `.btn-preview-spirit-3d`. Verificado con Playwright: 41 tarjetas = 41 pósters, **0** `model-viewer` dentro de `#spirits-grid`.
+- `public.html`: misma rejilla de pósters (`poster_url || texture_url`); el click abre el overlay compartido. El visor de la esquina usa el espíritu seleccionado de la tienda.
+- `packages.html`: la cola de BDD ya no monta un `model-viewer` por archivo 3D (icono `fa-cube` + "3D"); el preview de subida sigue siendo un único visor.
+- `sw.js` (`STATIC_CACHE` v256): cache-first para `/storage/v1/object/public/spirits/` (`.gltf`, `.bin`, texturas), `model-viewer.min.js` de `ajax.googleapis.com` y `cache.put()` tolerante. Verificado: tras `serviceWorker.ready` + recarga, `viking-images-v1` contiene el `.gltf`, el `.bin` y las texturas.
+
+## Asistente Gemini (`spirit-chat`) — conversación natural
+- Regla del usuario: NO anunciar capacidades ni usar "¿En qué puedo ayudarte?" como muletilla. Un saludo se responde con un saludo; una pregunta se responde; una acción solo se menciona si el usuario la pide.
+- **Sin respuestas fijas**: se eliminó `isSimpleGreeting()` y el saludo predefinido. Gemini formula siempre la respuesta (solo queda `'¡Hola!'` como fallback si llega un prompt vacío).
+- `systemInstruction` prohíbe enumerar capacidades y pide respuestas breves y naturales.
+- `sanitizeAIResponse()` sigue limpiando coletillas tipo "¿En qué puedo ayudarte?".
+- **Contexto bajo demanda**: `shouldAttachStoreContext(text)` en `michatbot.js` decide si el mensaje es del negocio. Si no lo es (clima, matemáticas, charla), NO se consulta la BD y se envía `context_mode: 'general'`; Gemini responde con sus conocimientos. Si es del negocio, se construye el contexto y se envía `context_mode: 'store'`.
+- **Caché**: `storeContextCache` (TTL 2 min) evita repetir las consultas en mensajes seguidos. `window.invalidateStoreContext()` lo limpia (se llama al añadir carta/producto/preventa).
+- **Qué incluye `db_context`**:
+  - Perfil/tienda e información adicional.
+  - Preventas, productos sellados, ventas y tracking.
+  - Binders + `binder_card_slots`.
+  - **Carpetas/álbumes**: `albums` + `pages` + `card_slots`.
+  - **Inversiones**: `investment_categories` + `investment_cards` (costo, mercado, venta, vendida, disponible).
+  - Subastas, eventos, decks/mazos, wishlist, accesorios y (solo admin) clientes.
+- **Admin vs público**: en `public.html` (o `?store=`) `is_admin` es siempre `false`; se filtran binders/álbumes/categorías privadas, cartas no públicas, agotadas y vendidas, y NUNCA se envían costos/ganancias. En admin se incluye todo.
+- **Lectura solamente**: el bot no escribe en Supabase. Si piden modificar algo, guía; no confirma cambios falsos. Acciones reales requerirían tool-calling validado.

@@ -2474,7 +2474,7 @@ async function showAuthenticatedContent() {
         };
     }
 
-    initMichatbot(true);
+    if (typeof initMichatbot === 'function') initMichatbot(true);
 }
 
 function copyPublicLink() {
@@ -4289,7 +4289,7 @@ async function loadSpirits() {
                 Swal.fire('Error', 'No se pudo seleccionar el asistente', 'error');
             } else {
                 window.currentSpirit = spirit;
-                initMichatbot(true);
+                if (typeof initMichatbot === 'function') initMichatbot(true);
                 Swal.fire({
                     title: '¡Asistente Seleccionado!',
                     text: `${spirit.name} aparecerá en tus pantallas de carga.`,

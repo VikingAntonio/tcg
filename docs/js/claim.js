@@ -104,7 +104,7 @@ async function checkClaimSession() {
             const { data: botMessages } = await _supabase.from('bot_messages').select('*').eq('user_id', user.id).eq('is_active', true);
             window.currentStoreDataForBot = { user: user, customMessages: botMessages };
 
-            initMichatbot(true);
+            if (typeof initMichatbot === 'function') initMichatbot(true);
             loadClaims();
         } else {
             window.location.href = 'admin.html';

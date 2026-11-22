@@ -402,7 +402,7 @@ $(document).ready(async function() {
 
         // Load store data first as it's required for view initialization
         await loadStoreData();
-        initMichatbot(true);
+        if (typeof initMichatbot === 'function') initMichatbot(true);
 
         // Initial view load (skipPush=true as the URL already contains the state)
         await switchView(initialView, true);
@@ -1733,7 +1733,7 @@ async function loadStoreData() {
         };
 
         // Initialize companion bot
-        initMichatbot(true);
+        if (typeof initMichatbot === 'function') initMichatbot(true);
 
         // Apply store customization to public store home slots
         await applyStoreCustomizationsToPublic(userData.id);
@@ -2893,7 +2893,7 @@ async function loadPublicSpirits() {
                  data-name="${spirit.name}"
                  data-poster="${spirit.poster_url || ''}">
                 <div class="badge-selected">Actual</div>
-                <img class="spirit-poster" src="${spirit.poster_url || ''}" alt="${spirit.name}" loading="lazy">
+                <img class="spirit-poster" src="${spirit.poster_url || spirit.texture_url || ''}" alt="${spirit.name}" loading="lazy">
                 <h3>${spirit.name}</h3>
                 <div class="zoom-btn" style="display: flex;"><i class="fas fa-search-plus"></i></div>
             </div>

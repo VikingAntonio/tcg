@@ -1,4 +1,4 @@
-const STATIC_CACHE = 'viking-static-v254';
+const STATIC_CACHE = 'viking-static-v256';
 const IMAGE_CACHE = 'viking-images-v1';
 const DATA_CACHE = 'viking-data-v1';
 
@@ -62,6 +62,7 @@ const URLS_TO_CACHE = [
   './js/turn.js',
   './js/ztext.js',
   './js/michatbot.js',
+  './js/michatbot-mobile3d.js',
   './js/notifications.js',
   './js/inversiones.js',
   './js/admin_deseos.js',
@@ -96,7 +97,8 @@ const URLS_TO_CACHE = [
   'https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.6/Sortable.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js',
-  'https://cdn.jsdelivr.net/npm/chart.js'
+  'https://cdn.jsdelivr.net/npm/chart.js',
+  'https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js'
 ];
 
 // Install Event
@@ -152,6 +154,7 @@ self.addEventListener('fetch', event => {
     url.hostname.includes('images.tcgplayer.com') ||
     url.hostname.includes('tcgdex.net') ||
     url.hostname.includes('github.io') ||
+    url.hostname.includes('ajax.googleapis.com') ||
     isSpiritModel ||
     isModelAsset
   ) {
@@ -161,11 +164,14 @@ self.addEventListener('fetch', event => {
           if (response) return response;
           return fetch(event.request).then(networkResponse => {
             if (networkResponse.status === 200) {
-              cache.put(event.request, networkResponse.clone());
+              // Algunas respuestas cross-origin no son almacenables; que eso
+              // no rompa la petición original.
+              cache.put(event.request, networkResponse.clone()).catch(() => {});
             }
             return networkResponse;
           }).catch(() => {
-              // Fail silently for images/models
+              // Sin red y sin caché: deja que el visor muestre su error.
+              return Response.error();
           });
         });
       })
