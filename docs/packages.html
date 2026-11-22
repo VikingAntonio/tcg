@@ -4193,7 +4193,7 @@
                 } else if (window._supabase && window._supabase.storage) {
                     const ext = file.name.split('.').pop();
                     const path = `bdd_uploads/${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
-                    const { data: uploadData, error: uploadErr } = await _supabase.storage.from('accessories').upload(path, file);
+                    const { data: uploadData, error: uploadErr } = await _supabase.storage.from('accessories').upload(path, file, { cacheControl: '31536000' });
                     if (!uploadErr && uploadData) {
                         const { data: pubUrlData } = _supabase.storage.from('accessories').getPublicUrl(path);
                         fileUrl = pubUrlData ? pubUrlData.publicUrl : '';

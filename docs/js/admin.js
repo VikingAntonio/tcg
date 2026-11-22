@@ -1940,7 +1940,7 @@ $(document).ready(async function() {
                 const gltfPath = `models/${folderId}/${gltfFile.name}`;
                 const { data: gltfData, error: gltfErr } = await _supabase.storage
                     .from('spirits')
-                    .upload(gltfPath, gltfFile);
+                    .upload(gltfPath, gltfFile, { cacheControl: '31536000' });
 
                 if (gltfErr) throw gltfErr;
                 gltfUrl = _supabase.storage.from('spirits').getPublicUrl(gltfPath).data.publicUrl;
@@ -1950,7 +1950,7 @@ $(document).ready(async function() {
                     const path = `models/${folderId}/${file.name}`;
                     const { error: extraErr } = await _supabase.storage
                         .from('spirits')
-                        .upload(path, file);
+                        .upload(path, file, { cacheControl: '31536000' });
                     if (extraErr) console.warn("Error subiendo archivo extra:", file.name, extraErr);
 
                     // If it's an image, we might use it as the main texture if needed
