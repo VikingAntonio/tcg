@@ -1102,45 +1102,39 @@ async function claimGiftItem(giftCampaign) {
             return;
         }
 
-        // Record claim
-        const { error: claimErr } = await _supabase.from('gift_claims').insert([{
-            campaign_id: giftCampaign.id,
-            user_id: userId,
-            delivered_items: giftCampaign.items
-        }]);
-        if (claimErr) throw claimErr;
+        // La entrega la hace el servidor (RPC): valida la campaña, registra el
+        // claim y guarda los artículos como compras permanentes. El navegador
+        // ya no puede "regalarse" artículos escribiendo en `usuarios`.
+        const { data: claimResult, error: claimErr } = await _supabase.rpc('claim_gift', {
+            p_campaign_id: giftCampaign.id
+        });
 
-        // Deliver items into user's inventory
-        const { data: userData } = await _supabase.from('usuarios').select('*').eq('id', userId).single();
-        if (userData) {
-            let stickers = (userData.purchased_sticker_ids || '').split(',').map(s=>s.trim()).filter(Boolean);
-            let accessories = (userData.purchased_accessory_ids || '').split(',').map(s=>s.trim()).filter(Boolean);
-            let spirits = (userData.purchased_spirit_ids || '').split(',').map(s=>s.trim()).filter(Boolean);
-
-            (giftCampaign.items || []).forEach(it => {
-                const idStr = String(it.id);
-                if (it.category === 'stickers' && !stickers.includes(idStr)) stickers.push(idStr);
-                else if (it.category === 'spirits' && !spirits.includes(idStr)) spirits.push(idStr);
-                else if (!accessories.includes(idStr)) accessories.push(idStr);
-            });
-
-            await _supabase.from('usuarios').update({
-                purchased_sticker_ids: stickers.join(','),
-                purchased_accessory_ids: accessories.join(','),
-                purchased_spirit_ids: spirits.join(',')
-            }).eq('id', userId);
-
-            // Update local cache
-            const raw = localStorage.getItem('tcg_session');
-            if (raw) {
-                try {
-                    const u = JSON.parse(raw);
-                    u.purchased_sticker_ids = stickers.join(',');
-                    u.purchased_accessory_ids = accessories.join(',');
-                    u.purchased_spirit_ids = spirits.join(',');
-                    localStorage.setItem('tcg_session', JSON.stringify(u));
-                } catch(e){}
+        if (claimErr) {
+            const raw = String(claimErr.message || '');
+            if (raw.includes('GIFT_EXPIRED')) {
+                Swal.fire('Regalo Expirado', 'Lo sentimos, el periodo para reclamar este regalo ha finalizado.', 'warning');
+            } else if (raw.includes('GIFT_INACTIVE')) {
+                Swal.fire('Regalo no disponible', 'Este regalo ya no está activo.', 'info');
+            } else if (raw.includes('GIFT_NOT_FOR_USER')) {
+                Swal.fire('No disponible', 'Este regalo no está dirigido a tu cuenta.', 'info');
+            } else if (raw.includes('AUTH_REQUIRED')) {
+                Swal.fire('Inicia Sesión', 'Debes iniciar sesión para reclamar este regalo.', 'info');
+            } else if (raw.includes('Could not find the function') || raw.includes('does not exist')) {
+                Swal.fire('Falta configuración', 'El servidor de regalos aún no está activado. Ejecuta la migración SQL I_stripe_purchases_durability_and_security.sql en Supabase.', 'error');
+            } else {
+                throw claimErr;
             }
+            return;
+        }
+
+        if (claimResult && claimResult.already_claimed) {
+            Swal.fire('Ya Reclamado', 'Ya has reclamado los artículos de este regalo anteriormente.', 'info');
+            return;
+        }
+
+        // Refrescar en memoria lo que el servidor acaba de entregar
+        if (window.TCGPurchase && typeof window.TCGPurchase.refreshUserFromDb === 'function') {
+            await window.TCGPurchase.refreshUserFromDb({ id: userId });
         }
 
         // 1. Play video game gift opening animation
@@ -1161,7 +1155,7 @@ async function claimGiftItem(giftCampaign) {
 
         Swal.fire({
             title: '¡Felicidades!',
-            text: 'Has reclamado tu regalo exitosamente. Los artículos ya se encuentran en tu inventario.',
+            text: 'Has reclamado tu regalo exitosamente. Los artículos ya se encuentran en tu inventario y son tuyos para siempre.',
             icon: 'success',
             background: '#0f172a',
             color: '#f8fafc',

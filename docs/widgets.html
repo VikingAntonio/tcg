@@ -227,6 +227,7 @@
 
     <script src="js/supabase-config.js"></script>
     <script src="js/cart.js"></script>
+    <script src="js/tcg-purchase-anim.js"></script>
     <script src="js/utils.js"></script>
     <script>
         window.widgetSnippets = {
@@ -271,17 +272,36 @@
             });
         });
 
-        function checkUrlPaymentStatus() {
+        async function checkUrlPaymentStatus() {
             const urlParams = new URLSearchParams(window.location.search);
             const payment = urlParams.get('payment');
+            const sessionId = urlParams.get('session_id') || '';
+
             if (payment === 'success') {
-                Swal.fire({
-                    icon: 'success',
-                    title: '¡Pago Completado!',
-                    text: 'Tu suscripción mensual ha sido procesada con éxito y tus widgets han sido activados.',
-                    confirmButtonColor: '#38bdf8'
-                });
+                // Confirmar con Stripe antes de anunciar la activación
+                let confirmed = false;
+                if (sessionId && window.TCGPurchase?.confirmCheckoutSession) {
+                    confirmed = await window.TCGPurchase.confirmCheckoutSession(
+                        sessionId,
+                        window.currentUser || null,
+                        { expectEntitlement: false }
+                    );
+                }
+                if (window.TCGPurchase?.refreshUserFromDb) {
+                    await window.TCGPurchase.refreshUserFromDb(window.currentUser || null);
+                }
+
                 window.history.replaceState({}, document.title, window.location.pathname);
+                Swal.fire({
+                    icon: confirmed ? 'success' : 'info',
+                    title: confirmed ? '¡Pago Completado!' : 'Pago en proceso',
+                    text: confirmed
+                        ? 'Tu suscripción mensual ha sido procesada con éxito y tus widgets han sido activados.'
+                        : 'Stripe está confirmando el pago. Tus widgets se activarán en cuanto se complete; recarga en un momento.',
+                    confirmButtonColor: '#38bdf8'
+                }).then(() => {
+                    if (confirmed) window.location.reload();
+                });
             } else if (payment === 'canceled') {
                 Swal.fire({
                     icon: 'info',

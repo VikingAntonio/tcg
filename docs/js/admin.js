@@ -211,7 +211,7 @@ $(document).ready(async function() {
         const paymentType = urlParams.get('type');
 
         if (paymentStatus === 'success') {
-            if (paymentType === 'spirit' || paymentType === 'accessory') {
+            if (paymentType === 'spirit' || paymentType === 'accessory' || paymentType === 'sticker' || paymentType === 'pack') {
                 if (window.TCGPurchase) {
                     await window.TCGPurchase.checkPostPaymentCallback({
                         spirit: (spiritData) => {
@@ -224,22 +224,54 @@ $(document).ready(async function() {
                             }
                             loadSpirits();
                         },
-                        accessory: (accData) => {
+                        accessory: () => {
                             const cached = localStorage.getItem('tcg_session');
                             if (cached) {
                                 try { currentUser = Object.assign(currentUser || {}, JSON.parse(cached)); } catch(_) {}
                             }
                             loadAndRenderAccessories();
+                        },
+                        sticker: () => {
+                            const cached = localStorage.getItem('tcg_session');
+                            if (cached) {
+                                try { currentUser = Object.assign(currentUser || {}, JSON.parse(cached)); } catch(_) {}
+                            }
+                        },
+                        pack: () => {
+                            const cached = localStorage.getItem('tcg_session');
+                            if (cached) {
+                                try { currentUser = Object.assign(currentUser || {}, JSON.parse(cached)); } catch(_) {}
+                            }
+                            loadAndRenderAccessories();
+                            loadSpirits();
                         }
                     });
                 }
             } else {
-                Swal.fire({
-                    title: '¡Suscripción Activada!',
-                    text: 'Tu plan se ha actualizado con éxito. ¡Disfruta de todos los beneficios Premium!',
-                    icon: 'success'
-                });
+                // Suscripción: se confirma con Stripe antes de anunciar la activación
+                const sessionId = urlParams.get('session_id') || '';
+                let confirmed = false;
+
+                if (sessionId && window.TCGPurchase?.confirmCheckoutSession) {
+                    confirmed = await window.TCGPurchase.confirmCheckoutSession(
+                        sessionId,
+                        currentUser,
+                        { expectEntitlement: false }
+                    );
+                }
+                if (window.TCGPurchase?.refreshUserFromDb) {
+                    await window.TCGPurchase.refreshUserFromDb(currentUser);
+                }
+
                 window.history.replaceState({}, document.title, window.location.pathname);
+
+                Swal.fire({
+                    title: confirmed ? '¡Suscripción Activada!' : 'Pago en proceso',
+                    text: confirmed
+                        ? 'Tu plan se ha actualizado con éxito. ¡Disfruta de todos los beneficios Premium!'
+                        : 'Stripe está confirmando el pago. Tu plan se activará en cuanto se complete; recarga la página en un momento.',
+                    icon: confirmed ? 'success' : 'info'
+                });
             }
         } else if (paymentStatus === 'canceled') {
             Swal.fire({
@@ -2911,15 +2943,15 @@ async function editDeck(deck) {
 async function loadAndRenderAccessories() {
     try {
         let accessories = [];
-        // First try accessories table
+        // Catálogo vivo
         const { data: accData, error: accErr } = await _supabase
             .from('accessories')
             .select('*')
             .order('created_at', { ascending: false });
 
-        if (!accErr && accData && accData.length > 0) {
-            accessories = accData;
-        } else {
+        accessories = (!accErr && accData) ? accData : [];
+
+        if (!accessories || accessories.length === 0) {
             // Fallback to viking_data
             const { data: vikData } = await _supabase
                 .from('viking_data')
@@ -2944,6 +2976,12 @@ async function loadAndRenderAccessories() {
                     target_roles: ['starter', 'premium', 'tienda']
                 };
             });
+        }
+
+        // Sumar lo que el usuario ya pagó (aunque el admin lo haya borrado)
+        if (window.TCGPurchase) {
+            await window.TCGPurchase.loadEntitlements(currentUser);
+            accessories = window.TCGPurchase.mergeOwnedIntoCatalog(accessories, 'accessory', currentUser);
         }
 
         renderAccessoriesGrid(accessories);
@@ -4058,9 +4096,15 @@ async function loadSpirits() {
         return;
     }
 
-    const spirits = spiritsRes.data;
+    let spirits = spiritsRes.data;
     const selectedId = userRes.data ? userRes.data.selected_spirit_id : null;
     const purchasedIds = (userRes.data?.purchased_spirit_ids || '').split(',').map(s => s.trim()).filter(Boolean);
+
+    // Sumar asistentes comprados que ya no existen en el catálogo
+    if (window.TCGPurchase) {
+        await window.TCGPurchase.loadEntitlements(currentUser);
+        spirits = window.TCGPurchase.mergeOwnedIntoCatalog(spirits, 'spirit', currentUser);
+    }
 
     if (spirits.length === 0) {
         $('#spirits-grid').html('<div class="empty">No hay asistentes disponibles.</div>');
@@ -4077,7 +4121,8 @@ async function loadSpirits() {
         const priceMxn = Number(spirit.price_mxn) || 50;
 
         // Check if user already purchased this assistant
-        const isPurchased = purchasedIds.includes(spirit.id.toString());
+        const isPurchased = purchasedIds.includes(spirit.id.toString()) ||
+            (window.TCGPurchase?.hasUserPurchased('spirit', spirit.id, currentUser) || false);
 
         // Check plan/permission access
         let isAllowed = false;

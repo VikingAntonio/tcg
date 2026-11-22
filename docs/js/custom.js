@@ -1039,6 +1039,14 @@ async function loadAvailableStickers() {
             state.availableStickers = stkRes.data || [];
             state.storePromotions = promoRes.data || [];
             state.storeGifts = giftRes.data || [];
+
+            // Sumar stickers comprados que ya no existen en el catálogo
+            if (window.TCGPurchase) {
+                await window.TCGPurchase.loadEntitlements(state.currentUser);
+                state.availableStickers = window.TCGPurchase.mergeOwnedIntoCatalog(
+                    state.availableStickers, 'sticker', state.currentUser
+                );
+            }
         }
     } catch (err) {
         console.warn('Notice loading stickers catalog:', err);
@@ -1087,7 +1095,8 @@ function renderStickersPicker() {
 
     visibleStickers.forEach(stk => {
         const isPaid = stk.sale_status === 'de_paga';
-        const isPurchased = purchasedStickers.includes(String(stk.id));
+        const isPurchased = purchasedStickers.includes(String(stk.id)) ||
+            (window.TCGPurchase?.hasUserPurchased('sticker', stk.id, state.currentUser) || false);
         const requiresPurchase = isPaid && !isPurchased && userRole !== 'admin';
         const basePrice = Number(stk.price_mxn) || 25;
 

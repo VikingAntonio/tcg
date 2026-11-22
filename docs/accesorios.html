@@ -622,7 +622,15 @@
                         if (cached) {
                             try { currentUser = JSON.parse(cached); } catch(_) {}
                         }
-                        renderCatalogGrid();
+                        loadCatalogAccessories();
+                    },
+                    pack: () => {
+                        const cached = localStorage.getItem('tcg_session');
+                        if (cached) {
+                            try { currentUser = JSON.parse(cached); } catch(_) {}
+                        }
+                        loadCatalogAccessories();
+                        fetchPromosAndPacks();
                     }
                 });
             }
@@ -718,47 +726,53 @@
 
         async function loadCatalogAccessories() {
             try {
-                // 1. Fetch from accessories table
-                const { data, error } = await _supabase
+                // 1. Catálogo vivo
+                const res = await _supabase
                     .from('accessories')
                     .select('*')
                     .order('created_at', { ascending: false });
 
-                if (!error && data && data.length > 0) {
-                    allAccessories = data;
-                } else {
-                    // Fallback to viking_data
+                let live = (!res.error && res.data) ? res.data : [];
+
+                if (live.length === 0) {
+                    // Fallback a viking_data (catálogo legado)
                     const { data: vikData } = await _supabase
                         .from('viking_data')
                         .select('*')
                         .or('type.eq.accessories,type.eq.accessory');
 
-                    if (vikData && vikData.length > 0) {
-                        allAccessories = vikData.map(v => {
-                            const r = (v.rarity || '').toLowerCase();
-                            const e = (v.expansion || '').toLowerCase();
-                            let cat = 'sleeves';
-                            if (r.includes('mat') || e.includes('mat')) cat = 'mats';
-                            else if (r === 'deckbox' || e === 'deckbox') cat = 'deckbox';
-                            else if (r === 'coin' || e === 'coin') cat = 'coin';
+                    live = (vikData || []).map(v => {
+                        const r = (v.rarity || '').toLowerCase();
+                        const e = (v.expansion || '').toLowerCase();
+                        let cat = 'sleeves';
+                        if (r.includes('mat') || e.includes('mat')) cat = 'mats';
+                        else if (r === 'deckbox' || e === 'deckbox') cat = 'deckbox';
+                        else if (r === 'coin' || e === 'coin') cat = 'coin';
 
-                            return {
-                                id: v.id,
-                                name: v.name,
-                                image_url: v.image_url,
-                                category: cat,
-                                sale_status: 'disponible',
-                                price_mxn: 25,
-                                target_roles: ['starter', 'premium', 'tienda']
-                            };
-                        });
-                    } else {
-                        allAccessories = [];
-                    }
+                        return {
+                            id: v.id,
+                            name: v.name,
+                            image_url: v.image_url,
+                            category: cat,
+                            sale_status: 'disponible',
+                            price_mxn: 25,
+                            target_roles: ['starter', 'premium', 'tienda']
+                        };
+                    });
+                }
+
+                // 2. Sumar lo que el usuario ya pagó (sobrevive al borrado del catálogo)
+                if (window.TCGPurchase) {
+                    await window.TCGPurchase.loadEntitlements(currentUser);
+                    allAccessories = window.TCGPurchase.mergeOwnedIntoCatalog(live, 'accessory', currentUser);
+                } else {
+                    allAccessories = live;
                 }
             } catch (err) {
                 console.warn('Error loading accessories catalog:', err);
-                allAccessories = [];
+                allAccessories = window.TCGPurchase
+                    ? window.TCGPurchase.getOwnedSnapshots('accessory', currentUser)
+                    : [];
             }
 
             renderCatalogGrid();
@@ -1079,7 +1093,8 @@
                 cancelButtonText: 'Cerrar'
             }).then(res => {
                 if (res.isConfirmed) {
-                    window.TCGPurchase.purchaseItemViaStripe(pack.id, 'pack', pack.promo_price || pack.normal_price);
+                    // El precio real lo resuelve el servidor (product_packs)
+                    window.TCGPurchase.purchaseItemViaStripe('pack', pack);
                 }
             });
         };

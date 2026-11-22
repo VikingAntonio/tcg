@@ -9,8 +9,17 @@ const corsHeaders = {
 // Fallback price in MXN for premium subscription if not set in DB package_configs
 const DEFAULT_PREMIUM_PRICE_MXN = 300;
 
+// Stripe exige un mínimo de 10 MXN por cargo
+const MIN_CHARGE_MXN = 10;
 
-async function resolvePromoPrice(supabase: any, productId: string, category: string, basePrice: number): Promise<{ price: number, isLimited: boolean, isExpired: boolean }> {
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+async function resolvePromoPrice(supabase: any, productId: string, basePrice: number): Promise<{ price: number, isLimited: boolean, isExpired: boolean }> {
   try {
     const { data: promo } = await supabase
       .from('product_promotions')
@@ -34,6 +43,146 @@ async function resolvePromoPrice(supabase: any, productId: string, category: str
   }
 }
 
+function appendSimpleLineItem(params: URLSearchParams, index: number, name: string, description: string, amountMxn: number) {
+  params.append(`line_items[${index}][price_data][currency]`, "mxn");
+  params.append(`line_items[${index}][price_data][unit_amount]`, Math.round(amountMxn * 100).toString());
+  params.append(`line_items[${index}][price_data][product_data][name]`, name);
+  if (description) {
+    params.append(`line_items[${index}][price_data][product_data][description]`, description);
+  }
+}
+
+async function resolveCartItem(supabase: any, raw: any, fallbackSellerId: string | null) {
+  const id = raw?.id || raw?.product_id;
+  if (!id) return { error: "Hay un artículo inválido en el carrito." };
+
+  const qty = Math.max(1, Math.min(99, parseInt(raw?.quantity ?? raw?.cart_quantity) || 1));
+
+  // Los apartados/preventas se liquidan en tienda (no son un cargo único)
+  if (raw?.is_preorder || raw?.preorder_id) {
+    return { error: `"${raw?.name || 'Apartado'}" es un apartado: su pago se coordina directamente con la tienda y no se puede cobrar con tarjeta en este carrito.` };
+  }
+
+  // Los artículos digitales se cobran en su propia ficha (así el webhook sabe
+  // exactamente qué entitlement entregar). Por el carrito se perdería la compra.
+  const digitalTypes = ["accessory", "accessories", "sticker", "stickers", "spirit", "spirits", "assistant", "pack", "packs"];
+  if (digitalTypes.includes(String(raw?.type || "").toLowerCase())) {
+    return { error: `"${raw?.name || 'Este artículo'}" es digital: cómpralo desde su ficha para que quede guardado para siempre en tu cuenta.` };
+  }
+
+  const isInvestment = String(raw?.type || "").toLowerCase() === "investment";
+
+  if (isInvestment) {
+    const { data } = await supabase
+      .from("investment_cards")
+      .select("id, card_name, image_url, current_price, quantity, user_id")
+      .eq("id", id)
+      .maybeSingle();
+    if (!data) return { error: `La carta "${raw?.name || id}" ya no está disponible.` };
+    const price = Number(data.current_price) || 0;
+    if (price <= 0) return { error: `La carta "${data.card_name || raw?.name || id}" no tiene precio de venta configurado.` };
+    const stock = parseInt(data.quantity);
+    if (Number.isFinite(stock) && stock > 0 && qty > stock) {
+      return { error: `Solo quedan ${stock} unidad(es) de "${data.card_name || raw?.name || id}".` };
+    }
+    return {
+      item: {
+        id: String(data.id),
+        source: "investment",
+        name: data.card_name || raw?.name || "Carta",
+        image_url: data.image_url || "",
+        price,
+        quantity: qty,
+        seller_id: data.user_id || fallbackSellerId || null,
+      },
+    };
+  }
+
+  // Producto sellado
+  const { data: sealed } = await supabase
+    .from("sealed_products")
+    .select("id, name, image_url, price, stock, quantity, user_id")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (sealed) {
+    const price = Number(sealed.price) || 0;
+    if (price <= 0) return { error: `"${sealed.name || id}" no tiene precio configurado.` };
+    const stock = sealed.stock !== undefined && sealed.stock !== null ? parseInt(sealed.stock) : NaN;
+    if (Number.isFinite(stock) && stock <= 0) {
+      return { error: `"${sealed.name || id}" está agotado.` };
+    }
+    if (Number.isFinite(stock) && qty > stock) {
+      return { error: `Solo quedan ${stock} unidad(es) de "${sealed.name || id}".` };
+    }
+    return {
+      item: {
+        id: String(sealed.id),
+        source: "sealed",
+        name: sealed.name || "Producto",
+        image_url: sealed.image_url || "",
+        price,
+        quantity: qty,
+        seller_id: sealed.user_id || fallbackSellerId || null,
+      },
+    };
+  }
+
+  // Carta / accesorio de la base general
+  const { data: card } = await supabase
+    .from("viking_data")
+    .select("id, name, image_url, price, quantity, user_id")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (card) {
+    const price = Number(String(card.price ?? "").replace(/[^0-9.]/g, "")) || 0;
+    if (price <= 0) return { error: `"${card.name || id}" no tiene precio configurado.` };
+    const stock = parseInt(card.quantity);
+    if (Number.isFinite(stock) && stock > 0 && qty > stock) {
+      return { error: `Solo quedan ${stock} unidad(es) de "${card.name || id}".` };
+    }
+    return {
+      item: {
+        id: String(card.id),
+        source: "card",
+        name: card.name || "Carta",
+        image_url: card.image_url || "",
+        price,
+        quantity: qty,
+        seller_id: card.user_id || fallbackSellerId || null,
+      },
+    };
+  }
+
+  return { error: `"${raw?.name || id}" ya no está disponible en la tienda.` };
+}
+
+function assertStripeMinimum(amountMxn: number, label: string) {
+  if (amountMxn < MIN_CHARGE_MXN) {
+    return `"${label}" cuesta $${amountMxn} MXN y Stripe exige un mínimo de $${MIN_CHARGE_MXN} MXN por cobro. Ajusta el precio en el panel.`;
+  }
+  return null;
+}
+
+// Evita que el navegador mande a Stripe a un dominio ajeno tras el pago.
+function sanitizeReturnUrl(raw: unknown, originHeader: string | null): string {
+  const fallback = "https://vikingtcg.xyz/widgets.html";
+  try {
+    const target = new URL(String(raw || ""));
+    if (target.protocol !== "https:" && target.protocol !== "http:") {
+      return originHeader || fallback;
+    }
+    if (originHeader) {
+      const origin = new URL(originHeader);
+      if (target.host !== origin.host) return origin.origin;
+    }
+    return target.toString();
+  } catch (_) {
+    return originHeader || fallback;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -42,10 +191,7 @@ serve(async (req) => {
   try {
     const stripeSecretKey = (Deno.env.get("STRIPE_SECRET_KEY") || "").trim();
     if (!stripeSecretKey) {
-      return new Response(JSON.stringify({ error: "Falta configurar STRIPE_SECRET_KEY en las variables de entorno de Supabase." }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
+      return json({ error: "Falta configurar STRIPE_SECRET_KEY en las variables de entorno de Supabase." }, 400);
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
@@ -65,24 +211,32 @@ serve(async (req) => {
             authUserId = user.id;
             authUserEmail = user.email || null;
           }
-        } catch (_) {}
+        } catch (_) { /* token inválido: se ignora */ }
       }
     }
 
     const reqBody = await req.json().catch(() => ({}));
-    const userId = authUserId || reqBody.user_id;
+    // El usuario autenticado manda; el body solo se usa si no hay sesión.
+    let userId = authUserId || reqBody.user_id || null;
 
-    if (!userId) {
-      return new Response(JSON.stringify({ error: "Usuario no autenticado o ID de usuario no proporcionado." }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
+    if (authUserId && reqBody.user_id && reqBody.user_id !== authUserId) {
+      const { data: authProfile } = await supabase
+        .from("usuarios")
+        .select("role")
+        .eq("id", authUserId)
+        .maybeSingle();
+      if (!authProfile || !["admin", "superadmin", "admin_store"].includes(String(authProfile.role || ""))) {
+        userId = authUserId;
+      }
     }
 
-    // Determine purchase type: 'subscription' (default), 'spirit' (3D assistant), 'sticker' (sticker purchase), or 'accessory' (deck accessory)
-    const purchaseType = reqBody.purchase_type || "subscription";
+    if (!userId) {
+      return json({ error: "Usuario no autenticado o ID de usuario no proporcionado." }, 401);
+    }
 
-    // Fetch user from DB
+    // Determine purchase type: 'subscription' (default), 'spirit', 'sticker', 'accessory', 'pack' or 'cart'
+    const purchaseType = String(reqBody.purchase_type || "subscription").toLowerCase();
+
     const { data: userProfile } = await supabase
       .from("usuarios")
       .select("id, username, store_name, stripe_customer_id, email")
@@ -92,7 +246,6 @@ serve(async (req) => {
     let customerId = userProfile?.stripe_customer_id;
     const userEmail = authUserEmail || userProfile?.email;
 
-    // Create Stripe Customer if not existing
     if (!customerId) {
       const customerParams = new URLSearchParams();
       if (userEmail) customerParams.append("email", userEmail);
@@ -121,7 +274,8 @@ serve(async (req) => {
         .eq("id", userId);
     }
 
-    const redirectOrigin = reqBody.return_url || "https://vikingtcg.xyz/widgets.html";
+    const redirectOrigin = sanitizeReturnUrl(reqBody.return_url, req.headers.get("origin"));
+    const returnQuery = redirectOrigin.includes("?") ? "&" : "?";
     const params = new URLSearchParams();
     params.append("customer", customerId);
     params.append("client_reference_id", userId);
@@ -133,14 +287,10 @@ serve(async (req) => {
       // ONE-TIME MICRO-PAYMENT FOR ASSISTANT / SPIRIT
       const spiritId = reqBody.spirit_id;
       if (!spiritId) {
-        return new Response(JSON.stringify({ error: "Falta proporcionar el ID del asistente (spirit_id)." }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" }
-        });
+        return json({ error: "Falta proporcionar el ID del asistente (spirit_id)." }, 400);
       }
 
-      // Security: Query spirits table directly via service role to get verified server-side price
-      // Frontend client input is strictly ignored to prevent price manipulation.
+      // Security: server-side price from the spirits table. Client input is ignored.
       const { data: spirit, error: spiritErr } = await supabase
         .from("spirits")
         .select("id, name, price_mxn, stripe_price_id, sale_status")
@@ -148,10 +298,7 @@ serve(async (req) => {
         .maybeSingle();
 
       if (spiritErr || !spirit) {
-        return new Response(JSON.stringify({ error: "El asistente seleccionado no fue encontrado." }), {
-          status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" }
-        });
+        return json({ error: "El asistente seleccionado no fue encontrado." }, 404);
       }
 
       params.append("mode", "payment");
@@ -159,40 +306,34 @@ serve(async (req) => {
       params.append("metadata[spirit_id]", spirit.id.toString());
       params.append("metadata[spirit_name]", spirit.name || "Asistente 3D");
 
-      // If a Stripe Price ID is explicitly configured for this assistant, use it directly;
-      // otherwise, securely create line_item using server-side validated price_mxn without requiring a Stripe Price ID.
-      // Resolve potential active promo price
-      const baseSpiritPrice = Number(spirit.price_mxn) || 50;
-      const promoInfo = await resolvePromoPrice(supabase, spirit.id.toString(), 'spirits', baseSpiritPrice);
+      // El precio que el admin guarda en packages.html (`price_mxn`) manda.
+      // Solo se usa el Price de Stripe si la fila no tiene precio propio.
+      const dbSpiritPrice = Number(spirit.price_mxn) || 0;
+      const baseSpiritPrice = dbSpiritPrice > 0 ? dbSpiritPrice : 50;
+      const promoInfo = await resolvePromoPrice(supabase, spirit.id.toString(), baseSpiritPrice);
       const effectiveSpiritPrice = promoInfo.price;
 
-      if (!promoInfo.isLimited && promoInfo.price === baseSpiritPrice && spirit.stripe_price_id && spirit.stripe_price_id.trim().startsWith("price_")) {
+      if (dbSpiritPrice <= 0 && !promoInfo.isLimited && spirit.stripe_price_id && spirit.stripe_price_id.trim().startsWith("price_")) {
         params.append("line_items[0][price]", spirit.stripe_price_id.trim());
         params.append("line_items[0][quantity]", "1");
       } else {
-        const priceAmount = Math.max(1000, Math.round(effectiveSpiritPrice * 100)); // in cents, min 10 MXN
-        params.append("line_items[0][price_data][currency]", "mxn");
-        params.append("line_items[0][price_data][unit_amount]", priceAmount.toString());
-        params.append("line_items[0][price_data][product_data][name]", `Asistente 3D: ${spirit.name}`);
-        params.append("line_items[0][price_data][product_data][description]", "Desbloqueo permanente de Asistente 3D en Viking TCG.");
+        const minErr = assertStripeMinimum(effectiveSpiritPrice, spirit.name || "Asistente 3D");
+        if (minErr) return json({ error: minErr }, 400);
+        appendSimpleLineItem(params, 0, `Asistente 3D: ${spirit.name}`, "Desbloqueo permanente de Asistente 3D en Viking TCG.", effectiveSpiritPrice);
         params.append("line_items[0][quantity]", "1");
       }
 
-      params.append("success_url", `${redirectOrigin}?payment=success&type=spirit&spirit_id=${spirit.id}&session_id={CHECKOUT_SESSION_ID}`);
-      params.append("cancel_url", `${redirectOrigin}?payment=canceled&type=spirit`);
+      params.append("success_url", `${redirectOrigin}${returnQuery}payment=success&type=spirit&spirit_id=${spirit.id}&session_id={CHECKOUT_SESSION_ID}`);
+      params.append("cancel_url", `${redirectOrigin}${returnQuery}payment=canceled&type=spirit`);
 
     } else if (purchaseType === "sticker") {
       // ONE-TIME MICRO-PAYMENT FOR STICKER
       const stickerId = reqBody.sticker_id;
       if (!stickerId) {
-        return new Response(JSON.stringify({ error: "Falta proporcionar el ID del sticker (sticker_id)." }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" }
-        });
+        return json({ error: "Falta proporcionar el ID del sticker (sticker_id)." }, 400);
       }
 
-      // Security: Query stickers table directly via service role to get verified server-side price.
-      // Frontend client input is strictly ignored to prevent price manipulation.
+      // Security: server-side price from the stickers table.
       const { data: sticker, error: stickerErr } = await supabase
         .from("stickers")
         .select("id, name, price_mxn, stripe_price_id, sale_status")
@@ -200,10 +341,7 @@ serve(async (req) => {
         .maybeSingle();
 
       if (stickerErr || !sticker) {
-        return new Response(JSON.stringify({ error: "El sticker seleccionado no fue encontrado." }), {
-          status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" }
-        });
+        return json({ error: "El sticker seleccionado no fue encontrado." }, 404);
       }
 
       params.append("mode", "payment");
@@ -211,38 +349,32 @@ serve(async (req) => {
       params.append("metadata[sticker_id]", sticker.id.toString());
       params.append("metadata[sticker_name]", sticker.name || "Sticker");
 
-      // Resolve potential active promo price
-      const baseStickerPrice = Number(sticker.price_mxn) || 25;
-      const promoInfo = await resolvePromoPrice(supabase, sticker.id.toString(), 'stickers', baseStickerPrice);
+      const dbStickerPrice = Number(sticker.price_mxn) || 0;
+      const baseStickerPrice = dbStickerPrice > 0 ? dbStickerPrice : 25;
+      const promoInfo = await resolvePromoPrice(supabase, sticker.id.toString(), baseStickerPrice);
       const effectiveStickerPrice = promoInfo.price;
 
-      if (!promoInfo.isLimited && promoInfo.price === baseStickerPrice && sticker.stripe_price_id && sticker.stripe_price_id.trim().startsWith("price_")) {
+      if (dbStickerPrice <= 0 && !promoInfo.isLimited && sticker.stripe_price_id && sticker.stripe_price_id.trim().startsWith("price_")) {
         params.append("line_items[0][price]", sticker.stripe_price_id.trim());
         params.append("line_items[0][quantity]", "1");
       } else {
-        const priceAmount = Math.max(1000, Math.round(effectiveStickerPrice * 100)); // in cents, min 10 MXN
-        params.append("line_items[0][price_data][currency]", "mxn");
-        params.append("line_items[0][price_data][unit_amount]", priceAmount.toString());
-        params.append("line_items[0][price_data][product_data][name]", `Sticker: ${sticker.name}`);
-        params.append("line_items[0][price_data][product_data][description]", "Desbloqueo permanente de Sticker en Viking TCG.");
+        const minErr = assertStripeMinimum(effectiveStickerPrice, sticker.name || "Sticker");
+        if (minErr) return json({ error: minErr }, 400);
+        appendSimpleLineItem(params, 0, `Sticker: ${sticker.name}`, "Desbloqueo permanente de Sticker en Viking TCG.", effectiveStickerPrice);
         params.append("line_items[0][quantity]", "1");
       }
 
-      params.append("success_url", `${redirectOrigin}?payment=success&type=sticker&sticker_id=${sticker.id}&session_id={CHECKOUT_SESSION_ID}`);
-      params.append("cancel_url", `${redirectOrigin}?payment=canceled&type=sticker`);
+      params.append("success_url", `${redirectOrigin}${returnQuery}payment=success&type=sticker&sticker_id=${sticker.id}&session_id={CHECKOUT_SESSION_ID}`);
+      params.append("cancel_url", `${redirectOrigin}${returnQuery}payment=canceled&type=sticker`);
 
     } else if (purchaseType === "accessory") {
       // ONE-TIME MICRO-PAYMENT FOR ACCESSORY (SLEEVES, DECKS, COINS, PLAYMAT)
       const accessoryId = reqBody.accessory_id;
       if (!accessoryId) {
-        return new Response(JSON.stringify({ error: "Falta proporcionar el ID del accesorio (accessory_id)." }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" }
-        });
+        return json({ error: "Falta proporcionar el ID del accesorio (accessory_id)." }, 400);
       }
 
-      // Security: Query accessories table directly via service role to get verified server-side price.
-      // Frontend client input is strictly ignored to prevent price manipulation.
+      // Security: server-side price from the accessories table.
       const { data: accessory, error: accErr } = await supabase
         .from("accessories")
         .select("id, name, price_mxn, stripe_price_id, sale_status, category")
@@ -250,10 +382,7 @@ serve(async (req) => {
         .maybeSingle();
 
       if (accErr || !accessory) {
-        return new Response(JSON.stringify({ error: "El accesorio seleccionado no fue encontrado." }), {
-          status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" }
-        });
+        return json({ error: "El accesorio seleccionado no fue encontrado." }, 404);
       }
 
       params.append("mode", "payment");
@@ -262,35 +391,130 @@ serve(async (req) => {
       params.append("metadata[accessory_name]", accessory.name || "Accesorio");
       params.append("metadata[accessory_category]", accessory.category || "sleeves");
 
-      // Resolve potential active promo price
-      const baseAccPrice = Number(accessory.price_mxn) || 25;
-      const promoInfo = await resolvePromoPrice(supabase, accessory.id.toString(), accessory.category || 'sleeves', baseAccPrice);
+      const dbAccPrice = Number(accessory.price_mxn) || 0;
+      const baseAccPrice = dbAccPrice > 0 ? dbAccPrice : 25;
+      const promoInfo = await resolvePromoPrice(supabase, accessory.id.toString(), baseAccPrice);
       const effectiveAccPrice = promoInfo.price;
 
-      if (!promoInfo.isLimited && promoInfo.price === baseAccPrice && accessory.stripe_price_id && accessory.stripe_price_id.trim().startsWith("price_")) {
+      if (dbAccPrice <= 0 && !promoInfo.isLimited && accessory.stripe_price_id && accessory.stripe_price_id.trim().startsWith("price_")) {
         params.append("line_items[0][price]", accessory.stripe_price_id.trim());
         params.append("line_items[0][quantity]", "1");
       } else {
-        const priceAmount = Math.max(1000, Math.round(effectiveAccPrice * 100)); // in cents, min 10 MXN
-        params.append("line_items[0][price_data][currency]", "mxn");
-        params.append("line_items[0][price_data][unit_amount]", priceAmount.toString());
-        params.append("line_items[0][price_data][product_data][name]", `Accesorio: ${accessory.name}`);
-        params.append("line_items[0][price_data][product_data][description]", `Desbloqueo permanente de Accesorio (${accessory.category}) en Viking TCG.`);
+        const minErr = assertStripeMinimum(effectiveAccPrice, accessory.name || "Accesorio");
+        if (minErr) return json({ error: minErr }, 400);
+        appendSimpleLineItem(params, 0, `Accesorio: ${accessory.name}`, `Desbloqueo permanente de Accesorio (${accessory.category || 'accesorio'}) en Viking TCG.`, effectiveAccPrice);
         params.append("line_items[0][quantity]", "1");
       }
 
-      params.append("success_url", `${redirectOrigin}?payment=success&type=accessory&accessory_id=${accessory.id}&session_id={CHECKOUT_SESSION_ID}`);
-      params.append("cancel_url", `${redirectOrigin}?payment=canceled&type=accessory`);
+      params.append("success_url", `${redirectOrigin}${returnQuery}payment=success&type=accessory&accessory_id=${accessory.id}&session_id={CHECKOUT_SESSION_ID}`);
+      params.append("cancel_url", `${redirectOrigin}${returnQuery}payment=canceled&type=accessory`);
+
+    } else if (purchaseType === "pack") {
+      // ONE-TIME PAYMENT FOR A COMPOSED PACK
+      const packId = reqBody.pack_id;
+      if (!packId) {
+        return json({ error: "Falta proporcionar el ID del pack (pack_id)." }, 400);
+      }
+
+      // Security: price comes from product_packs, never from the browser
+      const { data: pack, error: packErr } = await supabase
+        .from("product_packs")
+        .select("id, name, normal_price, promo_price, status, items")
+        .eq("id", packId)
+        .maybeSingle();
+
+      if (packErr || !pack) {
+        return json({ error: "El pack seleccionado no fue encontrado." }, 404);
+      }
+
+      if (String(pack.status || "") !== "published") {
+        return json({ error: "El pack ya no está disponible." }, 400);
+      }
+
+      const packPrice = Number(pack.promo_price || pack.normal_price) || 0;
+      if (packPrice <= 0) {
+        return json({ error: "El pack no tiene precio configurado." }, 400);
+      }
+
+      const packMinErr = assertStripeMinimum(packPrice, pack.name || "Pack");
+      if (packMinErr) return json({ error: packMinErr }, 400);
+
+      params.append("mode", "payment");
+      params.append("metadata[purchase_type]", "pack");
+      params.append("metadata[pack_id]", String(pack.id));
+      params.append("metadata[pack_name]", pack.name || "Pack");
+
+      appendSimpleLineItem(params, 0, `Pack: ${pack.name}`, "Compra de pack en Viking TCG.", packPrice);
+      params.append("line_items[0][quantity]", "1");
+
+      params.append("success_url", `${redirectOrigin}${returnQuery}payment=success&type=pack&pack_id=${pack.id}&session_id={CHECKOUT_SESSION_ID}`);
+      params.append("cancel_url", `${redirectOrigin}${returnQuery}payment=canceled&type=pack`);
+
+    } else if (purchaseType === "cart") {
+      // ONE-TIME PAYMENT FOR THE SHOPPING CART (físico + cartas)
+      if (!authUserId) {
+        return json({ error: "Debes iniciar sesión para pagar el carrito con tarjeta." }, 401);
+      }
+
+      const rawItems = Array.isArray(reqBody.items) ? reqBody.items : [];
+      if (rawItems.length === 0) {
+        return json({ error: "El carrito está vacío." }, 400);
+      }
+
+      const resolved: any[] = [];
+      for (const raw of rawItems) {
+        const res = await resolveCartItem(supabase, raw, reqBody.seller_id || null);
+        if (!res || res.error) {
+          return json({ error: res?.error || "Hay un artículo que ya no está disponible." }, 400);
+        }
+        resolved.push(res.item);
+      }
+
+      const total = resolved.reduce((sum, it) => sum + it.price * it.quantity, 0);
+      if (total < MIN_CHARGE_MXN) {
+        return json({ error: `El total mínimo para pagar con tarjeta es de $${MIN_CHARGE_MXN} MXN.` }, 400);
+      }
+
+      const { data: order, error: orderErr } = await supabase
+        .from("checkout_orders")
+        .insert([{
+          user_id: userId,
+          buyer_name: reqBody.buyer_name || "",
+          buyer_contact: reqBody.buyer_email || reqBody.buyer_contact || "",
+          items: resolved,
+          total_amount: Number(total.toFixed(2)),
+          currency: "MXN",
+          status: "pending",
+        }])
+        .select("id")
+        .single();
+
+      if (orderErr || !order) {
+        throw new Error(orderErr?.message || "No se pudo registrar el pedido.");
+      }
+
+      params.append("mode", "payment");
+      params.append("metadata[purchase_type]", "cart");
+      params.append("metadata[order_id]", String(order.id));
+
+      resolved.forEach((it, idx) => {
+        appendSimpleLineItem(params, idx, it.name, "", it.price);
+        params.append(`line_items[${idx}][quantity]`, String(it.quantity));
+      });
+
+      params.append("success_url", `${redirectOrigin}${returnQuery}payment=success&type=cart&order_id=${order.id}&session_id={CHECKOUT_SESSION_ID}`);
+      params.append("cancel_url", `${redirectOrigin}${returnQuery}payment=canceled&type=cart`);
 
     } else {
       // SUBSCRIPTION PURCHASE (PREMIUM PLAN)
-      // Check if env variable STRIPE_PRICE_ID is set and starts with price_
       const envPriceId = (Deno.env.get("STRIPE_PRICE_ID") || "").trim();
 
       params.append("mode", "subscription");
       params.append("metadata[purchase_type]", "subscription");
 
-      // Security: Query package_configs table for verified server-side price of premium plan
+      // Security: server-side price from package_configs (lo que el admin
+      // guarda en packages.html). El Price de Stripe solo se usa si no hay precio.
+      let hasDbPrice = false;
       let subscriptionPriceMxn = DEFAULT_PREMIUM_PRICE_MXN;
       try {
         const { data: pkgConfig } = await supabase
@@ -301,21 +525,21 @@ serve(async (req) => {
 
         if (pkgConfig && Number(pkgConfig.price_mxn) > 0) {
           subscriptionPriceMxn = Number(pkgConfig.price_mxn);
+          hasDbPrice = true;
         }
       } catch (_) {
         subscriptionPriceMxn = DEFAULT_PREMIUM_PRICE_MXN;
       }
 
-      // Resolve potential active promo price for plan_premium
-      const promoInfo = await resolvePromoPrice(supabase, "plan_premium", "planes", subscriptionPriceMxn);
+      const promoInfo = await resolvePromoPrice(supabase, "plan_premium", subscriptionPriceMxn);
       const effectivePlanPrice = promoInfo.price;
 
-      if (!promoInfo.isLimited && promoInfo.price === subscriptionPriceMxn && envPriceId && envPriceId.startsWith("price_")) {
+      if (!hasDbPrice && !promoInfo.isLimited && envPriceId && envPriceId.startsWith("price_")) {
         params.append("line_items[0][price]", envPriceId);
         params.append("line_items[0][quantity]", "1");
       } else {
-        // Create recurring subscription directly via price_data without needing a pre-created Stripe Price ID.
-        // Works seamlessly in test mode (sk-test) and live mode (sk-live) without manual dashboard setup!
+        const planMinErr = assertStripeMinimum(effectivePlanPrice, "Plan Premium");
+        if (planMinErr) return json({ error: planMinErr }, 400);
         const unitAmountCents = Math.round(effectivePlanPrice * 100);
         params.append("line_items[0][price_data][currency]", "mxn");
         params.append("line_items[0][price_data][unit_amount]", unitAmountCents.toString());
@@ -325,8 +549,8 @@ serve(async (req) => {
         params.append("line_items[0][quantity]", "1");
       }
 
-      params.append("success_url", `${redirectOrigin}?payment=success&type=subscription&session_id={CHECKOUT_SESSION_ID}`);
-      params.append("cancel_url", `${redirectOrigin}?payment=canceled&type=subscription`);
+      params.append("success_url", `${redirectOrigin}${returnQuery}payment=success&type=subscription&session_id={CHECKOUT_SESSION_ID}`);
+      params.append("cancel_url", `${redirectOrigin}${returnQuery}payment=canceled&type=subscription`);
     }
 
     const sessionRes = await fetch("https://api.stripe.com/v1/checkout/sessions", {
@@ -343,15 +567,17 @@ serve(async (req) => {
       throw new Error(sessionData.error?.message || "Error al crear sesión de Checkout de Stripe.");
     }
 
-    return new Response(JSON.stringify({ url: sessionData.url, id: sessionData.id }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
+    // Guardar la sesión en el pedido del carrito (trazabilidad + idempotencia del webhook)
+    if (purchaseType === "cart" && sessionData.id && sessionData.metadata?.order_id) {
+      await supabase
+        .from("checkout_orders")
+        .update({ stripe_session_id: sessionData.id })
+        .eq("id", sessionData.metadata.order_id);
+    }
+
+    return json({ url: sessionData.url, id: sessionData.id });
 
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message || "Error procesando el pago en Stripe." }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
+    return json({ error: err.message || "Error procesando el pago en Stripe." }, 500);
   }
 });

@@ -1609,18 +1609,19 @@
         async function initPackagesPage() {
             if (typeof _supabase === 'undefined') return;
 
-            const { data: { session } } = await _supabase.auth.getSession();
-            let sessionUser = session ? session.user : null;
-
-            if (!sessionUser) {
-                const stored = localStorage.getItem('tcg_session');
-                if (stored) {
-                    try { sessionUser = JSON.parse(stored); } catch (e) {}
-                }
+            // El acceso se decide SIEMPRE con la sesión real de Supabase y el rol
+            // guardado en la base de datos. No se acepta `localStorage` (era
+            // falsificable desde la consola) y cualquier error cierra la puerta.
+            let sessionUser = null;
+            try {
+                const { data: { session } } = await _supabase.auth.getSession();
+                sessionUser = session ? session.user : null;
+            } catch (_) {
+                sessionUser = null;
             }
 
             if (!sessionUser) {
-                window.location.href = 'index.html';
+                window.location.replace('index.html');
                 return;
             }
 
@@ -1628,18 +1629,41 @@
 
             let profile = null;
             try {
-                const { data } = await _supabase.from('usuarios').select('*').eq('id', currentUserId).maybeSingle();
-                profile = data;
-            } catch (_) {}
-
-            if (!profile && sessionUser && sessionUser.role) {
-                profile = sessionUser;
+                const { data, error } = await _supabase
+                    .from('usuarios')
+                    .select('id, role')
+                    .eq('id', currentUserId)
+                    .maybeSingle();
+                if (!error) profile = data;
+            } catch (_) {
+                profile = null;
             }
 
-            if (!profile || profile.role !== 'admin') {
+            const role = String(profile?.role || '').toLowerCase();
+            if (!profile || !['admin', 'superadmin', 'admin_store'].includes(role)) {
                 window.location.replace('index.html');
                 return;
             }
+
+            // Si la sesión cambia (logout o cambio de usuario) se vuelve a validar
+            _supabase.auth.onAuthStateChange(async (_event, session) => {
+                if (!session?.user) {
+                    window.location.replace('index.html');
+                    return;
+                }
+                try {
+                    const { data } = await _supabase
+                        .from('usuarios')
+                        .select('role')
+                        .eq('id', session.user.id)
+                        .maybeSingle();
+                    if (!data || !['admin', 'superadmin', 'admin_store'].includes(String(data.role || '').toLowerCase())) {
+                        window.location.replace('index.html');
+                    }
+                } catch (_) {
+                    window.location.replace('index.html');
+                }
+            });
 
             $('#authenticated-content').show();
 
