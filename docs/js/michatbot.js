@@ -2204,7 +2204,7 @@ async function handleSendAIChatMessage() {
                 if (isAdmin) {
                     const { data: clientes } = await _supabase
                         .from('clientes')
-                        .select('nombre, detalles, precio_total, status')
+                        .select('*')
                         .eq('user_id', targetStoreId);
                     if (clientes && clientes.length > 0) {
                         dbContext += '\n--- CLIENTES ---\n';
