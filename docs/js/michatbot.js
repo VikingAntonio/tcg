@@ -1774,10 +1774,13 @@ const BUSINESS_CONTEXT_KEYWORDS = [
     'envio', 'envios', 'guia', 'guias', 'rastreo', 'tracking', 'paqueteria',
     'horario', 'horarios', 'ubicacion', 'direccion', 'contacto', 'whatsapp', 'messenger',
     'entrega', 'entregas', 'pago', 'pagos', 'subasta', 'subastas',
+    'evento', 'eventos', 'torneo', 'torneos',
     'cliente', 'clientes', 'proveedor', 'proveedores', 'preventa', 'preventas',
     'sellado', 'sellados', 'sobre', 'sobres', 'booster', 'etb', 'tcg',
     'pokemon', 'yugioh', 'magic', 'one piece', 'digimon', 'dragon ball',
     'mazo', 'mazos', 'deck', 'decks', 'tengo', 'tienes', 'tiene',
+    'wishlist', 'buscada', 'buscadas', 'busco',
+    'accesorio', 'accesorios',
     'producto', 'productos', 'tienda', 'negocio', 'perfil',
     'ganancia', 'ganancias', 'costo', 'costos', 'invertido', 'reporte',
     'estadistica', 'estadisticas'
