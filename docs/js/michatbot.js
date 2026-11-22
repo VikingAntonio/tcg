@@ -1808,10 +1808,10 @@ function shouldAttachStoreContext(text) {
     const normalized = normalizeForContextMatch(text);
     if (!normalized) return false;
 
+    if (BUSINESS_CONTEXT_KEYWORDS.some(keyword => normalized.includes(keyword))) return true;
+
     const generalOnly = /^(hola|holi|buenas|hey|hi|hello|que tal|que onda|gracias|muchas gracias|quien eres|como estas|que puedes hacer|ayuda|adios|hasta luego)\b/.test(normalized);
     if (generalOnly && normalized.split(' ').length <= 6) return false;
-
-    if (BUSINESS_CONTEXT_KEYWORDS.some(keyword => normalized.includes(keyword))) return true;
 
     if (storeContextCache && storeContextCache.names) {
         for (const name of storeContextCache.names) {
