@@ -1395,9 +1395,6 @@
     </div>
 
     <!-- 3D Companion Chatbot Integration -->
-    <script src="js/michatbot-mobile3d.js"></script>
-    <script src="js/michatbot.js"></script>
-
     <script>
         let currentUserId = null;
         let allAvailableSpirits = [];
@@ -4301,8 +4298,10 @@
             let html = '';
             queue.forEach((item, idx) => {
                 const isGltf = item.fileType === 'gltf' || item.fileUrl.endsWith('.gltf') || item.fileUrl.endsWith('.glb');
+                // En la lista solo va un icono: montar un model-viewer por
+                // elemento descargaba un modelo 3D por cada archivo encolado.
                 const previewMedia = isGltf
-                    ? `<model-viewer src="${item.fileUrl}" auto-rotate camera-controls style="width: 70px; height: 70px; background: #000; border-radius: 6px;"></model-viewer>`
+                    ? `<div style="width: 70px; height: 70px; background: rgba(0,210,255,0.12); border: 1px solid rgba(0,210,255,0.35); border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #00d2ff; gap: 2px;"><i class="fas fa-cube" style="font-size: 1.2rem;"></i><span style="font-size: 9px; font-weight: 700;">3D</span></div>`
                     : `<img src="${item.fileUrl}" style="width: 70px; height: 70px; object-fit: contain; background: rgba(0,0,0,0.3); border-radius: 6px;">`;
 
                 html += `

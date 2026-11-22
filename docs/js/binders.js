@@ -659,7 +659,7 @@ async function showAuthenticatedContent() {
     $('#dropdown-user-name').text(currentUser.username);
     showView('dashboard');
     loadAlbums();
-    initMichatbot(true);
+    if (typeof initMichatbot === 'function') initMichatbot(true);
 }
 
 function showLoginView() { $('#login-modal').addClass('active'); $('#authenticated-content, #top-panel').hide(); }

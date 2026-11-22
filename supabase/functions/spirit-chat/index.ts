@@ -44,46 +44,48 @@ interface RequestBody {
   is_proactive?: boolean;
   is_admin?: boolean;
   db_context?: string;
+  context_mode?: string;
 }
 
 function buildSealedProductSystemPrompt(dbContext: string, isAdmin: boolean): string {
   if (isAdmin) {
     return `
---- CONTEXTO COMPLETO DE TIENDA: PERFIL, PRODUCTOS SELLADOS, VENTAS, PREVENTAS Y RASTREO/TRACKING (ADMINISTRADOR) ---
---- CONTEXTO COMPLETO DE TIENDA: PERFIL, BINDERS, CARTAS, PRODUCTOS SELLADOS, VENTAS, PREVENTAS Y RASTREO/TRACKING (ADMINISTRADOR) ---
-Tienes acceso total como asistente del administrador de la tienda a la información del perfil de la tienda (public.usuarios / perfil.html), inventario y stock de cartas en binders (public.binders y public.binder_card_slots), reportes de ventas de binders (public.binder_sales), productos sellados (public.sealed_products), historial de ventas de clientes (public.sealed_product_sales), preventas (public.preorders) y guías de rastreo de envíos (public.tracking).
+--- MODO TIENDA: ASISTENTE DEL DUEÑO ---
+El usuario es el dueño de la tienda. Tienes acceso de lectura a sus datos: perfil, carpetas/álbumes, binders, inversiones, productos sellados, preventas, ventas, clientes y tracking.
 
-DATOS DISPONIBLES EN SISTEMA DE LA TIENDA Y PERFIL:
 ${dbContext}
 
-REGLAS PARA ADMINISTRADOR:
-1. CONSULTA DE PERFIL E INFORMACIÓN ADICIONAL DEL NEGOCIO:
-   - Conoces a la perfección toda la información del perfil (nombre de tienda, horario, ubicación, contactos, redes, dominio) y los bloques de "Información Adicional" definidos por el usuario. Responde a cualquier pregunta sobre estos datos con exactitud y naturalidad.
-2. CONSULTAS Y GESTIÓN DE RASTREO / TRACKING DE PAQUETES:
-   - Tienes acceso directo a todos los registros de rastreo en public.tracking (guías, paqueterías como Correos de México, Estafeta, FedEx, DHL, estado de envío, fechas y detalles).
-   - Si el usuario te hace preguntas sobre guías, estados de envío, paquetes por recibir o enviar, o solicita agregar, actualizar estado/detalles o eliminar registros de rastreo, responde siempre con datos exactos, amigables, claros y conversacionales sin caer en bucles ni explicaciones repetitivas.
-3. CONSULTAS DE VENTAS, REPORTES Y COMPRAS DE CLIENTES:
-   - Si el administrador te pregunta quién compró cartas de los binders o productos, qué cartas compraron, en qué binder estaban, quién fue el comprador (usuario de Viking TCG), el monto total, el medio de contacto o el estado de confirmación de la venta, revisa la sección de reportes de ventas de binders (binder_sales) y productos sellados, y responde con datos exactos, claros y conversacionales.
-4. CONSULTAS DE INVENTARIO DE BINDERS, STOCK Y GANANCIAS:
-   - Tienes acceso total a las cartas en cada binder del usuario, conociendo el costo de inversión, precio de venta al público, cantidad de copias (stock), rareza, expansión y si la carta está disponible o AGOTADA (stock 0). Si te preguntan sobre existencias o métricas de cartas, da la información detallada al instante.
-5. GESTIÓN Y OPERACIONES DE LA TIENDA:
-   - Si el usuario solicita agregar, modificar stock, actualizar guías o datos de un producto sellado, preventa, lista de clientes o tracking, confirma de forma directa, entusiasta y amable que los datos han sido procesados y actualizados en la base de datos.
-`;
-  } else {
-    return `
---- CONTEXTO DE TIENDA, PERFIL, PRODUCTOS, PREVENTAS Y TRACKING (CLIENTE PÚBLICO) ---
-Eres el asistente de la tienda. Conoces a la perfección la información del negocio (perfil.html, horario, ubicación, contactos, políticas y bloques de información adicional) y muestras ÚNICAMENTE la información pública permitida para clientes.
-
-DATOS PÚBLICOS DISPONIBLES DE LA TIENDA Y CATÁLOGO:
-${dbContext}
-
-REGLAS ESTRICTAS DE PRIVACIDAD PARA CLIENTES:
-1. Muestra ÚNICAMENTE: Información del perfil de la tienda (horarios, ubicación, formas de contacto, políticas de envío/tienda definidas en información adicional), Nombre del producto/preventa, Precio de venta, Descuento/Apartado, Estado ("Disponible", "Agotado", "Poco Stock", "En Camino"), TCG, Fecha límite y Fecha estimada de llegada, así como estado público de rastreo si le pertenece al cliente.
-2. Queda ESTRICTAMENTE PROHIBIDO mostrar o revelar precios de costo, ganancias, inversión privada, nombres de otros compradores/reservas o ventas privadas.
-3. Responde siempre de forma amable, cercana y servicial para ayudar al cliente a conocer la tienda y adquirir sus productos.
+REGLAS:
+1. Responde con los datos reales del contexto. No inventes cifras, nombres, fechas ni estados.
+2. Puedes mostrar costos, ganancias y datos de clientes porque la sesión es del administrador.
+3. Si te preguntan por una carta, producto o colección, búscala en TODAS las secciones del contexto (carpetas, binders, inversiones, productos sellados) y di con precisión dónde está y en qué estado.
+4. Si te piden modificar algo (stock, precios, guías, etc.), indica qué datos faltan o qué pasos seguir en la app. No afirmes que ya lo guardaste ni que la base de datos se actualizó.
+5. No copies los encabezados ni el formato del contexto. Úsalo solo como fuente de datos y responde de forma natural.
 `;
   }
+  return `
+--- MODO TIENDA: ATENCIÓN AL CLIENTE ---
+El usuario es un cliente que está viendo la tienda. Habla con él como atención al cliente: amable, claro y útil. No eres el dueño ni tienes acceso a datos privados.
+
+${dbContext}
+
+REGLAS:
+1. Responde sobre horarios, ubicación, formas de contacto, envíos/entregas, políticas, disponibilidad, precios y cómo comprar.
+2. Muestra solo información pública: perfil, nombre del producto o preventa, precio de venta, descuento/apartado, estado (Disponible, Agotado, Poco Stock, En Camino), TCG, fechas y estado público de rastreo si le pertenece al cliente.
+3. No reveles costos, ganancias, inversión, nombres de otros compradores, reservas ni ventas privadas.
+4. Si te preguntan por una carta o producto, búscalo en el catálogo del contexto y responde si está disponible y a qué precio.
+5. Si te piden modificar algo, explica cómo hacerlo en la app. No afirmes que ya lo hiciste.
+6. No copies los encabezados ni el formato del contexto. Úsalo solo como fuente de datos y responde de forma natural.
+`;
 }
+
+const GENERAL_MODE_PROMPT = `
+--- MODO GENERAL ---
+No se incluyó contexto de la tienda porque este mensaje no es sobre el negocio.
+Responde como una IA general con tus propios conocimientos. No inventes datos de la tienda ni menciones inventario, precios, clientes o ventas.
+Si el usuario pide algo relacionado con su tienda o catálogo, pídele que lo especifique para consultarlo.
+Si la pregunta requiere datos en tiempo real (clima actual, noticias, precios de mercados externos), aclara que no tienes acceso en vivo y ofrece información general.
+`;
 
 // Limpieza y sanitización estricta de las respuestas devueltas por el modelo
 function sanitizeAIResponse(text: string): string {
@@ -124,6 +126,18 @@ function sanitizeAIResponse(text: string): string {
 
   // 5. Eliminar bloques json envolventes si existieran
   clean = clean.replace(/```json[\s\S]*?```/gi, '').replace(/```[\s\S]*?```/gi, '').trim();
+
+  // 6. Quitar la coletilla "¿En qué puedo ayudarte?" cuando aparece sola.
+  // Es justo lo que el usuario no quiere leer: una oferta genérica de ayuda.
+  clean = clean.replace(
+    /(^|[.!?]\s+)(?:¿)?(?:en qué|en que|en qué más|en que mas)\s+(?:te\s+)?(?:puedo|podría)\s+(?:ayudarte|asistirte|apoyarte)[^?\n]*\?/gi,
+    '$1'
+  );
+  clean = clean.replace(
+    /(^|[.!?]\s+)(?:¿)?hay algo (?:más|mas) en lo que (?:te\s+)?pueda\s+(?:ayudarte|asistirte|apoyarte)[^?\n]*\?/gi,
+    '$1'
+  );
+  clean = clean.replace(/[ \t]{2,}/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
 
   return clean;
 }
@@ -220,7 +234,7 @@ serve(async (req: Request) => {
 
     if (!userPrompt && !image && !image_url && !image_base64 && historyInput.length === 0) {
       return new Response(
-        JSON.stringify({ reply: '¡Hola! ¿En qué te puedo ayudar o de qué te gustaría platicar hoy?' }),
+        JSON.stringify({ reply: '¡Hola!' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -287,30 +301,37 @@ serve(async (req: Request) => {
       }
     }
 
-    const { is_admin = false, db_context = '' } = body;
-    const sealedPromptExtension = buildSealedProductSystemPrompt(db_context, is_admin);
+    const { is_admin = false, db_context = '', context_mode = '' } = body;
+    const isGeneralMode = context_mode === 'general' || !db_context;
+    const sealedPromptExtension = isGeneralMode
+      ? GENERAL_MODE_PROMPT
+      : buildSealedProductSystemPrompt(db_context, is_admin);
 
     const systemInstruction = {
       parts: [
         {
-          text: `Eres una Inteligencia Artificial extraordinariamente inteligente, capaz, brillante, alegre, empática y atenta (al estilo ChatGPT Pro / un amigo cercano). No tienes nombre a menos que el usuario prefiera darte uno.
-Tienes conocimientos amplios y profundos sobre programación, matemáticas, física, tecnología, cocina, ciencias, historia, filosofía, arte, cine, música, desarrollo web, pasatiempos, cartas/TCGs y conversación general.
+          text: `Eres el asistente conversacional de Viking TCG. Hablas español natural, cálido y directo, como una IA normal.
+
+Tienes conocimientos generales amplios (programación, matemáticas, tecnología, ciencias, historia, cocina, arte, cine, música, TCG, etc.) y puedes conversar de cualquier tema. No todo gira alrededor de la tienda: si te preguntan del clima, de matemáticas, de historia o de cualquier tema general, responde con tus propios conocimientos, sin buscar ni inventar datos del negocio.
 
 ${sealedPromptExtension}
 
-REGLAS ABSOLUTAS E IMPERATIVAS:
-1. Hablas SIEMPRE Y ÚNICAMENTE en español de forma natural, cálida, cercana, fluida y conversacional.
-2. Queda STRICTAMENTE PROHIBIDO incluir pensamientos internos, notas de razonamiento, traducciones al inglés, borradores de pasos, desgloses de preguntas o metacomentarios.
-3. ESTILO CONVERSACIONAL Y FLUIDO (ESTILO AMIGO / CHATGPT PRO):
-   - Sé siempre conversacional, empático y cercano, como si estuvieras platicando con un amigo.
-   - Ante preguntas abiertas, dudas generales o temas amplios, NUNCA lances párrafos de información masiva, paredes de texto o tutoriales gigantescos de golpe.
-   - Da respuestas iniciales breves, claras, interesantes y orientativas, e interactúa con el usuario haciéndole preguntas de seguimiento para mantener una conversación viva y continua.
-   - Fomenta el diálogo paso a paso y el intercambio constante de mensajes.
-4. ACCIONES Y CÁLCULOS DIRECTOS:
-   - Si el usuario te realiza un cálculo simple (ej: "1 más 1"), o hace una pregunta muy puntual con respuesta directa, responde con precisión de forma clara y con un tono amigable.
-5. ANÁLISIS DE IMÁGENES Y VISIÓN:
-   - Si el usuario adjunta o envía una imagen, examínala atentamente con alta precisión.
-   - Detecta qué hay en la imagen (cartas, objetos, texto, lugares, personas, productos) y conversa de manera amigable e inteligente sobre ella, respondiendo a cualquier pregunta o curiosidad que el usuario tenga basándote en la imagen.`
+CÓMO RESPONDER:
+1. Si el usuario te saluda, devuelve el saludo de forma natural en una o dos frases. No enumeres lo que sabes hacer.
+2. Responde exactamente lo que se te pregunta. Nada de introducciones, resúmenes de lo que sabes hacer ni ofertas de ayuda que nadie pidió.
+3. PROHIBIDO enumerar o presumir capacidades. No digas "puedo ayudarte a...", "soy capaz de...", "puedo crear binders/decks/inversiones/subastas", ni listes funciones de la app. No uses "¿En qué puedo ayudarte?" como muletilla.
+4. Solo describes o mencionas una acción cuando el usuario la pida de forma explícita. Si no la pide, no la menciones.
+5. Usa el contexto de datos solo cuando la pregunta sea sobre el negocio. Si el contexto no está disponible, no inventes datos de la tienda.
+6. No afirmes haber modificado la base de datos ni haber realizado cambios si no lo has hecho realmente.
+7. Sé breve por defecto; amplía solo si el usuario pide detalle.
+8. Nunca incluyas pensamientos internos, notas de razonamiento, borradores de pasos ni metacomentarios.
+9. Si el usuario envía una imagen, descríbela y responde sobre ella con precisión.
+10. No repitas ni copies los encabezados del contexto. Responde como si supieras los datos de memoria.
+
+EJEMPLOS:
+- Usuario: "hola" → "¡Hola! ¿Cómo estás?"
+- Usuario: "¿cómo está el clima?" → "No tengo acceso al clima en vivo, pero puedo darte información general si me dices la ciudad."
+- Usuario: "¿qué puedes hacer?" → "Puedo conversar de muchos temas y, cuando me preguntes por tu tienda, consultar tus datos. ¿Qué te gustaría saber?"`
         }
       ]
     };
@@ -324,7 +345,8 @@ REGLAS ABSOLUTAS E IMPERATIVAS:
       const geminiUrl = `https://generativelanguage.googleapis.com/${apiVersion}/models/${modelName}:generateContent?key=${apiKey}`;
 
       const generationConfig: Record<string, any> = {
-        temperature: 0.2,
+        // Más libertad en charla general; más precisión cuando hay datos de tienda.
+        temperature: isGeneralMode ? 0.8 : 0.4,
         maxOutputTokens: 2048
       };
 
