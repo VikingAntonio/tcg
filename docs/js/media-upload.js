@@ -1,7 +1,7 @@
-const CloudinaryUpload = {
+const MediaUpload = {
     cloudName: "de3n9pg8x",
     uploadPreset: "vikingdevBdd",
-    // El plan gratuito de Cloudinary rechaza archivos raw de más de 10 MiB
+    // El servidor rechaza archivos raw de más de 10 MiB
     // ("File size too large. Got 13000000. Maximum is 10485760."). Se comprueba
     // antes de subir nada para no dejar archivos sueltos si uno es demasiado
     // grande. Subir este valor si se pasa a un plan de pago.
@@ -31,7 +31,7 @@ const CloudinaryUpload = {
                     savedTokens[data.secure_url] = data.delete_token;
                     localStorage.setItem('cloudinary_delete_tokens', JSON.stringify(savedTokens));
                 } catch (e) {
-                    console.error('Error saving Cloudinary delete token to localStorage:', e);
+                    console.error('Error saving delete token to localStorage:', e);
                 }
             }
             return data.secure_url;
@@ -60,11 +60,11 @@ const CloudinaryUpload = {
         return response.json();
     },
 
-    // Sube un modelo 3D completo a Cloudinary (raw) y devuelve la URL del
-    // .gltf/.glb principal. Cloudinary rechaza la extensión .bin, así que los
+    // Sube un modelo 3D completo (raw) y devuelve la URL del
+    // .gltf/.glb principal. El servidor rechaza la extensión .bin, así que los
     // buffers se suben como .glbin y se reescribe la referencia dentro del
     // .gltf. Todo va a una carpeta única para que las rutas relativas sigan
-    // funcionando y la URL sea inmutable (Cloudinary sirve con max-age=30d).
+    // funcionando y la URL sea inmutable (se sirve con max-age=30d).
     async uploadModelFiles(files) {
         const list = Array.from(files || []);
         const main = list.find(f => /\.(gltf|glb)$/i.test(f.name || ''));
@@ -73,7 +73,7 @@ const CloudinaryUpload = {
         const tooBig = list.find(f => (f.size || 0) > this.maxRawBytes);
         if (tooBig) {
             const mb = ((tooBig.size || 0) / 1048576).toFixed(1);
-            throw new Error(`"${tooBig.name}" pesa ${mb} MB y Cloudinary acepta hasta ${(this.maxRawBytes / 1048576).toFixed(0)} MB`);
+            throw new Error(`"${tooBig.name}" pesa ${mb} MB y el servidor acepta hasta ${(this.maxRawBytes / 1048576).toFixed(0)} MB`);
         }
 
         const folder = `spirits/models/${Date.now()}_${Math.floor(Math.random() * 1000)}`;
@@ -133,16 +133,16 @@ const CloudinaryUpload = {
             if (response.ok) {
                 delete savedTokens[secureUrl];
                 localStorage.setItem('cloudinary_delete_tokens', JSON.stringify(savedTokens));
-                console.log('Image deleted from Cloudinary successfully using delete token');
+                console.log('Image deleted successfully using delete token');
             } else {
-                console.warn('Could not delete image from Cloudinary (token might have expired):', await response.text());
+                console.warn('Could not delete image (token might have expired):', await response.text());
             }
         } catch (error) {
-            console.error('Error in Cloudinary deleteImage:', error);
+            console.error('Error in deleteImage:', error);
         }
     }
 };
 
 // Expose on window too: `const` creates a lexical global, not a window property,
-// so `window.CloudinaryUpload` was undefined in code that guards on it.
-window.CloudinaryUpload = CloudinaryUpload;
+// so `window.MediaUpload` was undefined in code that guards on it.
+window.MediaUpload = MediaUpload;

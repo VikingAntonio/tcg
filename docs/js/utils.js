@@ -2,7 +2,7 @@
 window.TCG_API_KEY = 'tcg_live_830032ddb812433fc16a783454caaa5353708266';
 window.TCG_API_BASE = 'https://api.tcgapi.dev/v1';
 
-window.optimizeCloudinaryUrl = function(url, width = 500, height = 500) {
+window.optimizeMediaUrl = function(url, width = 500, height = 500) {
     if (!url || typeof url !== 'string' || !url.includes('cloudinary.com')) return url;
     if (url.includes('/upload/w_') || url.includes('/upload/c_limit')) return url;
 
@@ -1693,7 +1693,7 @@ window.setupMultiMaskField = function(targetInputSelector, containerSelector, ad
 
         const rowHTML = `
             <div class="multi-mask-row" id="${rowId}" style="display: flex; gap: 10px; margin-bottom: 8px; align-items: center; background: rgba(255,255,255,0.02); padding: 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
-                <input type="text" class="multi-mask-row-input" value="${maskUrl}" placeholder="URL de máscara (Cloudinary, etc.)" style="flex: 1; background: #252525; color: white; border: 1px solid rgba(255,255,255,0.1); padding: 8px; border-radius: 6px;">
+                <input type="text" class="multi-mask-row-input" value="${maskUrl}" placeholder="URL de máscara" style="flex: 1; background: #252525; color: white; border: 1px solid rgba(255,255,255,0.1); padding: 8px; border-radius: 6px;">
                 <input type="file" id="${fileInputId}" class="multi-mask-file-input" accept="image/*" style="display: none;">
                 <button type="button" class="btn btn-secondary btn-sm btn-row-upload" onclick="$('#${fileInputId}').click()" style="white-space: nowrap; padding: 8px 12px; font-size: 12px; border-radius: 6px;">
                     <i class="fas fa-upload"></i> Subir
@@ -1717,11 +1717,11 @@ window.setupMultiMaskField = function(targetInputSelector, containerSelector, ad
             Swal.fire({ title: 'Subiendo máscara...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
             try {
-                const secureUrl = await CloudinaryUpload.uploadImage(file);
+                const secureUrl = await MediaUpload.uploadImage(file);
                 $row.find('.multi-mask-row-input').val(secureUrl).trigger('change');
                 Swal.fire({ icon: 'success', title: '¡Subido con éxito!', timer: 1000, showConfirmButton: false });
             } catch (err) {
-                Swal.fire('Error', 'No se pudo subir la imagen a Cloudinary.', 'error');
+                Swal.fire('Error', 'No se pudo subir la imagen.', 'error');
             }
         });
 

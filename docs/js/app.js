@@ -907,8 +907,8 @@ async function openCardModal($slot) {
     if (!imgSrc || imgSrc.includes('placeholder') || imgSrc.startsWith('data:image/gif')) return;
 
     // Optimize image for modal view
-    if (window.optimizeCloudinaryUrl) {
-        imgSrc = window.optimizeCloudinaryUrl(imgSrc, 700, 700);
+    if (window.optimizeMediaUrl) {
+        imgSrc = window.optimizeMediaUrl(imgSrc, 700, 700);
     }
 
     const id = $slot.data("id");
@@ -2430,7 +2430,7 @@ function setupDeckObserver() {
 function populateDeckSlide($slide, card) {
     if ($slide.hasClass('is-populated')) return;
 
-    const imgSrc = window.optimizeCloudinaryUrl ? window.optimizeCloudinaryUrl(card.image_url, 500, 500) : card.image_url;
+    const imgSrc = window.optimizeMediaUrl ? window.optimizeMediaUrl(card.image_url, 500, 500) : card.image_url;
     const isMissing = card.obtained === false || card.obtained === 'false';
 
     $slide.html(`
@@ -4242,7 +4242,7 @@ $(document).on('click', '.btn-toggle-deck-view', function() {
         const showFoil = card.show_foil_in_list || false;
         const holo = card.holo_effect || '';
         const mask = card.custom_mask_url || '';
-        const imgSrc = window.optimizeCloudinaryUrl ? window.optimizeCloudinaryUrl(card.image_url, 400, 400) : card.image_url;
+        const imgSrc = window.optimizeMediaUrl ? window.optimizeMediaUrl(card.image_url, 400, 400) : card.image_url;
 
         const $card = $(`
             <div class="grid-card-item card-slot"
@@ -4409,7 +4409,7 @@ function loadPublicAuctions() {
                         $('#auctions-container').attr('data-realtime', 'active');
                     }
                     if (status === 'CHANNEL_ERROR') {
-                        console.error("Error en el canal de Realtime. Verifica que Realtime esté habilitado en Supabase para las tablas subastas y subastas_pujas.");
+                        console.error("Error en el canal de Realtime. Verifica que Realtime esté habilitado para las tablas subastas y subastas_pujas.");
                     }
                 });
 

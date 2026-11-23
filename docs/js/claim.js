@@ -121,7 +121,7 @@ async function handleClaimUpload(fileList) {
         Swal.fire({ title: 'Subiendo...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         let entries = $('#preview-grid-claim').data('entries') || [];
         for (const file of fileList) {
-            const url = await CloudinaryUpload.uploadImage(file);
+            const url = await MediaUpload.uploadImage(file);
             entries.push({ url: url, price: '', description: '' });
         }
         renderClaimEntries(entries);

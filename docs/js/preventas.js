@@ -79,7 +79,7 @@ $(document).ready(async function() {
         e.stopPropagation();
         const files = e.originalEvent.dataTransfer.files;
         if (files.length > 0) {
-            handleCloudinaryUpload(files[0], '#preorder-image-url', '#drop-zone-preorder .file-name');
+            handleMediaUpload(files[0], '#preorder-image-url', '#drop-zone-preorder .file-name');
         }
     });
 
@@ -97,14 +97,14 @@ $(document).ready(async function() {
 
     $(document).on('change', '#input-preorder-file', function() {
         if (this.files.length > 0) {
-            handleCloudinaryUpload(this.files[0], '#preorder-image-url', '#drop-zone-preorder .file-name');
+            handleMediaUpload(this.files[0], '#preorder-image-url', '#drop-zone-preorder .file-name');
         }
     });
 
-    async function handleCloudinaryUpload(file, inputSelector, nameSelector) {
+    async function handleMediaUpload(file, inputSelector, nameSelector) {
         $(nameSelector).text("Subiendo...").css('color', '#aaa');
         try {
-            const url = await CloudinaryUpload.uploadImage(file);
+            const url = await MediaUpload.uploadImage(file);
             $(inputSelector).val(url);
             $(nameSelector).text("¡Imagen subida!").css('color', '#00ff88');
             Swal.fire({
@@ -217,7 +217,7 @@ async function toggleTableEditMode() {
         if (modifiedIds.length > 0) {
             Swal.fire({
                 title: 'Guardando cambios...',
-                text: 'Actualizando preventas en Supabase...',
+                text: 'Actualizando preventas...',
                 didOpen: () => Swal.showLoading()
             });
 
@@ -254,7 +254,7 @@ async function toggleTableEditMode() {
                 pendingTableChanges = {};
                 Swal.fire({
                     title: '¡Cambios Guardados!',
-                    text: 'Toda la tabla ha sido actualizada correctamente en Supabase.',
+                    text: 'Toda la tabla ha sido actualizada correctamente.',
                     icon: 'success',
                     timer: 1500,
                     showConfirmButton: false

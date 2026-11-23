@@ -1259,7 +1259,7 @@ async function initMichatbot(forceRefresh = false) {
     }
 
     // El localStorage del visitante puede tener una URL vieja (por ejemplo si
-    // el modelo se migró de Supabase a Cloudinary). Se revalida en segundo
+    // el modelo se migró a otro host). Se revalida en segundo
     // plano y, si cambió, se cambia el modelo en el visor ya montado: así deja
     // de pedirse el archivo a Supabase en las siguientes visitas.
     if (!window._michatbotSpiritRevalidated) {

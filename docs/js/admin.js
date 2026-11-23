@@ -1498,13 +1498,13 @@ $(document).ready(async function() {
         }
     });
 
-    // Cloudinary Drag & Drop for Slot
+    // Drag & Drop de imagen del slot
     $(document).on('drop', '#drop-zone-slot', async function(e) {
         e.preventDefault(); e.stopPropagation();
         $(this).removeClass('dragover');
         const files = e.originalEvent.dataTransfer.files;
         if (files.length > 0) {
-            handleCloudinaryUpload(files[0], '#slot-image-url', '#drop-zone-slot .file-name');
+            handleMediaUpload(files[0], '#slot-image-url', '#drop-zone-slot .file-name');
         }
     });
     $(document).on('dragover dragenter', '#drop-zone-slot', function(e) { e.preventDefault(); e.stopPropagation(); $(this).addClass('dragover'); });
@@ -1512,7 +1512,7 @@ $(document).ready(async function() {
 
     $(document).on('change', '#input-slot-file', function() {
         if (this.files.length > 0) {
-            handleCloudinaryUpload(this.files[0], '#slot-image-url', '#drop-zone-slot .file-name');
+            handleMediaUpload(this.files[0], '#slot-image-url', '#drop-zone-slot .file-name');
         }
     });
 
@@ -1522,13 +1522,13 @@ $(document).ready(async function() {
         $(this).removeClass('dragover');
         const files = e.originalEvent.dataTransfer.files;
         if (files.length > 0) {
-            handleCloudinaryUpload(files[0], '#input-album-cover', '#drop-zone-album-cover .file-name');
+            handleMediaUpload(files[0], '#input-album-cover', '#drop-zone-album-cover .file-name');
         }
     });
     $(document).on('dragover dragenter', '#drop-zone-album-cover', function(e) { e.preventDefault(); e.stopPropagation(); $(this).addClass('dragover'); });
     $(document).on('dragleave dragend drop', '#drop-zone-album-cover', function(e) { e.preventDefault(); e.stopPropagation(); $(this).removeClass('dragover'); });
     $(document).on('change', '#input-album-cover-file', function() {
-        if (this.files.length > 0) handleCloudinaryUpload(this.files[0], '#input-album-cover', '#drop-zone-album-cover .file-name');
+        if (this.files.length > 0) handleMediaUpload(this.files[0], '#input-album-cover', '#drop-zone-album-cover .file-name');
     });
 
     // Album Back
@@ -1537,13 +1537,13 @@ $(document).ready(async function() {
         $(this).removeClass('dragover');
         const files = e.originalEvent.dataTransfer.files;
         if (files.length > 0) {
-            handleCloudinaryUpload(files[0], '#input-album-back', '#drop-zone-album-back .file-name');
+            handleMediaUpload(files[0], '#input-album-back', '#drop-zone-album-back .file-name');
         }
     });
     $(document).on('dragover dragenter', '#drop-zone-album-back', function(e) { e.preventDefault(); e.stopPropagation(); $(this).addClass('dragover'); });
     $(document).on('dragleave dragend drop', '#drop-zone-album-back', function(e) { e.preventDefault(); e.stopPropagation(); $(this).removeClass('dragover'); });
     $(document).on('change', '#input-album-back-file', function() {
-        if (this.files.length > 0) handleCloudinaryUpload(this.files[0], '#input-album-back', '#drop-zone-album-back .file-name');
+        if (this.files.length > 0) handleMediaUpload(this.files[0], '#input-album-back', '#drop-zone-album-back .file-name');
     });
 
     // Album Extra Images Drag & Drop
@@ -1552,7 +1552,7 @@ $(document).ready(async function() {
         $fileName.text("Subiendo imágenes...").css('color', '#aaa');
         try {
             for (let i = 0; i < files.length; i++) {
-                const url = await CloudinaryUpload.uploadImage(files[i]);
+                const url = await MediaUpload.uploadImage(files[i]);
                 currentAlbumExtraImages.push(url);
             }
             $fileName.text("¡Cargadas!").css('color', '#00ff88');
@@ -1586,7 +1586,7 @@ $(document).ready(async function() {
         $fileName.text("Subiendo imágenes...").css('color', '#aaa');
         try {
             for (let i = 0; i < files.length; i++) {
-                const url = await CloudinaryUpload.uploadImage(files[i]);
+                const url = await MediaUpload.uploadImage(files[i]);
                 currentSlotExtraImages.push(url);
             }
             $fileName.text("¡Cargadas!").css('color', '#00ff88');
@@ -1635,13 +1635,13 @@ $(document).ready(async function() {
         $(this).removeClass('dragover');
         const files = e.originalEvent.dataTransfer.files;
         if (files.length > 0) {
-            handleCloudinaryUpload(files[0], '#input-spirit-poster-url', '#drop-zone-spirit-poster .file-name');
+            handleMediaUpload(files[0], '#input-spirit-poster-url', '#drop-zone-spirit-poster .file-name');
         }
     });
     $(document).on('dragover dragenter', '#drop-zone-spirit-poster', function(e) { e.preventDefault(); e.stopPropagation(); $(this).addClass('dragover'); });
     $(document).on('dragleave dragend drop', '#drop-zone-spirit-poster', function(e) { e.preventDefault(); e.stopPropagation(); $(this).removeClass('dragover'); });
     $(document).on('change', '#input-spirit-poster', function() {
-        if (this.files.length > 0) handleCloudinaryUpload(this.files[0], '#input-spirit-poster-url', '#drop-zone-spirit-poster .file-name');
+        if (this.files.length > 0) handleMediaUpload(this.files[0], '#input-spirit-poster-url', '#drop-zone-spirit-poster .file-name');
     });
 
     // Spirit Particle Asset Drop Zone
@@ -1650,13 +1650,13 @@ $(document).ready(async function() {
         $(this).removeClass('dragover');
         const files = e.originalEvent.dataTransfer.files;
         if (files.length > 0) {
-            handleCloudinaryUpload(files[0], '#input-spirit-particle-asset', '#drop-zone-spirit-particle .file-name');
+            handleMediaUpload(files[0], '#input-spirit-particle-asset', '#drop-zone-spirit-particle .file-name');
         }
     });
     $(document).on('dragover dragenter', '#drop-zone-spirit-particle', function(e) { e.preventDefault(); e.stopPropagation(); $(this).addClass('dragover'); });
     $(document).on('dragleave dragend drop', '#drop-zone-spirit-particle', function(e) { e.preventDefault(); e.stopPropagation(); $(this).removeClass('dragover'); });
     $(document).on('change', '#input-spirit-particle-file', function() {
-        if (this.files.length > 0) handleCloudinaryUpload(this.files[0], '#input-spirit-particle-asset', '#drop-zone-spirit-particle .file-name');
+        if (this.files.length > 0) handleMediaUpload(this.files[0], '#input-spirit-particle-asset', '#drop-zone-spirit-particle .file-name');
     });
 
     // Spirit Poster Search Logic
@@ -1688,13 +1688,13 @@ $(document).ready(async function() {
         $(this).removeClass('dragover');
         const files = e.originalEvent.dataTransfer.files;
         if (files.length > 0) {
-            handleCloudinaryUpload(files[0], '#bdd-image-url', '#drop-zone-bdd .file-name');
+            handleMediaUpload(files[0], '#bdd-image-url', '#drop-zone-bdd .file-name');
         }
     });
     $(document).on('dragover dragenter', '#drop-zone-bdd', function(e) { e.preventDefault(); e.stopPropagation(); $(this).addClass('dragover'); });
     $(document).on('dragleave dragend drop', '#drop-zone-bdd', function(e) { e.preventDefault(); e.stopPropagation(); $(this).removeClass('dragover'); });
     $(document).on('change', '#input-bdd-file', function() {
-        if (this.files.length > 0) handleCloudinaryUpload(this.files[0], '#bdd-image-url', '#drop-zone-bdd .file-name');
+        if (this.files.length > 0) handleMediaUpload(this.files[0], '#bdd-image-url', '#drop-zone-bdd .file-name');
     });
 
     $(document).on('change', '#bdd-type', function() {
@@ -1826,7 +1826,7 @@ $(document).ready(async function() {
                 return;
             }
 
-            const url = await CloudinaryUpload.uploadImage(file);
+            const url = await MediaUpload.uploadImage(file);
             const newCard = {
                 localId: 'new_' + Date.now(),
                 deck_id: currentDeckId,
@@ -1846,10 +1846,10 @@ $(document).ready(async function() {
         }
     }
 
-    window.handleCloudinaryUpload = async function(file, inputSelector, nameSelector) {
+    window.handleMediaUpload = async function(file, inputSelector, nameSelector) {
         $(nameSelector).text("Subiendo...").css('color', '#aaa');
         try {
-            const url = await CloudinaryUpload.uploadImage(file);
+            const url = await MediaUpload.uploadImage(file);
             $(inputSelector).val(url);
             $(nameSelector).text("¡Imagen subida!").css('color', '#00ff88');
             Swal.fire({
@@ -1885,7 +1885,7 @@ $(document).ready(async function() {
         $('#input-spirit-scale').val(1.8);
         $('#input-spirit-poster-url').val('');
         $('#input-spirit-particle-asset').val(''); // Clear hidden input
-        $('#input-spirit-storage').val('supabase');
+        $('#input-spirit-storage').val('primary');
         $('#drop-zone-spirit-poster .file-name').text('');
         $('#drop-zone-spirit-particle .file-name').text('');
         $('#spirit-poster-search-input').val('');
@@ -1932,21 +1932,20 @@ $(document).ready(async function() {
         try {
             let gltfUrl = null;
             let textureUrl = null;
-            let cloudinaryError = null;
-            const storage = $('#input-spirit-storage').val() || 'supabase';
+            let alternateError = null;
+            const storage = $('#input-spirit-storage').val() || 'primary';
 
             if (gltfFile) {
-                // Cloudinary saca los modelos del Storage de Supabase (cuyo plan
-                // de 5 GB de egress se agotaba con los .bin de hasta 12 MB).
-                if (storage === 'cloudinary' && window.CloudinaryUpload?.uploadModelFiles) {
+                // El servidor alterno evita el egress del principal.
+                if (storage === 'alternate' && window.MediaUpload?.uploadModelFiles) {
                     try {
-                        const result = await window.CloudinaryUpload.uploadModelFiles([gltfFile, ...extraFiles]);
+                        const result = await window.MediaUpload.uploadModelFiles([gltfFile, ...extraFiles]);
                         gltfUrl = result.url;
                         const texture = result.files.find(f => /\.(png|jpe?g|webp)$/i.test(f.name));
                         if (texture) textureUrl = texture.url;
                     } catch (err) {
-                        cloudinaryError = err;
-                        console.warn('Cloudinary no pudo subir el modelo, se usa Supabase:', err);
+                        alternateError = err;
+                        console.warn('El servidor alterno no pudo subir el modelo, se usa el principal:', err);
                     }
                 }
 
@@ -2016,8 +2015,8 @@ $(document).ready(async function() {
             Swal.fire({
                 icon: 'success',
                 title: editId ? 'Compañero actualizado correctamente' : 'Compañero subido correctamente',
-                html: cloudinaryError
-                    ? `Se guardó en Supabase porque Cloudinary no lo aceptó:<br><small>${escapeHtml(cloudinaryError.message || String(cloudinaryError))}</small>`
+                html: alternateError
+                    ? `Se guardó en el servidor principal porque el alterno no lo aceptó:<br><small>${escapeHtml(alternateError.message || String(alternateError))}</small>`
                     : undefined
             });
             $('#spirit-upload-modal').removeClass('active');
@@ -2234,7 +2233,7 @@ function editSpirit(spirit) {
     $('#input-spirit-scale').val(spirit.scale || 1.8);
     $('#input-spirit-public').prop('checked', spirit.is_public !== false);
     $('#input-spirit-poster-url').val(spirit.poster_url || '');
-    $('#input-spirit-storage').val(/cloudinary\.com/.test(spirit.gltf_url || '') ? 'cloudinary' : 'supabase');
+    $('#input-spirit-storage').val(/cloudinary\.com/.test(spirit.gltf_url || '') ? 'alternate' : 'primary');
 
     // UI Status
     $('#drop-zone-spirit-poster .file-name').text(spirit.poster_url ? '¡Cargado!' : '').css('color', '#00ff88');
@@ -2542,7 +2541,7 @@ async function loadDecks() {
         .order('id', { ascending: true });
 
     if (error) {
-        console.warn("Supabase error loading decks, trying to continue...", error);
+        console.warn("Error loading decks, trying to continue...", error);
         if (!decks) {
             $('#deck-list').html('<div class="error">Error al cargar decks. Revisa tu conexión.</div>');
             return;
@@ -3397,7 +3396,7 @@ async function loadDeckCards(deckId, fetchCards = true) {
             .order(deckSortOrder, { ascending: true });
 
         if (error) {
-            console.warn("Supabase error loading deck cards, trying to continue...", error);
+            console.warn("Error loading deck cards, trying to continue...", error);
             if (!cards) {
                 $('#deck-card-list').html('<div class="error">Error al cargar cartas. Revisa tu conexión.</div>');
                 return;
@@ -4201,11 +4200,9 @@ async function loadSpirits() {
         // Se muestra el póster (imagen ya cacheada) en vez de montar un
         // model-viewer por asistente: cada .bin pesa ~2.7 MB y la rejilla
         // descargaba decenas de modelos por visita (egress de Storage).
-        const modelHost = /cloudinary\.com/.test(spirit.gltf_url || '') ? 'Cloudinary' : 'Supabase';
         const modelViewerHTML = `
             <div class="spirit-card-media" style="position: relative; width: 100%; height: 250px; border-radius: 15px; overflow: hidden; margin-bottom: 15px; background: radial-gradient(circle, #1a1a1a 0%, #000 100%);">
                 <img class="spirit-poster" src="${spirit.poster_url || spirit.texture_url || ''}" alt="${spirit.name}" loading="lazy" style="width: 100%; height: 100%; object-fit: cover; display: block;">
-                <span title="Servidor del modelo 3D" style="position: absolute; left: 8px; top: 8px; padding: 3px 8px; border-radius: 999px; background: rgba(0,0,0,0.65); color: #fff; font-size: 10px; letter-spacing: .4px;">${modelHost}</span>
                 <button type="button" class="btn-preview-spirit-3d" title="Ver en 3D" style="position: absolute; right: 8px; bottom: 8px; width: 34px; height: 34px; border-radius: 50%; border: none; background: rgba(0,0,0,0.65); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                     <i class="fas fa-cube"></i>
                 </button>

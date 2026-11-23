@@ -99,7 +99,7 @@ async function handleFilesUpload(files) {
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
             if (!file.type.startsWith('image/')) continue;
-            const uploadedUrl = await CloudinaryUpload.uploadImage(file);
+            const uploadedUrl = await MediaUpload.uploadImage(file);
             if (uploadedUrl) {
                 currentSlotExtraImages.push(uploadedUrl);
             }

@@ -113,7 +113,7 @@ async function handleSingleUpload(fileList) {
         let currentUrls = $('#preview-grid-auction').data('urls') || [];
         const newUrls = [];
         for (const file of fileList) {
-            const url = await CloudinaryUpload.uploadImage(file);
+            const url = await MediaUpload.uploadImage(file);
             newUrls.push(url);
         }
         const totalUrls = [...currentUrls, ...newUrls];

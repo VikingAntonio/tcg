@@ -1,4 +1,4 @@
-const STATIC_CACHE = 'viking-static-v258';
+const STATIC_CACHE = 'viking-static-v259';
 const IMAGE_CACHE = 'viking-images-v1';
 const DATA_CACHE = 'viking-data-v1';
 
@@ -71,7 +71,7 @@ const URLS_TO_CACHE = [
   './js/preventas.js',
   './js/subastas_v2.js',
   './js/viking-data.js',
-  './js/cloudinary-upload.js',
+  './js/media-upload.js',
   './js/loading3d.js',
   './js/landing2.js',
   './js/adminClaim.js',
