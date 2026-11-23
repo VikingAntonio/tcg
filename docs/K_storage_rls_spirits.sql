@@ -12,10 +12,9 @@
 --      `accessories`, y las políticas de escritura totalmente abiertas a
 --      anon/public (esas son las que permitían escribir sin sesión).
 --   3. Recrea lo necesario:
---        - `spirits/models/...`          → escribir solo admin
+--        - `spirits/…`                   → escribir solo admin (todo el bucket)
 --        - `spirits/build_models/<uid>/…` → cada usuario su propia carpeta
---        - `accessories/...`             → escribir solo admin (packages.html)
---        - lectura/listado de `spirits`  → solo admin (botón Reparar caché)
+--        - `accessories/…`               → escribir solo admin (packages.html)
 --
 -- Lo que NO cambia:
 --   - Los objetos públicos se siguen leyendo por /storage/v1/object/public/…
@@ -85,20 +84,15 @@ begin
     end loop;
 end $$;
 
--- 3) Modelos 3D: escribir solo admin
+-- 3) Modelos 3D: el admin escribe en todo el bucket `spirits`
+--    (models/, accessories_3d/, accessories_models/, logos/…). Los objetos
+--    públicos se siguen leyendo por /object/public/ sin RLS.
 drop policy if exists spirits_admin_models on storage.objects;
-create policy spirits_admin_models on storage.objects
+drop policy if exists spirits_admin_all on storage.objects;
+create policy spirits_admin_all on storage.objects
     for all to authenticated
-    using (
-        bucket_id = 'spirits'
-        and split_part(name, '/', 1) = 'models'
-        and public.is_admin()
-    )
-    with check (
-        bucket_id = 'spirits'
-        and split_part(name, '/', 1) = 'models'
-        and public.is_admin()
-    );
+    using (bucket_id = 'spirits' and public.is_admin())
+    with check (bucket_id = 'spirits' and public.is_admin());
 
 -- 4) Constructor 3D: cada usuario solo su carpeta build_models/<uid>/
 drop policy if exists spirits_build_own on storage.objects;
@@ -115,13 +109,7 @@ create policy spirits_build_own on storage.objects
         and split_part(name, '/', 2) = auth.uid()::text
     );
 
--- 5) Lectura/listado de spirits para el admin (botón "Reparar caché de modelos")
-drop policy if exists spirits_admin_read on storage.objects;
-create policy spirits_admin_read on storage.objects
-    for select to authenticated
-    using (bucket_id = 'spirits' and public.is_admin());
-
--- 6) Accesorios (packages.html, solo admin)
+-- 5) Accesorios (packages.html, solo admin)
 drop policy if exists accessories_admin on storage.objects;
 create policy accessories_admin on storage.objects
     for all to authenticated

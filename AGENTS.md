@@ -309,7 +309,8 @@ Los `.bin` de los asistentes no estaban "sin comprimir": ya venían con `KHR_dra
 
 
 ## Storage — subir a Supabase o a Cloudinary (repartir la carga)
-- El modal de asistente tiene `#input-spirit-storage` con **Supabase (por defecto)** y **Cloudinary (opcional)**. Es por modelo, así que se puede repartir la carga entre los dos hosts.
+- El modal de asistente tiene `#input-spirit-storage` con **Supabase (por defecto)** y **Cloudinary (opcional)**. Es por modelo, así que se puede repartir la carga entre los dos hosts. Lo que se sube a Cloudinary **no pasa por el CDN de Supabase** (no gasta su Cached Egress).
+- No hay botones de "reparar caché" ni de "copiar a Cloudinary": el usuario los pidió quitar. La cabecera ya quedó reparada en producción y los modelos nuevos se suben con la cabecera correcta desde el propio modal.
 - La tarjeta de cada asistente en Admin → Mis Asistentes muestra un badge con el host (`Supabase` / `Cloudinary`) leyendo `gltf_url`, para ver el reparto de un vistazo.
 - Cloudinary: `.gltf` + `.bin` + texturas en una carpeta única, `.bin` → `.glbin` con reescritura de `buffers[].uri`, límite 10 MiB/archivo.
 
@@ -318,6 +319,6 @@ Los `.bin` de los asistentes no estaban "sin comprimir": ya venían con `KHR_dra
 - La clave anónima podía subir/sobreescribir/borrar en `spirits` sin sesión (probado con `POST`/`DELETE` desde fuera del navegador). `docs/K_storage_rls_spirits.sql` lo cierra:
   - helper `public.is_admin()` (`security definer`, `usuarios.role='admin'`);
   - borra las políticas de `storage.objects` que mencionan `spirits`/`accessories` y las de escritura totalmente abiertas a `anon`/`public`;
-  - recrea: `spirits/models/*` solo admin, `spirits/build_models/<uid>/*` solo su dueño, `accessories/*` solo admin, `select` de `spirits` para el admin (botón Reparar caché).
+  - recrea: `spirits/*` solo admin (todo el bucket, incluye `models/`, `accessories_3d/`, `accessories_models/`, `logos/`), `spirits/build_models/<uid>/*` solo su dueño, `accessories/*` solo admin.
 - La lectura pública (`/storage/v1/object/public/...`) no usa RLS, así que la web sigue igual.
 - Los `PATCH` a la tabla `spirits` con la clave anónima ya estaban bloqueados; el panel los hace con el JWT del admin.
