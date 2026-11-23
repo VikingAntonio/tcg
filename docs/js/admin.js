@@ -1777,7 +1777,7 @@ $(document).ready(async function() {
         bddQueue.forEach((item, index) => {
             const $el = $(`
                 <div class="fast-result-item" style="position: relative; width: 80px; height: 110px;" title="${item.name}">
-                    <img src="${item.image_url}" alt="${item.name}" style="width: 100%; height: 80px; object-fit: cover; border-radius: 4px;">
+                    <img src="${optImg(item.image_url, 200)}" alt="${item.name}" style="width: 100%; height: 80px; object-fit: cover; border-radius: 4px;">
                     <span style="font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; color: #fff;">${item.name}</span>
                     <div class="btn-delete-card-top" style="top: -5px; right: -5px; width: 20px; height: 20px; font-size: 10px; line-height: 20px;" data-index="${index}">
                         <i class="fas fa-times"></i>
@@ -3431,7 +3431,7 @@ function renderDeckCardsLocal(scrollPos = null) {
                     </label>
                 </div>
                 <div class="btn-delete-card-top btn-delete-deck-card"><i class="fas fa-times"></i></div>
-                <img src="${card.image_url}" style="width:100%; height:150px; object-fit:contain;">
+                <img src="${optImg(card.image_url, 400)}" style="width:100%; height:150px; object-fit:contain;">
                 <div style="font-size: 12px; margin-top: 5px; color: #aaa; text-align: center;">${card.name || 'Sin nombre'}</div>
                 ${!isObtained ? '<div class="label-buscando" style="position:absolute; bottom:5px; left:5px; background:rgba(255,68,68,0.9); color:white; font-size:9px; padding:2px 5px; border-radius:4px; font-weight:bold;">BUSCANDO</div>' : ''}
             </div>
@@ -4008,7 +4008,7 @@ function renderAlbumPagesLocal(pages, scrollPos) {
             const $slot = $(`<div class="card-slot" data-index="${i}"></div>`);
             if (slotData && slotData.image_url) {
                 const isObtained = slotData.obtained !== false;
-                $slot.append(`<img src="${slotData.image_url}" class="tcg-card">`);
+                $slot.append(`<img src="${optImg(slotData.image_url, 400)}" class="tcg-card">`);
 
                 if (!isObtained) {
                     $slot.append('<div class="label-buscando" style="position:absolute; bottom:5px; left:5px; background:rgba(255,68,68,0.9); color:white; font-size:9px; padding:2px 5px; border-radius:4px; font-weight:bold;">BUSCANDO</div>');
@@ -4280,7 +4280,7 @@ async function loadSpirits() {
                 title: `Desbloquear ${spirit.name}`,
                 html: `
                     <div style="text-align: center; margin: 12px 0;">
-                        <img src="${spirit.poster_url || 'https://vikingtcg.xyz/favi.png'}" style="max-height: 120px; border-radius: 12px; margin-bottom: 12px; object-fit: contain;">
+                        <img src="${optImg(spirit.poster_url || 'https://vikingtcg.xyz/favi.png', 400)}" style="max-height: 120px; border-radius: 12px; margin-bottom: 12px; object-fit: contain;">
                         <div style="font-size: 1.5rem; font-weight: 900; color: #c084fc;">$${rawEffective} MXN</div>
                     </div>
                 `,
@@ -4794,7 +4794,7 @@ async function loadWonAuctionsList() {
                 <div class="won-items-table" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px;">
                     ${group.items.map(item => `
                         <div style="display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.02); padding: 10px 15px; border-radius: 12px;">
-                            <img src="${item.image_url}" style="width: 40px; height: 40px; object-fit: contain; border-radius: 6px; background: #000;">
+                            <img src="${optImg(item.image_url, 200)}" style="width: 40px; height: 40px; object-fit: contain; border-radius: 6px; background: #000;">
                             <div style="flex: 1;">
                                 <div style="font-weight: 600;">${item.nombre}</div>
                                 ${item.delivery_place ? `<div style="font-size: 0.7rem; color: #aaa;"><i class="fas fa-map-marker-alt"></i> ${item.delivery_place}</div>` : ''}
@@ -5177,9 +5177,9 @@ async function openOrganizeModal(type) {
         let previewHtml = '';
 
         if (type === 'albums' && item.cover_image_url) {
-            previewHtml = `<img src="${item.cover_image_url}">`;
+            previewHtml = `<img src="${optImg(item.cover_image_url, 400)}">`;
         } else if (type === 'cards' && item.image_url) {
-            previewHtml = `<img src="${item.image_url}">`;
+            previewHtml = `<img src="${optImg(item.image_url, 400)}">`;
         } else {
             previewHtml = `<div class="organize-item-icon"><i class="fas ${type === 'decks' ? 'fa-layer-group' : 'fa-book'} fa-2x"></i></div>`;
         }
@@ -5565,7 +5565,7 @@ function renderNexusDeck() {
                             </label>
                         </div>
                         <div class="nexus-card-remove"><i class="fas fa-times"></i></div>
-                        <img src="${card.image_url}" loading="lazy">
+                        <img src="${optImg(card.image_url, 400)}" loading="lazy">
                         ${card.quantity > 1 ? `<div class="nexus-card-qty">x${card.quantity}</div>` : ''}
                         ${!isObtained ? '<div class="label-buscando" style="position:absolute; bottom:2px; left:2px; background:rgba(255,68,68,0.9); color:white; font-size:8px; padding:1px 3px; border-radius:3px; font-weight:bold; pointer-events:none; z-index:5;">FALTANTE</div>' : ''}
                     </div>

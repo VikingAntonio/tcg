@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="https://vikingtcg.xyz/favi.png">
+    <link rel="manifest" href="manifest.json">
+    <title>Mis compras - Vikingdev TCG</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/mis-compras.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/supabase-config.js"></script>
+</head>
+<body class="public-body">
+    <div class="top-left-panel">
+        <div class="pill-panel">
+            <div class="pill-group" id="header-theme-group">
+                <button class="pill-icon theme-btn-small" data-theme="theme-light" title="Modo Claro">
+                    <i class="fas fa-sun"></i>
+                </button>
+                <button class="pill-icon theme-btn-small" data-theme="theme-purple" title="Modo Morado">
+                    <i class="fas fa-tint"></i>
+                </button>
+                <button class="pill-icon theme-btn-small" data-theme="theme-dark" title="Modo Oscuro">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+
+            <a href="carrito.html" id="cart-btn" class="pill-icon" title="Ver Carrito">
+                <i class="fas fa-shopping-cart"></i>
+                <span id="cart-count">0</span>
+            </a>
+
+            <div class="user-menu-container">
+                <button class="pill-icon" id="avatar-btn" title="Usuario">
+                    <i class="fas fa-user"></i>
+                </button>
+                <div class="user-dropdown-menu" id="user-dropdown">
+                    <div class="user-dropdown-info">
+                        <img id="dropdown-user-logo" src="" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; display: none;">
+                        <div class="user-dropdown-name" id="dropdown-user-name">Usuario</div>
+                        <div class="user-dropdown-role" id="dropdown-user-role" style="display: none;">Usuario</div>
+                    </div>
+                    <a href="admin.html" class="menu-item"><i class="fas fa-home"></i> Mi Panel</a>
+                    <a href="perfil.html" class="menu-item"><i class="fas fa-user-edit"></i> Mi Perfil</a>
+                    <a href="mis-compras.html" class="menu-item"><i class="fas fa-receipt"></i> Mis compras</a>
+                    <a href="play.html" class="menu-item"><i class="fas fa-gamepad"></i> Play!</a>
+                    <a href="#" class="menu-item logout" id="btn-logout"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mc-container">
+        <div class="mc-header">
+            <a href="perfil.html" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Volver</a>
+            <h1>Mis compras</h1>
+        </div>
+
+        <div class="mc-tabs">
+            <button type="button" class="mc-tab active" data-tab="orders">
+                Pedidos <span class="mc-count" id="mc-orders-count">0</span>
+            </button>
+            <button type="button" class="mc-tab" data-tab="digital">
+                Compras y regalos <span class="mc-count" id="mc-digital-count">0</span>
+            </button>
+        </div>
+
+        <div id="mc-loading" class="mc-state"><i class="fas fa-spinner fa-spin"></i> Cargando tus compras…</div>
+        <div id="mc-guest" class="mc-state" style="display: none;">
+            <i class="fas fa-user-lock"></i>
+            <p>Inicia sesión para ver tus compras.</p>
+            <a href="index.html" class="btn">Ir a iniciar sesión</a>
+        </div>
+
+        <div id="mc-orders" class="mc-panel active"></div>
+        <div id="mc-digital" class="mc-panel"></div>
+
+        <p class="mc-footnote">
+            <i class="fas fa-shield-halved"></i>
+            Estos registros son tuyos y no dependen del catálogo: aunque el vendedor borre un producto, tu compra sigue aquí.
+        </p>
+    </div>
+
+    <div class="bottom-nav">
+        <div class="nav-item" id="btn-nav-home" title="Ir al Home">
+            <i class="fas fa-home"></i>
+        </div>
+        <div class="nav-item" id="btn-nav-return" title="Volver">
+            <i class="fas fa-chevron-left"></i>
+        </div>
+    </div>
+
+    <script src="js/cart.js"></script>
+    <script src="js/mis-compras.js"></script>
+    <script>
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", () => {
+                navigator.serviceWorker.register("./sw.js")
+                    .then(reg => console.log("Service Worker registrado", reg))
+                    .catch(err => console.warn("Error al registrar Service Worker", err));
+            });
+        }
+    </script>
+</body>
+</html>

@@ -127,7 +127,7 @@ $(document).ready(function() {
             const $item = $(`
                 <div class="expansion-card-item">
                     <input type="checkbox" class="expansion-card-checkbox" data-index="${index}" checked>
-                    <img src="${card.image_url}" alt="${card.name}" onerror="this.src='https://via.placeholder.com/150x210?text=Sin+Imagen'">
+                    <img src="${optImg(card.image_url, 400)}" alt="${card.name}" onerror="this.src='https://via.placeholder.com/150x210?text=Sin+Imagen'">
                     <div class="expansion-card-info" title="${card.name}">${card.name}</div>
                 </div>
             `);

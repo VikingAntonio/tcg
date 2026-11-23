@@ -82,7 +82,10 @@ async function resolveCartItem(supabase: any, raw: any, fallbackSellerId: string
     const price = Number(data.current_price) || 0;
     if (price <= 0) return { error: `La carta "${data.card_name || raw?.name || id}" no tiene precio de venta configurado.` };
     const stock = parseInt(data.quantity);
-    if (Number.isFinite(stock) && stock > 0 && qty > stock) {
+    if (Number.isFinite(stock) && stock <= 0) {
+      return { error: `"${data.card_name || raw?.name || id}" está agotado.` };
+    }
+    if (Number.isFinite(stock) && qty > stock) {
       return { error: `Solo quedan ${stock} unidad(es) de "${data.card_name || raw?.name || id}".` };
     }
     return {
@@ -129,9 +132,11 @@ async function resolveCartItem(supabase: any, raw: any, fallbackSellerId: string
   }
 
   // Carta / accesorio de la base general
+  // `select("*")` a propósito: `quantity` puede no existir todavía en el
+  // proyecto (migración O) y una lista de columnas rompería el SELECT entero.
   const { data: card } = await supabase
     .from("viking_data")
-    .select("id, name, image_url, price, quantity, user_id")
+    .select("*")
     .eq("id", id)
     .maybeSingle();
 
@@ -139,7 +144,10 @@ async function resolveCartItem(supabase: any, raw: any, fallbackSellerId: string
     const price = Number(String(card.price ?? "").replace(/[^0-9.]/g, "")) || 0;
     if (price <= 0) return { error: `"${card.name || id}" no tiene precio configurado.` };
     const stock = parseInt(card.quantity);
-    if (Number.isFinite(stock) && stock > 0 && qty > stock) {
+    if (Number.isFinite(stock) && stock <= 0) {
+      return { error: `"${card.name || id}" está agotado.` };
+    }
+    if (Number.isFinite(stock) && qty > stock) {
       return { error: `Solo quedan ${stock} unidad(es) de "${card.name || id}".` };
     }
     return {

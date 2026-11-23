@@ -327,7 +327,7 @@ function renderAdminPreorderTable(preorders) {
         const $tr = $(`
             <tr class="sheet-tr" data-id="${preorder.id}">
                 <td class="sheet-td" style="text-align: center;">
-                    <img src="${preorder.image_url || 'https://via.placeholder.com/100?text=Sin+Imagen'}" class="sheet-img-thumb" alt="${preorder.name}">
+                    <img src="${optImg(preorder.image_url || 'https://via.placeholder.com/100?text=Sin+Imagen', 400)}" class="sheet-img-thumb" alt="${preorder.name}">
                 </td>
                 <td class="sheet-td">
                     <input type="text" class="sheet-input sheet-input-name" value="${preorder.name || ''}" style="width: 100%; min-width: 180px; pointer-events: ${pointerEvents};" ${disabledAttr}>

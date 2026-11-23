@@ -124,6 +124,61 @@ async function fetchSnapshot(supabase: any, type: string, id: string): Promise<R
 }
 
 /**
+ * Descuenta existencias de lo vendido (sellados, cartas sueltas e inversiones).
+ * Es best-effort: un fallo se registra y se sigue con el resto, porque la venta
+ * ya quedó asentada y no debe revertirse por el stock.
+ */
+async function decrementStockForItems(supabase: any, items: any[]): Promise<void> {
+  for (const it of items) {
+    if (!it?.id || !it?.source) continue;
+    const qty = Math.max(1, Number(it.quantity || 1));
+    try {
+      if (it.source === "sealed") {
+        const { data: prod } = await supabase
+          .from("sealed_products")
+          .select("stock, quantity, status")
+          .eq("id", it.id)
+          .maybeSingle();
+        if (!prod) continue;
+        const current = prod.stock !== undefined && prod.stock !== null
+          ? parseInt(prod.stock)
+          : parseInt(prod.quantity);
+        const next = Math.max(0, (Number.isFinite(current) ? current : 1) - qty);
+        await supabase
+          .from("sealed_products")
+          .update({ stock: next, quantity: next, status: next === 0 ? "Agotado" : (prod.status || "Disponible") })
+          .eq("id", it.id);
+      } else if (it.source === "card") {
+        const { data: card } = await supabase
+          .from("viking_data")
+          .select("quantity")
+          .eq("id", it.id)
+          .maybeSingle();
+        if (!card) continue;
+        const current = parseInt(card.quantity);
+        const next = Math.max(0, (Number.isFinite(current) ? current : 1) - qty);
+        await supabase.from("viking_data").update({ quantity: next }).eq("id", it.id);
+      } else if (it.source === "investment") {
+        const { data: inv } = await supabase
+          .from("investment_cards")
+          .select("quantity")
+          .eq("id", it.id)
+          .maybeSingle();
+        if (!inv) continue;
+        const current = parseInt(inv.quantity);
+        const next = Math.max(0, (Number.isFinite(current) ? current : 1) - qty);
+        const patch: Record<string, unknown> = { quantity: next };
+        // is_sold es contabilidad del dueño: solo se marca agotada públicamente
+        if (next === 0) patch.is_available = false;
+        await supabase.from("investment_cards").update(patch).eq("id", it.id);
+      }
+    } catch (e: any) {
+      console.error(`stock decrement failed (${it.source}/${it.id}):`, e?.message || e);
+    }
+  }
+}
+
+/**
  * Aplica un checkout pagado. Es idempotente: puede ejecutarse desde el webhook
  * y desde `verify-checkout-session` sin duplicar compras.
  */
@@ -269,26 +324,8 @@ async function applyPaidCheckoutSession(supabase: any, session: any): Promise<{ 
         }]);
       }
 
-      // Descontar stock de productos sellados
-      for (const it of items) {
-        if (it.source !== "sealed" || !it.id) continue;
-        const qty = Number(it.quantity || 1);
-        const { data: prod } = await supabase
-          .from("sealed_products")
-          .select("stock, quantity, status")
-          .eq("id", it.id)
-          .maybeSingle();
-        if (prod) {
-          const currentStock = prod.stock !== undefined && prod.stock !== null
-            ? parseInt(prod.stock)
-            : (parseInt(prod.quantity) || 1);
-          const newStock = Math.max(0, currentStock - qty);
-          await supabase
-            .from("sealed_products")
-            .update({ stock: newStock, quantity: newStock, status: newStock === 0 ? "Agotado" : (prod.status || "Disponible") })
-            .eq("id", it.id);
-        }
-      }
+      // Descontar stock (sellados, cartas sueltas e inversiones)
+      await decrementStockForItems(supabase, items);
     } catch (e) {
       // Dejar el pedido reintentable si algo falló a mitad de camino
       await supabase.from("checkout_orders").update({ status: "pending" }).eq("id", orderId);
