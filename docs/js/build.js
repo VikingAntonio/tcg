@@ -295,18 +295,18 @@ async function saveAsset() {
 
     try {
         let gltfUrl = null, posterUrl = null;
-        if (droppedPoster) posterUrl = await CloudinaryUpload.uploadImage(droppedPoster);
+        if (droppedPoster) posterUrl = await MediaUpload.uploadImage(droppedPoster);
 
         if (droppedGltf) {
-            // Cloudinary primero: los modelos 3D no deben consumir el egress de
-            // Supabase (plan de 5 GB). Si falla, se sube a Supabase como antes.
+            // Servidor alterno primero: los modelos 3D no deben consumir el egress del
+            // principal. Si falla, se sube al principal como antes.
             try {
-                if (window.CloudinaryUpload && typeof window.CloudinaryUpload.uploadModelFiles === 'function') {
-                    const result = await window.CloudinaryUpload.uploadModelFiles([droppedGltf, ...droppedExtras]);
+                if (window.MediaUpload && typeof window.MediaUpload.uploadModelFiles === 'function') {
+                    const result = await window.MediaUpload.uploadModelFiles([droppedGltf, ...droppedExtras]);
                     gltfUrl = result.url;
                 }
             } catch (e) {
-                console.warn('Cloudinary no pudo subir el modelo, se usa Supabase:', e);
+                console.warn('El servidor alterno no pudo subir el modelo, se usa el principal:', e);
             }
 
             if (!gltfUrl) {

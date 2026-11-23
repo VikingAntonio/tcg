@@ -616,12 +616,12 @@ async function deleteWishlistItem(id, maskUrl = '') {
     });
 
     if (result.isConfirmed) {
-        // Deletion of custom masks from Cloudinary
+        // Borrado de máscaras personalizadas del CDN
         if (maskUrl) {
             const maskUrls = maskUrl.split(';');
             for (const url of maskUrls) {
                 if (url && url.includes('cloudinary.com')) {
-                    CloudinaryUpload.deleteImage(url);
+                    MediaUpload.deleteImage(url);
                 }
             }
         }
