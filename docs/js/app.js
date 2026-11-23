@@ -694,7 +694,17 @@ $(document).ready(async function() {
         e.preventDefault();
         if (window.currentCardData) {
             const qtyToBuy = parseInt($('#card-purchase-quantity').val()) || 1;
-            const maxAvail = parseInt(window.currentCardData.quantity) || 1;
+            const rawStock = window.currentCardData.quantity;
+            const hasStock = rawStock !== undefined && rawStock !== null && String(rawStock).trim() !== '';
+            const maxAvail = hasStock ? parseInt(rawStock) : 1;
+            if (Number.isFinite(maxAvail) && maxAvail <= 0) {
+                Swal.fire({
+                    title: 'Agotado',
+                    text: `${window.currentCardData.name || 'Esta carta'} ya no tiene existencias.`,
+                    icon: 'info'
+                });
+                return;
+            }
             const itemToAdd = {
                 ...window.currentCardData,
                 cart_quantity: Math.min(maxAvail, Math.max(1, qtyToBuy)),
@@ -1962,7 +1972,7 @@ function openPublicPreorderModal(preorder) {
                             </div>
                         ` : ''}
                         ${isOutOfStock ? '<div class="sealed-soldout-overlay">AGOTADO</div>' : ''}
-                        <img src="${preorder.image_url || 'https://via.placeholder.com/300x200?text=Preventa'}" style="max-width: 100%; max-height: 280px; object-fit: contain; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.15)); transition: transform 0.3s;" alt="${preorder.name}">
+                        <img src="${optImg(preorder.image_url || 'https://via.placeholder.com/300x200?text=Preventa', 400)}" style="max-width: 100%; max-height: 280px; object-fit: contain; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.15)); transition: transform 0.3s;" alt="${preorder.name}">
                     </div>
 
                     <!-- RIGHT COLUMN: PRODUCT DETAILS & BUY BOX -->
@@ -2142,7 +2152,7 @@ function loadPublicPreorders() {
                                 </div>
                             ` : ''}
                             ${isOutOfStock ? '<div class="sealed-soldout-overlay">AGOTADO</div>' : ''}
-                            <img src="${preorder.image_url || 'https://via.placeholder.com/300x200?text=Preventa'}" alt="${preorder.name}" class="amazon-product-img">
+                            <img src="${optImg(preorder.image_url || 'https://via.placeholder.com/300x200?text=Preventa', 400)}" alt="${preorder.name}" class="amazon-product-img">
                         </div>
 
                         <!-- TITLE -->
@@ -3068,7 +3078,7 @@ function renderBinder(binder) {
 
                 if (slotData.image_url) {
                     const cardAlt = slotData.name || 'Carta';
-                    $slot.append(`<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="${slotData.image_url}" class="tcg-card" alt="${cardAlt}" decoding="async">`);
+                    $slot.append(`<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="${optImg(slotData.image_url, 400)}" class="tcg-card" alt="${cardAlt}" decoding="async">`);
 
                     if (slotData.price) {
                         $slot.append(`<div style="position: absolute; top: 3px; right: 3px; background: rgba(0, 255, 136, 0.9); color: #000; font-weight: 900; font-size: 10px; padding: 2px 5px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.5); z-index: 5;">$${slotData.price}</div>`);
@@ -3292,7 +3302,7 @@ function renderAlbum(album) {
                 });
                 if (slotData.image_url) {
                     const cardAlt = slotData.name || 'Carta';
-                    $slot.append(`<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="${slotData.image_url}" class="tcg-card" alt="${cardAlt}" decoding="async">`);
+                    $slot.append(`<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="${optImg(slotData.image_url, 400)}" class="tcg-card" alt="${cardAlt}" decoding="async">`);
                     const $zoomBtn = $('<div class="zoom-btn"><i class="fas fa-search-plus"></i></div>');
 
                     // Prioridad para móvil: el listener global captura el touchstart.
@@ -4433,7 +4443,7 @@ function renderAuctionCard(auction) {
     const $card = $(`
         <div class="auction-public-card ${isEnded ? 'status-ended' : ''}" id="auction-${auction.id}">
             <div class="auction-image-wrapper">
-                <img src="${auction.image_url || 'https://via.placeholder.com/300x200?text=Sin+Imagen'}" alt="${auction.nombre}">
+                <img src="${optImg(auction.image_url || 'https://via.placeholder.com/300x200?text=Sin+Imagen', 400)}" alt="${auction.nombre}">
                 ${isEnded ? '<div class="status-ended-seal"></div>' : ''}
                 <div class="auction-bid-badge winning-bid-badge">$${currentBid.toFixed(2)}</div>
             </div>
@@ -5387,7 +5397,7 @@ function renderPublicInvAlbumMode($container) {
                 const stampOverlay = isUnavailable ? `<div class="inv-stamp-unavailable">AGOTADO</div>` : '';
 
                 $slot.append(`
-                    <img src="${card.image_url}" class="tcg-card" alt="${escapeHtml(card.card_name || 'Carta')}">
+                    <img src="${optImg(card.image_url, 400)}" class="tcg-card" alt="${escapeHtml(card.card_name || 'Carta')}">
                     ${stampOverlay}
                     <div class="pub-inv-slot-price">${publicInvPriceLabel(card)}</div>
                     <button type="button" class="zoom-btn pub-inv-slot-zoom" aria-label="Ver ${escapeHtml(card.card_name || 'carta')}"><i class="fas fa-search"></i></button>
@@ -5459,7 +5469,7 @@ function renderPublicInvSlideMode($container) {
                     <div class="swiper-slide pub-inv-slide" data-id="${card.id}"
                          data-show-foil="${card.show_foil}" data-holo="${card.holo_effect || ''}" data-mask="${card.custom_mask_url || ''}">
                         <div class="pub-inv-slide-media">
-                            <img src="${card.image_url}" alt="${escapeHtml(card.card_name || 'Carta')}">
+                            <img src="${optImg(card.image_url, 400)}" alt="${escapeHtml(card.card_name || 'Carta')}">
                             ${stampOverlay}
                         </div>
                         <div class="pub-inv-slide-body">
@@ -5520,7 +5530,7 @@ function renderPublicInvListMode($container) {
         const $item = $(`
             <div class="pub-inv-list-item" data-id="${card.id}">
                 <div class="pub-inv-list-img">
-                    <img src="${card.image_url}" alt="${escapeHtml(card.card_name || 'Carta')}">
+                    <img src="${optImg(card.image_url, 400)}" alt="${escapeHtml(card.card_name || 'Carta')}">
                     ${stampOverlay}
                 </div>
                 <div class="pub-inv-list-details">
@@ -5771,7 +5781,7 @@ function loadPublicLearnItems() {
                         </div>
                         <h3 style="margin: 0 0 12px 0; font-size: 1.15rem; font-weight: 800; color: #f8fafc; line-height: 1.35;">${titleText}</h3>
                         <div style="font-size: 0.88rem; color: #cbd5e1; line-height: 1.6; white-space: pre-wrap; word-break: break-word;">${bodyContent}</div>
-                        ${item.image_url ? `<img src="${item.image_url}" style="width: 100%; max-height: 250px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); margin-top: 14px;" alt="Imagen">` : ''}
+                        ${item.image_url ? `<img src="${optImg(item.image_url, 400)}" style="width: 100%; max-height: 250px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); margin-top: 14px;" alt="Imagen">` : ''}
                     </div>
                 `);
                 $container.append($card);

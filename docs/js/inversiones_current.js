@@ -484,7 +484,7 @@ function renderAlbumMode($container) {
                 const trend = getTrendIcon(card.current_price, card.previous_price);
 
                 $slot.append(`
-                    <img src="${card.image_url}" class="tcg-card" style="border-radius: 4px; border: 1px solid #000; width: 100%; height: 100%; object-fit: contain;">
+                    <img src="${optImg(card.image_url, 400)}" class="tcg-card" style="border-radius: 4px; border: 1px solid #000; width: 100%; height: 100%; object-fit: contain;">
                     <div class="inv-card-info-badge">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
                     <div class="zoom-btn"><i class="fas fa-search"></i></div>
                 `);
@@ -579,7 +579,7 @@ function renderSlideMode($container) {
                     const trend = getTrendIcon(card.current_price, card.previous_price);
                     return `
                     <div class="swiper-slide inv-card-slot inv-card-item" data-id="${card.id}" style="background: transparent; cursor: pointer;">
-                        <img src="${card.image_url}" style="width: 100%; border-radius: 4px; border: 2px solid #000; box-shadow: 0 20px 40px rgba(0,0,0,0.3);">
+                        <img src="${optImg(card.image_url, 400)}" style="width: 100%; border-radius: 4px; border: 2px solid #000; box-shadow: 0 20px 40px rgba(0,0,0,0.3);">
                         <div class="inv-card-info-overlay" style="background: rgba(255,255,255,0.95); padding: ${isMobile ? '10px' : '20px'}; border-radius: 4px; border: 1px solid #000; margin-top: ${isMobile ? '10px' : '15px'}; text-align: center;">
                             <h4 style="margin: 0; font-weight: 800; text-transform: uppercase; color: #000; font-size: ${isMobile ? '0.8rem' : '0.9rem'};">${escapeHtml(card.card_name)}</h4>
                             <p style="margin: 5px 0; font-size: 0.7rem; color: #666; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name)} - ${escapeHtml(card.rarity)}</p>
@@ -636,7 +636,7 @@ function renderListMode($container) {
         const trend = getTrendIcon(card.current_price, card.previous_price);
         const $item = $(`
             <div class="inv-list-item" style="border: 1px solid #eee; border-radius: 4px; padding: 15px; background: white; margin-bottom: 10px; display: flex; align-items: center; gap: 20px; cursor: pointer;">
-                <img src="${card.image_url}" class="inv-list-thumb" style="width: 60px; height: 84px; object-fit: contain; border: 1px solid #000; border-radius: 2px;">
+                <img src="${optImg(card.image_url, 200)}" class="inv-list-thumb" style="width: 60px; height: 84px; object-fit: contain; border: 1px solid #000; border-radius: 2px;">
                 <div class="inv-list-details" style="flex: 1;">
                     <div class="inv-list-name" style="font-weight: 800; text-transform: uppercase; font-size: 0.9rem; color: #000;">${escapeHtml(card.card_name)}</div>
                     <div class="inv-list-set" style="font-size: 0.7rem; color: #666; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name)} - ${escapeHtml(card.rarity)}</div>

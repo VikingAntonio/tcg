@@ -1327,7 +1327,7 @@ function renderAlbumMode($container) {
                 const stampOverlay = isUnavailable ? `<div class="inv-stamp-unavailable">VENDIDO</div>` : '';
 
                 $slot.append(`
-                    <img src="${card.image_url}" class="tcg-card" style="border-radius: 4px; border: 1px solid #000; width: 100%; height: 100%; object-fit: contain; position: relative; z-index: 1;">
+                    <img src="${optImg(card.image_url, 400)}" class="tcg-card" style="border-radius: 4px; border: 1px solid #000; width: 100%; height: 100%; object-fit: contain; position: relative; z-index: 1;">
                     ${stampOverlay}
                     ${privateBadge}
                     <div class="inv-card-info-badge" style="z-index: 110;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
@@ -1481,7 +1481,7 @@ function renderSlideMode($container) {
 
         const $slide = $(`
             <div class="swiper-slide inv-card-slot inv-card-item" data-id="${card.id}" data-idx="${cardIdx}" style="background: transparent; cursor: pointer; position: relative; display: flex; align-items: center; justify-content: center; height: 100%;">
-                <img src="${card.image_url}" style="width: auto; max-width: 100%; height: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; border: 2px solid #000; box-shadow: 0 20px 40px rgba(0,0,0,0.3); position: relative; z-index: 1; display: block; margin: 0 auto;">
+                <img src="${optImg(card.image_url, 400)}" style="width: auto; max-width: 100%; height: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; border: 2px solid #000; box-shadow: 0 20px 40px rgba(0,0,0,0.3); position: relative; z-index: 1; display: block; margin: 0 auto;">
                 ${stampOverlay}
                 ${privateBadge}
             </div>
@@ -1626,7 +1626,7 @@ function renderListMode($container) {
         const $item = $(`
             <div class="inv-list-item ${m.isActive ? '' : 'inv-list-item-out'}" style="border: 1px solid #eee; border-radius: 4px; padding: 15px; background: white; margin-bottom: 10px; display: flex; align-items: center; gap: 20px; cursor: pointer;">
                 <div class="inv-list-img-wrapper" style="position: relative; width: 60px; height: 84px; flex-shrink: 0;">
-                    <img src="${card.image_url}" class="inv-list-thumb" style="width: 100%; height: 100%; object-fit: contain; border: 1px solid #000; border-radius: 2px; position: relative; z-index: 1;">
+                    <img src="${optImg(card.image_url, 400)}" class="inv-list-thumb" style="width: 100%; height: 100%; object-fit: contain; border: 1px solid #000; border-radius: 2px; position: relative; z-index: 1;">
                     ${stampOverlay}
                 </div>
                 <div class="inv-list-details" style="flex: 1; min-width: 0;">
@@ -2394,7 +2394,7 @@ async function openVaultLedger(cat) {
             $tbody.append(`
                 <tr class="inv-ledger-row ${m.isActive ? '' : 'inv-ledger-row-out'}" data-id="${card.id}">
                     <td class="inv-ledger-card-cell">
-                        <img src="${card.image_url || ''}" class="inv-ledger-thumb" alt="">
+                        <img src="${optImg(card.image_url || '', 400)}" class="inv-ledger-thumb" alt="">
                         <span>${escapeHtml(card.card_name)}</span>
                     </td>
                     <td>${escapeHtml(card.set_name || '-')}<br><small>${escapeHtml(card.rarity || '-')}</small></td>

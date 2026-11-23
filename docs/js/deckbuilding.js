@@ -871,7 +871,7 @@ function renderDeckGrids() {
                     <div class="nexus-card" title="${card.name}" data-id="${card.id || ''}" data-local-id="${card.localId || ''}">
                         <div class="nexus-card-zoom" title="Ver carta"><i class="fas fa-search-plus"></i></div>
                         <div class="nexus-card-remove" title="Quitar carta"><i class="fas fa-times"></i></div>
-                        <img src="${card.image_url}" loading="lazy">
+                        <img src="${optImg(card.image_url, 400)}" loading="lazy">
                         ${card.quantity > 1 ? `<div class="nexus-card-qty">x${card.quantity}</div>` : ''}
                     </div>
                 `);

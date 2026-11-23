@@ -344,6 +344,7 @@
                     </div>
                     <a href="admin.html" class="menu-item" id="menu-btn-home"><i class="fas fa-home"></i> Mi Panel</a>
                     <a href="play.html" class="menu-item"><i class="fas fa-gamepad"></i> Play!</a>
+                    <a href="mis-compras.html" class="menu-item"><i class="fas fa-receipt"></i> Mis compras</a>
                     <a href="#" class="menu-item logout" id="menu-btn-logout"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
                     <div class="theme-menu-container">
                         <span class="theme-menu-label">Tema</span>
@@ -539,9 +540,14 @@
                         title: '¡Pago confirmado!',
                         text: 'Tu pago se procesó correctamente. El vendedor ya recibió la notificación de tu pedido.',
                         icon: 'success',
+                        showCancelButton: true,
+                        confirmButtonText: 'Ver mis compras',
+                        cancelButtonText: 'Seguir comprando',
                         confirmButtonColor: '#635bff',
                         background: '#0f172a',
                         color: '#fff'
+                    }).then((res) => {
+                        if (res.isConfirmed) window.location.href = 'mis-compras.html';
                     });
                 } else if (payStatus === 'canceled') {
                     Swal.fire({

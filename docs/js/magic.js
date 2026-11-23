@@ -706,7 +706,7 @@ function openSearchModal(owner) {
     mainCards.forEach((card, index) => {
         const html = `
             <div class="pile-card-container" data-index="${index}" data-owner="${owner}" data-source="deck">
-                <img src="${card.image_url}" alt="${card.name}">
+                <img src="${optImg(card.image_url, 400)}" alt="${card.name}">
                 <div class="pile-card-hover-overlay">
                     <div class="pile-card-menu">
                         <button class="pile-card-action-btn search-to-hand">A Mano</button>
@@ -743,7 +743,7 @@ function openExtraModal(owner) {
     extraCards.forEach((card, index) => {
         const html = `
             <div class="pile-card-container" data-index="${index}" data-owner="${owner}" data-source="extra">
-                <img src="${card.image_url}" alt="${card.name}">
+                <img src="${optImg(card.image_url, 400)}" alt="${card.name}">
                 <div class="pile-card-hover-overlay">
                     <div class="pile-card-menu">
                         <button class="pile-card-action-btn search-to-field">Invocar</button>
@@ -1274,7 +1274,7 @@ function setupGlobalEvents() {
         listCards.forEach((card, index) => {
             const html = `
                 <div class="pile-card-container" data-card-id="${card.id}">
-                    <img src="${card.image_url}" alt="${card.name}">
+                    <img src="${optImg(card.image_url, 400)}" alt="${card.name}">
                     <div class="pile-card-hover-overlay">
                         <div class="pile-card-menu">
                             <button class="pile-card-action-btn search-list-to-hand">A Mano</button>

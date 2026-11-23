@@ -750,7 +750,7 @@ function renderAlbumPagesLocal(pages) {
             const hasCard = !!(slot && slot.image_url);
             const $slot = $(`<div class="card-slot binder-dnd-slot" data-index="${i}" data-page-id="${page.id}" draggable="${hasCard ? 'true' : 'false'}"></div>`);
             if (hasCard) {
-                let slotHtml = `<img src="${slot.image_url}" class="tcg-card" alt="${slot.name || 'Carta'}" draggable="false">`;
+                let slotHtml = `<img src="${optImg(slot.image_url, 400)}" class="tcg-card" alt="${slot.name || 'Carta'}" draggable="false">`;
                 if (slot.price) slotHtml += `<div style="position: absolute; top: 2px; right: 2px; background: rgba(0,255,136,0.9); color: #000; font-weight: 900; font-size: 10px; padding: 1px 4px; border-radius: 4px; z-index: 2;">$${slot.price}</div>`;
                 $slot.html(slotHtml);
                 $slot.attr('title', 'Arrastra para reacomodar en otro slot o intercambiar');
@@ -816,7 +816,7 @@ async function openOrganizeModal(type) {
     const { data: items } = await _supabase.from('binders').select('id, title, cover_image_url').eq('user_id', currentUser.id).order('position', { ascending: true });
     if (!items) return;
     items.forEach(item => {
-        $grid.append(`<div class="organize-item" data-id="${item.id}"><img src="${item.cover_image_url || ''}"><span>${item.title}</span></div>`);
+        $grid.append(`<div class="organize-item" data-id="${item.id}"><img src="${optImg(item.cover_image_url || '', 400)}"><span>${item.title}</span></div>`);
     });
     if (window.Sortable) {
         Sortable.create($grid[0], { animation: 150, onEnd: async () => {
@@ -1162,7 +1162,7 @@ function renderInversionesTable(slots) {
         const $row = $(`
             <tr style="border-bottom: 1px solid rgba(255,255,255,0.06); transition: background 0.2s;" data-slot-id="${invEsc(slot.id)}">
                 <td style="padding: 10px; text-align: center;">
-                    <img src="${invEsc(slot.image_url)}" style="width: 36px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid rgba(255,255,255,0.15); display: inline-block;">
+                    <img src="${optImg(invEsc(slot.image_url), 200)}" style="width: 36px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid rgba(255,255,255,0.15); display: inline-block;">
                 </td>
                 <td style="padding: 10px 12px; font-weight: 700; color: #cbd5e1;">${invEsc(slot.binder_title)}</td>
                 <td style="padding: 10px 12px; font-weight: 800; color: #fff;">${invEsc(slot.name || 'Sin nombre')}</td>

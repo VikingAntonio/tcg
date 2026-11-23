@@ -175,7 +175,7 @@ function createPrettyCard(item, isLive) {
             ${isLive ? `<div class="status-badge" style="${isEnded ? 'background:#ff4757;' : ''}">${isEnded ? 'FINALIZADA' : (item.status || 'ACTIVA')}</div>` : '<div class="status-badge" style="background:#adb5bd;">DRAFT</div>'}
 
             <div class="card-img-container">
-                <img src="${item.image_url}" alt="Auction">
+                <img src="${optImg(item.image_url, 400)}" alt="Auction">
                 ${isEnded ? '<div class="status-ended-seal" style="font-size: 1.2rem; border-width: 3px; padding: 5px 10px;"></div>' : ''}
             </div>
 

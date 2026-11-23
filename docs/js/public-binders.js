@@ -373,7 +373,7 @@
 
                     const stamp = card.is_available ? '' : '<div class="pub-binder-stamp">AGOTADO</div>';
                     $slot.append(`
-                        <img src="${card.image_url}" class="tcg-card" alt="${escapeHtml(card.card_name)}" decoding="async">
+                        <img src="${optImg(card.image_url, 400)}" class="tcg-card" alt="${escapeHtml(card.card_name)}" decoding="async">
                         ${stamp}
                         <div class="pub-binder-slot-price">${cardPriceLabel(card)}</div>
                         <button type="button" class="zoom-btn pub-binder-slot-zoom" aria-label="Ver ${escapeHtml(card.card_name)}"><i class="fas fa-search"></i></button>
@@ -425,7 +425,7 @@
                         return `
                         <div class="swiper-slide pub-binder-slide" data-id="${card.id}">
                             <div class="pub-binder-slide-media">
-                                <img src="${card.image_url}" alt="${escapeHtml(card.card_name)}">
+                                <img src="${optImg(card.image_url, 400)}" alt="${escapeHtml(card.card_name)}">
                                 ${stamp}
                             </div>
                             <div class="pub-binder-slide-body">
@@ -484,7 +484,7 @@
             const $item = $(`
                 <div class="pub-binder-list-item" data-id="${card.id}">
                     <div class="pub-binder-list-img">
-                        <img src="${card.image_url}" alt="${escapeHtml(card.card_name)}">
+                        <img src="${optImg(card.image_url, 400)}" alt="${escapeHtml(card.card_name)}">
                         ${stamp}
                     </div>
                     <div class="pub-binder-list-details">

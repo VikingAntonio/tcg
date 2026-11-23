@@ -349,7 +349,7 @@ $(document).ready(async function() {
                     <div class="store-slide" onclick="openBusinessModal('${store.username}')">
                         <div class="store-logo-circle">
                             ${store.store_logo
-                                ? `<img src="${store.store_logo}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`
+                                ? `<img src="${optImg(store.store_logo, 400)}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`
                                 : `<i class="fas fa-store" style="font-size: 3rem; color: var(--primary-color); display: flex; justify-content: center; align-items: center; height: 100%;"></i>`
                             }
                         </div>
