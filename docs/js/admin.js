@@ -1885,7 +1885,7 @@ $(document).ready(async function() {
         $('#input-spirit-scale').val(1.8);
         $('#input-spirit-poster-url').val('');
         $('#input-spirit-particle-asset').val(''); // Clear hidden input
-        $('#input-spirit-storage').val('cloudinary');
+        $('#input-spirit-storage').val('supabase');
         $('#drop-zone-spirit-poster .file-name').text('');
         $('#drop-zone-spirit-particle .file-name').text('');
         $('#spirit-poster-search-input').val('');
@@ -1933,7 +1933,7 @@ $(document).ready(async function() {
             let gltfUrl = null;
             let textureUrl = null;
             let cloudinaryError = null;
-            const storage = $('#input-spirit-storage').val() || 'cloudinary';
+            const storage = $('#input-spirit-storage').val() || 'supabase';
 
             if (gltfFile) {
                 // Cloudinary saca los modelos del Storage de Supabase (cuyo plan
@@ -1958,7 +1958,7 @@ $(document).ready(async function() {
                     const gltfPath = `models/${folderId}/${gltfFile.name}`;
                     const { data: gltfData, error: gltfErr } = await _supabase.storage
                         .from('spirits')
-                        .upload(gltfPath, gltfFile, { cacheControl: '31536000' });
+                        .upload(gltfPath, gltfFile, { cacheControl: 'public, max-age=31536000, immutable' });
 
                     if (gltfErr) throw gltfErr;
                     gltfUrl = _supabase.storage.from('spirits').getPublicUrl(gltfPath).data.publicUrl;
@@ -1968,7 +1968,7 @@ $(document).ready(async function() {
                         const path = `models/${folderId}/${file.name}`;
                         const { error: extraErr } = await _supabase.storage
                             .from('spirits')
-                            .upload(path, file, { cacheControl: '31536000' });
+                            .upload(path, file, { cacheControl: 'public, max-age=31536000, immutable' });
                         if (extraErr) console.warn("Error subiendo archivo extra:", file.name, extraErr);
 
                         // If it's an image, we might use it as the main texture if needed
@@ -2025,6 +2025,92 @@ $(document).ready(async function() {
         } catch (err) {
             console.error(err);
             Swal.fire('Error', 'No se pudo guardar el asistente: ' + (err.message || ''), 'error');
+        }
+    });
+
+    // Marca todos los archivos del bucket `spirits` con caché de 1 año.
+    // La API hace una copia en el servidor (S3 CopyObject), así que no se
+    // descarga ni se re-sube ningún byte: solo cambian los metadatos del objeto.
+    // Con `max-age=31536000, immutable` el navegador ya no vuelve a pedir el
+    // modelo (antes se servía `max-age=3600` y cada visita gastaba egress).
+    $('#btn-fix-spirits-cache').click(async function() {
+        const FULL = 'public, max-age=31536000, immutable';
+        const confirm = await Swal.fire({
+            title: 'Reparar caché de modelos',
+            html: 'Se marcarán todos los archivos del bucket <code>spirits</code> con caché de 1 año.<br>No se descarga nada y el contenido no cambia.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Reparar',
+            cancelButtonText: 'Cancelar'
+        });
+        if (!confirm.isConfirmed) return;
+
+        Swal.fire({
+            title: 'Reparando caché...',
+            html: '<div id="fix-cache-status">Leyendo archivos...</div>',
+            allowOutsideClick: false,
+            showConfirmButton: false
+        });
+        const setStatus = text => {
+            const el = document.getElementById('fix-cache-status');
+            if (el) el.innerHTML = text;
+        };
+
+        try {
+            const files = [];
+            const walk = async (prefix) => {
+                const { data, error } = await _supabase.storage.from('spirits').list(prefix, { limit: 1000 });
+                if (error) throw error;
+                for (const entry of data || []) {
+                    const path = prefix ? `${prefix}/${entry.name}` : entry.name;
+                    if (entry.id) files.push(path);
+                    else await walk(path);
+                }
+            };
+            await walk('');
+
+            const session = await _supabase.auth.getSession();
+            const token = session?.data?.session?.access_token || SUPABASE_KEY;
+            let done = 0;
+            const failed = [];
+
+            for (const path of files) {
+                setStatus(`<b>${done + failed.length + 1}/${files.length}</b> · ${escapeHtml(path)}`);
+                try {
+                    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/copy`, {
+                        method: 'POST',
+                        headers: {
+                            apikey: SUPABASE_KEY,
+                            Authorization: `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                            'x-upsert': 'true'
+                        },
+                        body: JSON.stringify({
+                            bucketId: 'spirits',
+                            sourceKey: path,
+                            destinationKey: path,
+                            metadata: { cacheControl: FULL },
+                            copyMetadata: false
+                        })
+                    });
+                    if (!res.ok) throw new Error(`${res.status} ${(await res.text()).slice(0, 120)}`);
+                    done++;
+                } catch (err) {
+                    failed.push(`${path}: ${err.message || err}`);
+                }
+            }
+
+            if (failed.length) {
+                Swal.fire({
+                    title: 'Reparación con errores',
+                    html: `${done} archivos reparados.<br><br>Fallaron:<br>${failed.slice(0, 10).map(escapeHtml).join('<br>')}`,
+                    icon: 'warning'
+                });
+            } else {
+                Swal.fire('¡Listo!', `${done} archivos con caché de 1 año.`, 'success');
+            }
+        } catch (err) {
+            Swal.fire('Error', escapeHtml(err.message || String(err)), 'error');
         }
     });
 

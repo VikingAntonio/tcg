@@ -312,10 +312,10 @@ async function saveAsset() {
             if (!gltfUrl) {
                 const folder = Date.now();
                 const mainPath = `build_models/${currentUser.id}/${folder}/${droppedGltf.name}`;
-                await _supabase.storage.from('spirits').upload(mainPath, droppedGltf, { cacheControl: '31536000' });
+                await _supabase.storage.from('spirits').upload(mainPath, droppedGltf, { cacheControl: 'public, max-age=31536000, immutable' });
                 gltfUrl = _supabase.storage.from('spirits').getPublicUrl(mainPath).data.publicUrl;
                 for (const f of droppedExtras) {
-                    await _supabase.storage.from('spirits').upload(`build_models/${currentUser.id}/${folder}/${f.name}`, f, { cacheControl: '31536000' });
+                    await _supabase.storage.from('spirits').upload(`build_models/${currentUser.id}/${folder}/${f.name}`, f, { cacheControl: 'public, max-age=31536000, immutable' });
                 }
             }
         }

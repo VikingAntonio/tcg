@@ -249,11 +249,11 @@ Síntoma: enviar cartas acopladas al cementerio/removido (botones masivos "Todas
 
 ## Consumo de cuota Supabase — "Cached Egress" (modelos 3D)
 Síntoma: el panel de Supabase marcaba **Cached Egress 6.1 / 5 GB (122 %)** mientras que `Egress` (base de datos) solo iba al 9 %. El "Cached Egress" es el CDN de **Storage**, no la BD.
-- **Causa 1:** cada asistente pesa ~2.7 MB (`models/<ts>_<rand>/<Nombre>.bin`) + texturas JPG (~0.3–1 MB). Los objetos se sirven con `cache-control: private, no-cache` y `cf-cache-status: DYNAMIC`.
+- **Causa 1:** cada asistente pesa ~2.7 MB (`models/<ts>_<rand>/<Nombre>.bin`) + texturas JPG (~0.3–1 MB) y se servían con `cache-control: public, max-age=3600`: a la hora, cada visitante los volvía a descargar. Ver la sección *Cached Egress — causa real y arreglo* al final: la cabecera ahora es de 1 año.
 - **Causa 2:** el Service Worker solo se registraba en 15 de 45 vistas, así que en el resto el modelo se bajaba completo en cada navegación. Ahora se registra desde `js/supabase-config.js` (lo cargan 37 vistas).
 - **Causa 3:** las rejillas de asistentes montaban un `<model-viewer>` por asistente (`admin.js` → `#spirits-grid`, `app.js` → `loadPublicSpirits`, `play.html`, `duel.html`). Con 41 asistentes eso son ~150 MB por visita. Ahora pintan el póster (`poster_url`, en Cloudinary) y el modelo se monta solo al abrirlo: en admin con `.btn-preview-spirit-3d` → `#gltf-overlay`; en público el click de `.spirit-card` ya abría ese overlay y lee `data-poster`.
 - `sw.js`: el cache-first ya no depende de la extensión; cualquier ruta con `/storage/v1/object/public/spirits/` se guarda en `IMAGE_CACHE` (por eso `STATIC_CACHE` v253 no la borra al subir de versión).
-- `docs/J_storage_cache_control.sql` (opcional) marca los objetos con `Cache-Control: public, max-age=31536000, immutable`; los nombres de archivo son únicos por subida, así que es seguro.
+- `docs/J_storage_cache_control.sql` (opcional) solo actualiza el espejo de la BD; **no** cambia la cabecera servida (se cambia con la copia en servidor descrita al final del archivo).
 - **No** volver a montar un `model-viewer` por elemento de una lista: con `loading="lazy"` igual descarga varios modelos al hacer scroll.
 - Notificaciones (`js/notifications.js`): sondeo cada 60 s (antes 15 s), se detiene con `document.hidden` y se refresca en `visibilitychange`/`focus`; los `select` piden solo las columnas usadas.
 
@@ -282,23 +282,17 @@ Síntoma: el panel de Supabase marcaba **Cached Egress 6.1 / 5 GB (122 %)** mien
 - **Admin vs público**: en `public.html` (o `?store=`) `is_admin` es siempre `false`; se filtran binders/álbumes/categorías privadas, cartas no públicas, agotadas y vendidas, y NUNCA se envían costos/ganancias. En admin se incluye todo.
 - **Lectura solamente**: el bot no escribe en Supabase. Si piden modificar algo, guía; no confirma cambios falsos. Acciones reales requerirían tool-calling validado.
 
-## Cached Egress de Supabase — por qué seguía subiendo y cómo se arregla
-Medido con curl sobre los objetos de `spirits`:
-- `GET /storage/v1/object/public/spirits/...` → `cache-control: public, max-age=3600` (`cf-cache-status: MISS`).
-- `HEAD` del mismo objeto → `cache-control: private, no-cache`.
-- El `metadata->>'cacheControl'` de `storage.objects` **sí** dice `public, max-age=31536000, immutable`, pero **no** es lo que se sirve: el Storage actual usa backend S3 y la cabecera sale de los metadatos del objeto en S3, que solo se fijan al subir (`cacheControl` en `storage.upload`). `J_storage_cache_control.sql` deja el espejo de la BD coherente pero no cambia la respuesta HTTP. Para cambiarla hay que re-subir el objeto.
-- Según la doc de Supabase, **Cached Egress = egress servido por su CDN con cache hits**. Es decir, el contador sube justo cuando Cloudflare responde `HIT`. Cachear más tiempo en el CDN no lo baja; solo baja si el navegador no llega a pedir el archivo (caché local/SW) o si se sirve desde otro host (Cloudinary).
-- Tamaño real: 220 archivos, 207 MB; los `.bin` van de 1.2 MB a 12 MB. Con 5 GB de plan, se agota con pocos visitantes nuevos (el modelo de la esquina se descarga completo en `admin.html` y `public.html`).
-
-Solución implementada: servir los modelos desde Cloudinary.
-- `js/cloudinary-upload.js` → `uploadRaw(file, publicId)` y `uploadModelFiles(files)`.
-  - Cloudinary **rechaza la extensión `.bin`** ("resources with extension bin are not allowed"): se sube como `.glbin` y se reescribe `buffers[].uri` del `.gltf` antes de subirlo.
-  - Todo va a `spirits/models/<timestamp>_<rand>/` con `public_id` explícito (NO mandar `folder` + `public_id`: se duplica la ruta). Las rutas relativas del `.gltf` resuelven dentro de la misma carpeta; Cloudinary ignora el `v<version>` de la URL para raw, así que también funciona aunque el `.bin` tenga otra versión.
-  - Delivery raw: `cache-control: public, no-transform, immutable, max-age=2592000` (30 días), `access-control-allow-origin: *`; `.glb` se sirve como `model/gltf-binary`, `.gltf` como `model/gltf+json`, `.glbin` como `application/octet-stream` (con `content-disposition: attachment`, que no afecta a `fetch`).
-  - Verificado con Node (subida real de `wingedKuriboh`) y con `model-viewer` en Chromium headless: `loaded === true` sirviendo el `.gltf` desde Cloudinary con el buffer `.glbin`.
-- `admin.html` → modal de asistente: selector `#input-spirit-storage` (`cloudinary` por defecto, `supabase` como respaldo). Si Cloudinary falla, se cae a Supabase sin romper el guardado.
-- `admin.html` → Mis Asistentes → `#btn-migrate-spirits-cloudinary`: recorre los `spirits` cuyo `gltf_url` está en Supabase, descarga `.gltf` + `buffers`/`images` referenciados, los sube a Cloudinary y actualiza `gltf_url` (y `texture_url` si estaba en la misma carpeta). Es por modelo: si uno falla, se reporta y se sigue con el resto.
-- Cloudinary gratuito ≈ 25 GB de banda/mes (5× el plan de Supabase) y el SW ya cachea todo `cloudinary.com` en `IMAGE_CACHE` (cache-first).
-- Ojo: `new URL(uri, folderUrl + '/')` es la forma correcta de descargar dependencias con espacios (`mago BETA.bin` → `mago%20BETA.bin`).
-- `STATIC_CACHE` subido a `viking-static-v257`.
-- **Límite real de Cloudinary (plan gratuito): 10 MiB por archivo raw.** Medido: `File size too large. Got 13000000. Maximum is 10485760.` `CloudinaryUpload.maxRawBytes` lo comprueba antes de subir (evita dejar archivos sueltos). Los `.bin` de `mago BETA` (12.19 MB) y `Eveningstar` (12.03 MB) **no** se pueden migrar así: hay que optimizarlos a `.glb` con Draco/meshopt o dejarlos en Supabase. El guardado del admin cae a Supabase y avisa en el Swal.
+## Cached Egress de Supabase — causa real y arreglo (cabecera de 1 año)
+Medido con `curl` sobre objetos de `spirits`:
+- `GET /storage/v1/object/public/spirits/...` devolvía **`cache-control: public, max-age=3600`**. Con 1 hora, cada visitante que vuelve después de 1 h descarga otra vez el modelo completo (1.2–12 MB), y Supabase lo cuenta como **Cached Egress** (su doc lo define como el egress servido por su CDN con cache hits). Por eso el contador subía aunque hubiera Service Worker: el SW solo cubre a quien ya lo tiene instalado y cuya petición pasa por él.
+- El `metadata->>'cacheControl'` de `storage.objects` **no** es la fuente de la cabecera servida: manda el `CacheControl` del objeto en S3. Ese espejo puede decir `public, max-age=31536000, immutable` y aun así servirse `3600` (pasaba en casi todos los modelos).
+- **El valor de `cacheControl` se manda tal cual a la cabecera.** Pasar `cacheControl: '31536000'` produce `cache-control: public, 31536000` (inválido, sin `max-age=`) y el CDN acaba sirviendo 3600. Hay que pasar el valor completo: **`public, max-age=31536000, immutable`**.
+- Arreglo aplicado (2026-11): los 228 objetos de `spirits` se marcaron con `public, max-age=31536000, immutable`. Se hace con **copia en el servidor**, sin descargar ni re-subir bytes:
+  `POST /storage/v1/object/copy` con `{bucketId, sourceKey, destinationKey: sourceKey, metadata:{cacheControl:'public, max-age=31536000, immutable'}, copyMetadata:false}` y `x-upsert: true`.
+  Es un `S3 CopyObject` con `MetadataDirective: REPLACE`: conserva bytes, `size`, `eTag` (salvo objetos multipart, que pasan a MD5 simple) y `mimetype`. Verificado: 228/228 OK, 0 fallos, modelo sigue cargando en `model-viewer`.
+  - OJO: `PUT /storage/v1/object/{bucket}/{path}` **no** sirve para esto: reemplaza el contenido por el body (con body vacío deja el objeto en 0 bytes).
+- En el panel: botón **"Reparar caché de modelos"** (`#btn-fix-spirits-cache`, en Mis Asistentes) → recorre el bucket y hace la copia. Es idempotente y se puede repetir.
+- Las subidas nuevas usan ya el valor completo (`cacheControl: 'public, max-age=31536000, immutable'`) en `admin.js`, `build.js` y `packages.html`.
+- `J_storage_cache_control.sql` (metadata en la BD) **no** cambia la cabecera servida; se conserva solo como documentación.
+- Cloudinary queda como opción secundaria (selector en el modal, `uploadModelFiles`, botón "Copiar modelos a Cloudinary"). El plan gratuito limita a **10 MiB por archivo raw** (`File size too large... Maximum is 10485760`) y ~25 GB/mes de banda. `.bin` se sube como `.glbin` porque Cloudinary rechaza esa extensión.
+- `michatbot.js` revalida el asistente en segundo plano (`lookupSpiritFromDb` + `refreshCornerModelUrl`) para que un `localStorage` con URL vieja no siga pidiendo el host anterior.

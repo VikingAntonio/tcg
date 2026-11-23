@@ -1178,8 +1178,12 @@
                 <p>Elige un asistente que te acompañará mientras navegas por la web.</p>
                 <div id="admin-upload-container" style="display:none; margin-top: 20px;">
                     <button id="btn-open-upload-spirit" class="btn"><i class="fas fa-upload"></i> Subir Nuevo Asistente</button>
-                    <button id="btn-migrate-spirits-cloudinary" class="btn btn-secondary" style="margin-left: 10px;"><i class="fas fa-cloud-upload-alt"></i> Migrar modelos a Cloudinary</button>
-                    <p style="font-size: 12px; color: #888; margin-top: 8px;">Los modelos que aún están en Supabase se copian a Cloudinary y se actualiza su URL. El tráfico deja de contar en la cuota de Supabase.</p>
+                    <button id="btn-fix-spirits-cache" class="btn btn-secondary" style="margin-left: 10px;"><i class="fas fa-bolt"></i> Reparar caché de modelos</button>
+                    <button id="btn-migrate-spirits-cloudinary" class="btn btn-secondary" style="margin-left: 10px;"><i class="fas fa-cloud-upload-alt"></i> Copiar modelos a Cloudinary</button>
+                    <p style="font-size: 12px; color: #888; margin-top: 8px;">
+                        "Reparar caché" marca todos los archivos del bucket <code>spirits</code> con caché de 1 año (copia en el servidor, no descarga nada).
+                        "Copiar a Cloudinary" es opcional: solo si algún día se supera la cuota de Supabase.
+                    </p>
                 </div>
             </div>
 
@@ -2522,12 +2526,12 @@
                 <div class="form-group">
                     <label>Almacenamiento del Modelo</label>
                     <select id="input-spirit-storage">
-                        <option value="cloudinary" selected>Cloudinary (recomendado, no consume Supabase)</option>
-                        <option value="supabase">Supabase Storage</option>
+                        <option value="supabase" selected>Supabase Storage (recomendado, caché 1 año)</option>
+                        <option value="cloudinary">Cloudinary (opcional, no consume Supabase)</option>
                     </select>
                     <p style="font-size: 11px; color: #888; margin-top: 6px; line-height: 1.4;">
-                        Cloudinary sirve los modelos con caché de 30 días y no gasta la cuota de Supabase.
-                        Se acepta .glb (un solo archivo) o .gltf con sus texturas; los .bin se convierten a .glbin automáticamente.
+                        Supabase sirve los modelos con caché de 1 año, así que cada visitante solo los descarga una vez.
+                        Se acepta .glb (un solo archivo) o .gltf con sus texturas.
                     </p>
                 </div>
                 <div class="form-group">

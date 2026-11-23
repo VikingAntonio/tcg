@@ -5,30 +5,29 @@
 --   Este script actualiza la columna `storage.objects.metadata->>'cacheControl'`
 --   (el "espejo" en la base de datos), pero NO cambia la cabecera que se sirve
 --   en /storage/v1/object/public/... En el Storage actual (backend S3) la
---   cabecera Cache-Control sale de los metadatos del objeto en S3, que solo se
---   fijan al SUBIR el archivo (header `cache-control`).
---   Resultado real medido con curl:
---     GET  /object/public/spirits/...  ->  cache-control: public, max-age=3600
---     HEAD /object/public/spirits/...  ->  cache-control: private, no-cache
---   Es decir: los objetos antiguos siguen con 1 hora de caché aunque este
---   script diga `max-age=31536000`.
+--   cabecera Cache-Control sale del `CacheControl` del objeto en S3.
 --
---   Para que un objeto tenga caché larga de verdad hay que volver a subirlo:
---     supabase.storage.from('spirits').upload(path, file, {
---       cacheControl: '31536000', upsert: true
---     })
---   (storage-js envía `cache-control: max-age=31536000`).
+--   Cómo se arregla de verdad (sin descargar ni re-subir bytes):
+--     POST /storage/v1/object/copy
+--     { "bucketId": "spirits", "sourceKey": "<path>", "destinationKey": "<path>",
+--       "metadata": { "cacheControl": "public, max-age=31536000, immutable" },
+--       "copyMetadata": false }
+--     con header `x-upsert: true`.
+--   Es un S3 CopyObject con MetadataDirective=REPLACE: conserva contenido,
+--   tamaño y mimetype y solo cambia los metadatos. En admin.html -> Mis
+--   Asistentes -> "Reparar caché de modelos" se hace para todo el bucket.
 --
---   La solución recomendada para los modelos 3D es NO servirlos desde Supabase:
---   el plan gratuito solo incluye 5 GB de "Cached Egress" y los .bin pesan
---   varios MB. En admin.html -> Mis Asistentes -> "Migrar modelos a Cloudinary"
---   se copian los modelos a Cloudinary (25 GB gratis) y se actualiza su URL.
+--   También hay que subir los archivos nuevos con el valor COMPLETO:
+--     cacheControl: 'public, max-age=31536000, immutable'
+--   Si se pasa solo '31536000', la cabecera sale `public, 31536000` (inválida)
+--   y el CDN termina sirviendo 3600.
 --
---   Además, según la documentación de Supabase, "Cached Egress" es justo el
---   egress servido por su CDN con cache hits. Es decir, el contador sube cuando
---   Cloudflare responde HIT. Cachear más tiempo en el CDN no reduce la cuota:
---   solo reduce peticiones si el navegador ya tiene el archivo en su caché (o
---   en el Service Worker), o si el archivo se sirve desde otro host.
+--   "Cached Egress" es el egress servido por el CDN con cache hits. Con la
+--   cabecera de 1 año el navegador no vuelve a pedir el modelo, así que cada
+--   visitante solo lo descarga una vez.
+--
+--   Cloudinary sigue disponible como opción secundaria (selector del modal y
+--   botón "Copiar modelos a Cloudinary"), pero ya no es necesaria.
 --
 -- Este script se mantiene porque deja el metadato de la BD coherente y algunas
 -- herramientas (dashboard/SDK) lo leen. Es idempotente.
