@@ -2893,7 +2893,7 @@ async function loadPublicSpirits() {
                  data-name="${spirit.name}"
                  data-poster="${spirit.poster_url || ''}">
                 <div class="badge-selected">Actual</div>
-                <img class="spirit-poster" src="${spirit.poster_url || spirit.texture_url || ''}" alt="${spirit.name}" loading="lazy">
+                <img class="spirit-poster" src="${window.optImg(spirit.poster_url || spirit.texture_url || '', 300)}" alt="${spirit.name}" loading="lazy">
                 <h3>${spirit.name}</h3>
                 <div class="zoom-btn" style="display: flex;"><i class="fas fa-search-plus"></i></div>
             </div>
@@ -3527,7 +3527,7 @@ function openPublicSealedModal(product) {
                     <!-- LEFT COLUMN: IMAGE PREVIEW -->
                     <div style="background: ${boxBg}; border: 1px solid ${boxBorder}; border-radius: 16px; padding: 20px; text-align: center; position: relative; display: flex; align-items: center; justify-content: center; min-height: 280px;">
                         ${isOutOfStock ? '<div class="sealed-soldout-overlay">AGOTADO</div>' : ''}
-                        <img src="${product.image_url || 'https://via.placeholder.com/300x200?text=Sin+Imagen'}" style="max-width: 100%; max-height: 280px; object-fit: contain; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.15)); transition: transform 0.3s;" alt="${product.name}">
+                        <img src="${window.optImg(product.image_url, 700) || 'https://via.placeholder.com/300x200?text=Sin+Imagen'}" style="max-width: 100%; max-height: 280px; object-fit: contain; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.15)); transition: transform 0.3s;" alt="${product.name}">
                     </div>
 
                     <!-- RIGHT COLUMN: PRODUCT DETAILS & BUY BOX -->
@@ -3784,7 +3784,7 @@ function renderPublicSealedGrid() {
                         <!-- PRODUCT IMAGE FRAME WITH FULL STAMP OVERLAY -->
                         <div class="amazon-image-frame">
                             ${isOutOfStock ? '<div class="sealed-soldout-overlay">AGOTADO</div>' : ''}
-                            <img src="${product.image_url || 'https://via.placeholder.com/300x200?text=Sin+Imagen'}" alt="${product.name}" class="amazon-product-img">
+                            <img src="${window.optImg(product.image_url, 500) || 'https://via.placeholder.com/300x200?text=Sin+Imagen'}" alt="${product.name}" class="amazon-product-img">
                         </div>
 
 
@@ -4044,7 +4044,7 @@ function loadPublicEvents() {
                     </button>
                     ${item.image_url ? `
                     <div class="product-image-container">
-                        <img src="${item.image_url}" class="sealed-product-img">
+                        <img src="${window.optImg(item.image_url, 500)}" class="sealed-product-img">
                     </div>
                     ` : ''}
                     <div class="event-content-wrapper" style="padding: 15px; flex: 1; display: flex; flex-direction: column;">
@@ -4203,7 +4203,7 @@ function loadPublicWishlist() {
                      data-show-foil="${item.show_foil_in_list || false}">
                     <h3>${item.name}</h3>
                     <div class="wishlist-image-container">
-                        <img src="${item.image_url}" alt="${item.name}">
+                        <img src="${window.optImg(item.image_url, 400)}" alt="${item.name}">
                     </div>
                     ${item.obtained ? '<div class="event-type-badge" style="background: #00ff88; color: #000; bottom: 5px; top: auto;">CONSEGUIDA</div>' : ''}
                     <div class="zoom-btn" style="display: flex; bottom: 5px; right: 5px; left: auto;"><i class="fas fa-search-plus"></i></div>
@@ -5908,7 +5908,7 @@ function renderStoreCustomizationsOnPublic(data) {
                 if (imgUrl) {
                     $layer.append(`
                         <div style="position: absolute; left: ${x}%; top: ${y}%; width: ${size}px; height: ${size}px; transform: translate(-50%, -50%) rotate(${rot}deg); pointer-events: none;">
-                            <img src="${imgUrl}" alt="${stk.name || 'Sticker'}" style="width: 100%; height: 100%; object-fit: contain;">
+                            <img src="${window.optImg(imgUrl, 120)}" alt="${stk.name || 'Sticker'}" style="width: 100%; height: 100%; object-fit: contain;">
                         </div>
                     `);
                 }

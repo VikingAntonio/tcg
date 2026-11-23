@@ -1722,7 +1722,7 @@
                         </button>
 
                         <div class="sticker-visual-stage">
-                            <img src="${stk.url}" alt="${escapeHtml(stk.name || 'Sticker')}" class="sticker-visual-img">
+                            <img src="${window.optImg(stk.url, 300)}" alt="${escapeHtml(stk.name || 'Sticker')}" class="sticker-visual-img">
                         </div>
 
                         <!-- Package Availability Checkboxes -->
@@ -2077,7 +2077,7 @@
                 if (isMultiFace && parsedFaces.length > 0) {
                     visualHtml = `
                         <div class="acc-multiface-slider" data-idx="0" style="position: relative; width: 100%; display: flex; align-items: center; justify-content: center;">
-                            <img src="${parsedFaces[0].url}" alt="${escapeHtml(acc.name || 'Accesorio')}" class="sticker-visual-img acc-slider-img" style="${imgAspectStyle} max-height: 140px; object-fit: contain; transition: transform 0.25s ease;">
+                            <img src="${window.optImg(parsedFaces[0].url, 300)}" alt="${escapeHtml(acc.name || 'Accesorio')}" class="sticker-visual-img acc-slider-img" style="${imgAspectStyle} max-height: 140px; object-fit: contain; transition: transform 0.25s ease;">
                             <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; padding: 4px; pointer-events: none; z-index: 5;">
                                 <button type="button" class="btn-acc-slide-prev" style="pointer-events: auto; background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(0, 210, 255, 0.3); color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; cursor: pointer; backdrop-filter: blur(4px); opacity: 0.7; transition: opacity 0.2s;"><i class="fas fa-chevron-left"></i></button>
                                 <button type="button" class="btn-acc-slide-next" style="pointer-events: auto; background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(0, 210, 255, 0.3); color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; cursor: pointer; backdrop-filter: blur(4px); opacity: 0.7; transition: opacity 0.2s;"><i class="fas fa-chevron-right"></i></button>
@@ -2085,7 +2085,7 @@
                         </div>
                     `;
                 } else {
-                    visualHtml = `<img src="${acc.image_url}" alt="${escapeHtml(acc.name || 'Accesorio')}" class="sticker-visual-img" style="${imgAspectStyle} max-height: 160px; object-fit: contain;">`;
+                    visualHtml = `<img src="${window.optImg(acc.image_url, 300)}" alt="${escapeHtml(acc.name || 'Accesorio')}" class="sticker-visual-img" style="${imgAspectStyle} max-height: 160px; object-fit: contain;">`;
                 }
 
                 const $card = $(`
@@ -3639,7 +3639,7 @@
 
                     container.append(`
                         <div class="pack-admin-card">
-                            <img src="${escapeHtml(pk.image_url)}" class="pack-thumb-img">
+                            <img src="${escapeHtml(window.optImg?window.optImg(pk.image_url, 300):pk.image_url)}" class="pack-thumb-img">
                             <div style="display:flex; justify-content:space-between; align-items:center;">
                                 <h3 style="margin:0; font-size:1.1rem; color:#fff;">${escapeHtml(pk.name)}</h3>
                                 <span class="status-badge ${pk.status}">${escapeHtml(pk.status)}</span>

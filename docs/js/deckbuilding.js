@@ -652,14 +652,11 @@ async function handleLogin() {
 
         if (!userInput.includes('@')) {
             // Attempt to find the real email in the 'usuarios' table for existing accounts
-            const { data: userRow } = await _supabase
-                .from('usuarios')
-                .select('email')
-                .eq('username', userInput)
-                .maybeSingle();
+            const { data: resolvedEmail } = await _supabase
+                .rpc('get_login_email', { p_identifier: userInput });
 
-            if (userRow && userRow.email) {
-                emailToUse = userRow.email;
+            if (resolvedEmail) {
+                emailToUse = resolvedEmail;
             } else {
                 // Fallback to our convention for new accounts
                 emailToUse = `${userInput}@tcgdual.com`;

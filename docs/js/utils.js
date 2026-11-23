@@ -9,6 +9,27 @@ window.optimizeMediaUrl = function(url, width = 500, height = 500) {
     return url.replace('/upload/', `/upload/w_${width},h_${height},c_limit,q_auto,f_auto/`);
 };
 
+// Imágenes subidas a Cloudinary (stickers, sleeves, pósteres, fotos de
+// producto): se piden redimensionadas y en el mejor formato del navegador.
+// Sin esto se descargaba el original (1 MB por sticker, ~600 KB por sleeve).
+// No toca las subidas /raw/ (modelos 3D) ni las que ya traen transformación.
+window.optImg = function(url, width = 400) {
+    return window.optimizeCloudinaryImage(url, width);
+};
+
+window.optimizeCloudinaryImage = function(url, width = 400) {
+    if (!url || typeof url !== 'string') return url;
+    const marker = '/image/upload/';
+    const idx = url.indexOf(marker);
+    if (idx === -1) return url;
+
+    const rest = url.slice(idx + marker.length);
+    const first = rest.split('/')[0] || '';
+    if (/^(w_|h_|c_|q_|f_|e_|g_|dpr_|ar_)/.test(first)) return url;
+
+    return url.slice(0, idx + marker.length) + `f_auto,q_auto,w_${width},c_limit/` + rest;
+};
+
 // Helper to safely parse and normalize deck counters (single string, JSON array, or list, up to 3)
 window.normalizeDeckCounters = function(rawVal) {
     if (!rawVal) return [];

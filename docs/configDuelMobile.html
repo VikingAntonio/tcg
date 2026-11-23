@@ -1070,15 +1070,11 @@
                 try {
                     let email = usernameOrEmail;
                     if (!usernameOrEmail.includes('@')) {
-                        const { data, error } = await _supabase
-                            .from('usuarios')
-                            .select('email')
-                            .eq('username', usernameOrEmail)
-                            .maybeSingle();
+                        const { data: resolvedEmail } = await _supabase
+                            .rpc('get_login_email', { p_identifier: usernameOrEmail });
 
-                        if (error) throw error;
-                        if (data && data.email) {
-                            email = data.email;
+                        if (resolvedEmail) {
+                            email = resolvedEmail;
                         } else {
                             throw new Error("Usuario no encontrado.");
                         }

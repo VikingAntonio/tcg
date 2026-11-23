@@ -633,7 +633,14 @@ async function checkSession() {
 async function handleLogin() {
     const user = $('#login-username').val().trim();
     const pass = $('#login-password').val().trim();
-    const { error } = await _supabase.auth.signInWithPassword({ email: `${user}@vikingtcg.xyz`, password: pass });
+    let email = user;
+    if (!user.includes('@')) {
+        // Igual que el resto de vistas: primero el correo real de la cuenta y,
+        // si no existe, el pseudo-correo histórico.
+        const { data: resolvedEmail } = await _supabase.rpc('get_login_email', { p_identifier: user });
+        email = resolvedEmail || `${user}@vikingtcg.xyz`;
+    }
+    const { error } = await _supabase.auth.signInWithPassword({ email: email, password: pass });
     if (error) Swal.fire('Error', 'Credenciales incorrectas', 'error');
     else window.location.reload();
 }
@@ -672,7 +679,7 @@ async function loadAlbums() {
     albums.forEach(album => {
         const $card = $(`
             <div class="album-card album-item" data-id="${album.id}">
-                <img src="${album.cover_image_url || 'https://via.placeholder.com/300x150'}">
+                <img src="(window.optImg?window.optImg(album.cover_image_url, 400):album.cover_image_url) || 'https://via.placeholder.com/300x150'">
                 <h3>${album.title}</h3>
                 <div style="display:flex; gap:10px; margin-top:10px;">
                     <button class="btn btn-edit-album" style="flex:1;">Editar</button>

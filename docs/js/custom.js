@@ -427,7 +427,7 @@ function renderSlotStickers($container, stickers, slotId) {
                 height: ${renderedSize}px;
                 transform: translate(-50%, -50%) rotate(${rot}deg);
             ">
-                <img src="${stk.url}" alt="${stk.name || 'Sticker'}">
+                <img src="${window.optImg(stk.url, 300)}" alt="${stk.name || 'Sticker'}">
                 <div class="stk-btn-del" title="Eliminar">&times;</div>
                 <div class="stk-handle stk-scale-handle" title="Cambiar tamaño"></div>
                 <div class="stk-handle stk-rotate-handle" title="Girar"></div>
@@ -1117,7 +1117,7 @@ function renderStickersPicker() {
 
         const $item = $(`
             <div class="picker-sticker-item ${requiresPurchase ? 'paid-sticker' : ''}" title="${requiresPurchase ? `Comprar sticker ($${pricing.effectivePrice} MXN)` : 'Agregar sticker al slot'}">
-                <img src="${stk.url}" alt="${escapeHtml(stk.name || 'Sticker')}">
+                <img src="${window.optImg(stk.url, 300)}" alt="${escapeHtml(stk.name || 'Sticker')}">
                 ${requiresPurchase ? `
                     <div class="sticker-lock-badge" title="Sticker de Pago"><i class="fas ${pricing.isGift ? 'fa-gift' : 'fa-lock'}"></i></div>
                     <div class="sticker-price-tag" style="${pricing.isGift ? 'background: linear-gradient(135deg, #a855f7, #7c3aed);' : pricing.hasPromo ? 'background: linear-gradient(135deg, #00d2ff, #0072ff);' : ''}">${priceTagHtml}</div>
@@ -1162,7 +1162,7 @@ async function purchaseStickerViaStripe(stk) {
         title: `Desbloquear ${stk.name || 'Sticker'}`,
         html: `
             <div style="text-align: center; margin: 12px 0;">
-                <img src="${stk.url}" style="max-width: 110px; max-height: 110px; object-fit: contain; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5)); margin-bottom: 12px;">
+                <img src="${window.optImg(stk.url, 320)}" style="max-width: 110px; max-height: 110px; object-fit: contain; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5)); margin-bottom: 12px;">
                 <div style="font-size: 1.5rem; color: #c084fc; font-weight: 900;">$${effectivePrice} MXN</div>
             </div>
         `,

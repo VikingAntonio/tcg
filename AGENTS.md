@@ -324,3 +324,22 @@ Los `.bin` de los asistentes no estaban "sin comprimir": ya venían con `KHR_dra
   - recrea: `spirits/*` solo admin (todo el bucket, incluye `models/`, `accessories_3d/`, `accessories_models/`, `logos/`), `spirits/build_models/<uid>/*` solo su dueño, `accessories/*` solo admin.
 - La lectura pública (`/storage/v1/object/public/...`) no usa RLS, así que la web sigue igual.
 - Los `PATCH` a la tabla `spirits` con la clave anónima ya estaban bloqueados; el panel los hace con el JWT del admin.
+
+## RLS de propiedad: binders, ventas y notificaciones (migración `M_`)
+`create_binders_tables.sql` creó las políticas `"Owners full …"` con `FOR ALL USING (true) WITH CHECK (true)` **sin `TO`**, así que aplicaban también a `anon`: cualquiera con la clave pública podía editar/borrar binders ajenos. Igual pasaba en `sealed_product_sales` (leía nombre/teléfono de compradores) y `user_notification_states`.
+- `docs/M_fix_rls_ownership_and_email.sql` (idempotente) deja: lectura pública solo de binders `is_public <> false`, escritura solo del dueño (`auth.uid()`) o admin; `sealed_product_sales` conserva el INSERT público (checkout invitado por WhatsApp) pero SELECT/UPDATE/DELETE solo del vendedor; `user_notification_states` solo del dueño; `app_notifications` lectura pública y escritura admin.
+- Helpers `SECURITY DEFINER` (`binder_is_owner`, `binder_page_is_owner`, `binder_page_is_visible`) para heredar la propiedad sin recursión de RLS.
+- **Correo en `usuarios`**: `anon` ya no tiene `SELECT` de tabla; se conceden columnas una por una salvo `email` (PostgreSQL suma privilegios, un `REVOKE (email)` no basta). Para el login/recuperación por nombre de usuario existe `public.get_login_email(text)` (SECURITY DEFINER, un solo correo, solo con coincidencia exacta). Todas las vistas que resolvían el correo con `from('usuarios').select('email')` ahora usan esa RPC con fallback al pseudo-correo (`@tcgdual.com`, `@vikingtcg.xyz`, `@vikingtcg.com`). `js/admin.js` y `scanner.html` siguen leyendo `email` porque van con sesión (rol `authenticated` conserva la columna).
+- Los pseudo-correos (`@tcgdual.com`, `@vikingtcg.xyz`, `@vikingtcg.com`) son credenciales de cuentas viejas: **nunca** cambiarlos al cambiar de dominio.
+
+## Imágenes de Cloudinary optimizadas (`window.optImg`)
+Antes se servían los originales: sticker PNG 1.09 MB, sleeves 0.5–1.8 MB (39 accesorios ≈ 22 MB por visita). Ahora `window.optimizeCloudinaryImage(url, w)` (en `js/utils.js`) inserta `f_auto,q_auto,w_<w>,c_limit` solo en URLs `/image/upload/` (no toca `/raw/` ni las ya transformadas) y `window.optImg` es el atajo. Medido: sticker 1065 → 21 KB, sleeve 1777 → 46 KB.
+- Aplicado en: `js/custom.js` (picker y modal de stickers), `packages.html` (stickers y accesorios), `accesorios.html` (tienda), `js/admin.js` (accesorios y pósteres), `js/app.js` (productos, preventas, eventos, wishlist, pósteres y stickers superpuestos), `carrito.html`, `js/productoSellado.js`, `subastas.html`, `js/binders.js`, `js/eventos.js`, `js/deseos.js`, `js/admin_deseos.js`, `js/adminClaim.js`, `js/viking-widget.js`.
+- En `js/viking-widget.js` se usa la forma guardada `(window.optImg?window.optImg(u,w):u)` porque corre en webs de terceros sin `utils.js`.
+- Las tarjetas ya usaban `window.optimizeMediaUrl`; no mezclar ambos helpers.
+
+## Notificaciones — `binder_sales` no existe
+`js/notifications.js` consultaba `binder_sales` en cada refresco (404 cada 60 s). Ahora se intenta una vez y, si falla, se desactiva en la sesión (`binderSalesUnavailable`). La tabla nunca existió; si se crea, el bloque vuelve a funcionar solo.
+
+## Login de `binders.html`
+Resolvía el correo **solo** con `${usuario}@vikingtcg.xyz`, así que las cuentas con correo real o `@tcgdual.com` no podían entrar. Ahora usa `get_login_email` y cae al pseudo-correo histórico.
