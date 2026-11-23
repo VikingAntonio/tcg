@@ -1885,6 +1885,7 @@ $(document).ready(async function() {
         $('#input-spirit-scale').val(1.8);
         $('#input-spirit-poster-url').val('');
         $('#input-spirit-particle-asset').val(''); // Clear hidden input
+        $('#input-spirit-storage').val('supabase');
         $('#drop-zone-spirit-poster .file-name').text('');
         $('#drop-zone-spirit-particle .file-name').text('');
         $('#spirit-poster-search-input').val('');
@@ -1931,31 +1932,49 @@ $(document).ready(async function() {
         try {
             let gltfUrl = null;
             let textureUrl = null;
+            let cloudinaryError = null;
+            const storage = $('#input-spirit-storage').val() || 'supabase';
 
             if (gltfFile) {
-                // 1. Upload into a unique folder to preserve relative paths
-                const folderId = Date.now() + '_' + Math.floor(Math.random() * 1000);
+                // Cloudinary saca los modelos del Storage de Supabase (cuyo plan
+                // de 5 GB de egress se agotaba con los .bin de hasta 12 MB).
+                if (storage === 'cloudinary' && window.CloudinaryUpload?.uploadModelFiles) {
+                    try {
+                        const result = await window.CloudinaryUpload.uploadModelFiles([gltfFile, ...extraFiles]);
+                        gltfUrl = result.url;
+                        const texture = result.files.find(f => /\.(png|jpe?g|webp)$/i.test(f.name));
+                        if (texture) textureUrl = texture.url;
+                    } catch (err) {
+                        cloudinaryError = err;
+                        console.warn('Cloudinary no pudo subir el modelo, se usa Supabase:', err);
+                    }
+                }
 
-                // Upload main GLTF
-                const gltfPath = `models/${folderId}/${gltfFile.name}`;
-                const { data: gltfData, error: gltfErr } = await _supabase.storage
-                    .from('spirits')
-                    .upload(gltfPath, gltfFile, { cacheControl: '31536000' });
+                if (!gltfUrl) {
+                    // 1. Upload into a unique folder to preserve relative paths
+                    const folderId = Date.now() + '_' + Math.floor(Math.random() * 1000);
 
-                if (gltfErr) throw gltfErr;
-                gltfUrl = _supabase.storage.from('spirits').getPublicUrl(gltfPath).data.publicUrl;
-
-                // 2. Upload extra files (textures, bin, etc.) into the SAME folder
-                for (const file of extraFiles) {
-                    const path = `models/${folderId}/${file.name}`;
-                    const { error: extraErr } = await _supabase.storage
+                    // Upload main GLTF
+                    const gltfPath = `models/${folderId}/${gltfFile.name}`;
+                    const { data: gltfData, error: gltfErr } = await _supabase.storage
                         .from('spirits')
-                        .upload(path, file, { cacheControl: '31536000' });
-                    if (extraErr) console.warn("Error subiendo archivo extra:", file.name, extraErr);
+                        .upload(gltfPath, gltfFile, { cacheControl: 'public, max-age=31536000, immutable' });
 
-                    // If it's an image, we might use it as the main texture if needed
-                    if (file.type.startsWith('image/')) {
-                        textureUrl = _supabase.storage.from('spirits').getPublicUrl(path).data.publicUrl;
+                    if (gltfErr) throw gltfErr;
+                    gltfUrl = _supabase.storage.from('spirits').getPublicUrl(gltfPath).data.publicUrl;
+
+                    // 2. Upload extra files (textures, bin, etc.) into the SAME folder
+                    for (const file of extraFiles) {
+                        const path = `models/${folderId}/${file.name}`;
+                        const { error: extraErr } = await _supabase.storage
+                            .from('spirits')
+                            .upload(path, file, { cacheControl: 'public, max-age=31536000, immutable' });
+                        if (extraErr) console.warn("Error subiendo archivo extra:", file.name, extraErr);
+
+                        // If it's an image, we might use it as the main texture if needed
+                        if (file.type.startsWith('image/')) {
+                            textureUrl = _supabase.storage.from('spirits').getPublicUrl(path).data.publicUrl;
+                        }
                     }
                 }
             }
@@ -1994,7 +2013,13 @@ $(document).ready(async function() {
 
             if (dbErr) throw dbErr;
 
-            Swal.fire('¡Éxito!', editId ? 'Compañero actualizado correctamente' : 'Compañero subido correctamente', 'success');
+            Swal.fire({
+                icon: 'success',
+                title: editId ? 'Compañero actualizado correctamente' : 'Compañero subido correctamente',
+                html: cloudinaryError
+                    ? `Se guardó en Supabase porque Cloudinary no lo aceptó:<br><small>${escapeHtml(cloudinaryError.message || String(cloudinaryError))}</small>`
+                    : undefined
+            });
             $('#spirit-upload-modal').removeClass('active');
             loadSpirits();
         } catch (err) {
@@ -2002,6 +2027,212 @@ $(document).ready(async function() {
             Swal.fire('Error', 'No se pudo guardar el asistente: ' + (err.message || ''), 'error');
         }
     });
+
+    // Marca todos los archivos del bucket `spirits` con caché de 1 año.
+    // La API hace una copia en el servidor (S3 CopyObject), así que no se
+    // descarga ni se re-sube ningún byte: solo cambian los metadatos del objeto.
+    // Con `max-age=31536000, immutable` el navegador ya no vuelve a pedir el
+    // modelo (antes se servía `max-age=3600` y cada visita gastaba egress).
+    $('#btn-fix-spirits-cache').click(async function() {
+        const FULL = 'public, max-age=31536000, immutable';
+        const confirm = await Swal.fire({
+            title: 'Reparar caché de modelos',
+            html: 'Se marcarán todos los archivos del bucket <code>spirits</code> con caché de 1 año.<br>No se descarga nada y el contenido no cambia.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Reparar',
+            cancelButtonText: 'Cancelar'
+        });
+        if (!confirm.isConfirmed) return;
+
+        Swal.fire({
+            title: 'Reparando caché...',
+            html: '<div id="fix-cache-status">Leyendo archivos...</div>',
+            allowOutsideClick: false,
+            showConfirmButton: false
+        });
+        const setStatus = text => {
+            const el = document.getElementById('fix-cache-status');
+            if (el) el.innerHTML = text;
+        };
+
+        try {
+            const files = [];
+            const walk = async (prefix) => {
+                const { data, error } = await _supabase.storage.from('spirits').list(prefix, { limit: 1000 });
+                if (error) throw error;
+                for (const entry of data || []) {
+                    const path = prefix ? `${prefix}/${entry.name}` : entry.name;
+                    if (entry.id) files.push(path);
+                    else await walk(path);
+                }
+            };
+            await walk('');
+
+            const session = await _supabase.auth.getSession();
+            const token = session?.data?.session?.access_token || SUPABASE_KEY;
+            let done = 0;
+            const failed = [];
+
+            for (const path of files) {
+                setStatus(`<b>${done + failed.length + 1}/${files.length}</b> · ${escapeHtml(path)}`);
+                try {
+                    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/copy`, {
+                        method: 'POST',
+                        headers: {
+                            apikey: SUPABASE_KEY,
+                            Authorization: `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                            'x-upsert': 'true'
+                        },
+                        body: JSON.stringify({
+                            bucketId: 'spirits',
+                            sourceKey: path,
+                            destinationKey: path,
+                            metadata: { cacheControl: FULL },
+                            copyMetadata: false
+                        })
+                    });
+                    if (!res.ok) throw new Error(`${res.status} ${(await res.text()).slice(0, 120)}`);
+                    done++;
+                } catch (err) {
+                    failed.push(`${path}: ${err.message || err}`);
+                }
+            }
+
+            if (failed.length) {
+                Swal.fire({
+                    title: 'Reparación con errores',
+                    html: `${done} archivos reparados.<br><br>Fallaron:<br>${failed.slice(0, 10).map(escapeHtml).join('<br>')}`,
+                    icon: 'warning'
+                });
+            } else {
+                Swal.fire('¡Listo!', `${done} archivos con caché de 1 año.`, 'success');
+            }
+        } catch (err) {
+            Swal.fire('Error', escapeHtml(err.message || String(err)), 'error');
+        }
+    });
+
+    // Migra los modelos 3D que aún viven en Supabase Storage a Cloudinary.
+    // El plan gratuito de Supabase solo da 5 GB de egress de CDN y los .bin de
+    // los asistentes pesan varios MB, así que se agotaba cada mes.
+    $('#btn-migrate-spirits-cloudinary').click(async function() {
+        const cdn = window.CloudinaryUpload;
+        if (!cdn || typeof cdn.uploadModelFiles !== 'function') {
+            Swal.fire('No disponible', 'El cargador de Cloudinary no está cargado en esta vista.', 'error');
+            return;
+        }
+
+        const { data: spirits, error } = await _supabase.from('spirits').select('id,name,gltf_url,texture_url');
+        if (error) {
+            Swal.fire('Error', 'No se pudieron leer los asistentes: ' + error.message, 'error');
+            return;
+        }
+
+        const isSupabaseModel = url => /\/storage\/v1\/object\/public\/spirits\//.test(url || '');
+        const pending = (spirits || []).filter(s => isSupabaseModel(s.gltf_url));
+        if (pending.length === 0) {
+            Swal.fire('Todo listo', 'Todos los modelos ya están en Cloudinary.', 'success');
+            return;
+        }
+
+        const confirm = await Swal.fire({
+            title: 'Migrar modelos a Cloudinary',
+            html: `Se copiarán <b>${pending.length}</b> modelos y se actualizará su URL.<br>No cierres esta pestaña mientras dura la migración.`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Migrar',
+            cancelButtonText: 'Cancelar'
+        });
+        if (!confirm.isConfirmed) return;
+
+        Swal.fire({
+            title: 'Migrando modelos...',
+            html: '<div id="migrate-spirits-status">Preparando...</div>',
+            allowOutsideClick: false,
+            showConfirmButton: false
+        });
+
+        const setStatus = text => {
+            const el = document.getElementById('migrate-spirits-status');
+            if (el) el.innerHTML = text;
+        };
+
+        let done = 0;
+        const failed = [];
+
+        for (const spirit of pending) {
+            setStatus(`<b>${done + 1}/${pending.length}</b> · ${escapeHtml(spirit.name || spirit.id)}`);
+            try {
+                const result = await uploadSupabaseModelToCloudinary(spirit, cdn);
+                const update = { gltf_url: result.url };
+                if (result.textureUrl) update.texture_url = result.textureUrl;
+                const { error: updateErr } = await _supabase.from('spirits').update(update).eq('id', spirit.id);
+                if (updateErr) throw updateErr;
+                done++;
+            } catch (err) {
+                console.error('Migración fallida:', spirit.name, err);
+                failed.push(`${spirit.name || spirit.id}: ${err.message || err}`);
+            }
+        }
+
+        if (failed.length) {
+            Swal.fire({
+                title: 'Migración terminada con errores',
+                html: `${done} modelos migrados.<br><br>Fallaron:<br>${failed.map(escapeHtml).join('<br>')}` +
+                    '<br><br><small>El plan gratuito de Cloudinary acepta archivos de hasta 10 MB. ' +
+                    'Los modelos que lo superan hay que optimizarlos (por ejemplo .glb con Draco/meshopt) o dejarlos en Supabase.</small>',
+                icon: 'warning'
+            });
+        } else {
+            Swal.fire('¡Listo!', `${done} modelos migrados a Cloudinary.`, 'success');
+        }
+        loadSpirits();
+    });
+
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    async function downloadAsFile(url, name) {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`No se pudo descargar ${name} (${response.status})`);
+        const blob = await response.blob();
+        return new File([blob], name, { type: blob.type || 'application/octet-stream' });
+    }
+
+    async function uploadSupabaseModelToCloudinary(spirit, cdn) {
+        const gltfUrl = spirit.gltf_url;
+        const fileName = decodeURIComponent(gltfUrl.split('/').pop().split('?')[0]);
+        const folderUrl = gltfUrl.slice(0, gltfUrl.lastIndexOf('/'));
+
+        if (/\.glb$/i.test(fileName)) {
+            const file = await downloadAsFile(gltfUrl, fileName);
+            return { url: (await cdn.uploadModelFiles([file])).url };
+        }
+
+        const gltfFile = await downloadAsFile(gltfUrl, fileName);
+        const json = JSON.parse(await gltfFile.text());
+        const uris = [...(json.buffers || []), ...(json.images || [])]
+            .map(item => item.uri)
+            .filter(uri => uri && !uri.startsWith('data:') && !/^[a-z]+:\/\//i.test(uri));
+
+        const files = [gltfFile];
+        for (const uri of [...new Set(uris)]) {
+            files.push(await downloadAsFile(new URL(uri, folderUrl + '/').href, uri));
+        }
+
+        const result = await cdn.uploadModelFiles(files);
+
+        let textureUrl = null;
+        if (spirit.texture_url && spirit.texture_url.startsWith(folderUrl)) {
+            const textureName = decodeURIComponent(spirit.texture_url.split('/').pop().split('?')[0]);
+            const match = result.files.find(f => f.original === textureName);
+            if (match) textureUrl = match.url;
+        }
+        return { url: result.url, textureUrl };
+    }
 
     // Toggle Public/Private from list (Albums, Decks, Spirits)
     // --- Chatbot Config Actions ---
@@ -2205,6 +2436,7 @@ function editSpirit(spirit) {
     $('#input-spirit-scale').val(spirit.scale || 1.8);
     $('#input-spirit-public').prop('checked', spirit.is_public !== false);
     $('#input-spirit-poster-url').val(spirit.poster_url || '');
+    $('#input-spirit-storage').val(/cloudinary\.com/.test(spirit.gltf_url || '') ? 'cloudinary' : 'supabase');
 
     // UI Status
     $('#drop-zone-spirit-poster .file-name').text(spirit.poster_url ? '¡Cargado!' : '').css('color', '#00ff88');
@@ -4171,9 +4403,11 @@ async function loadSpirits() {
         // Se muestra el póster (imagen ya cacheada) en vez de montar un
         // model-viewer por asistente: cada .bin pesa ~2.7 MB y la rejilla
         // descargaba decenas de modelos por visita (egress de Storage).
+        const modelHost = /cloudinary\.com/.test(spirit.gltf_url || '') ? 'Cloudinary' : 'Supabase';
         const modelViewerHTML = `
             <div class="spirit-card-media" style="position: relative; width: 100%; height: 250px; border-radius: 15px; overflow: hidden; margin-bottom: 15px; background: radial-gradient(circle, #1a1a1a 0%, #000 100%);">
                 <img class="spirit-poster" src="${spirit.poster_url || spirit.texture_url || ''}" alt="${spirit.name}" loading="lazy" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                <span title="Servidor del modelo 3D" style="position: absolute; left: 8px; top: 8px; padding: 3px 8px; border-radius: 999px; background: rgba(0,0,0,0.65); color: #fff; font-size: 10px; letter-spacing: .4px;">${modelHost}</span>
                 <button type="button" class="btn-preview-spirit-3d" title="Ver en 3D" style="position: absolute; right: 8px; bottom: 8px; width: 34px; height: 34px; border-radius: 50%; border: none; background: rgba(0,0,0,0.65); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                     <i class="fas fa-cube"></i>
                 </button>

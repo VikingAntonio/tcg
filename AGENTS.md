@@ -249,11 +249,11 @@ Síntoma: enviar cartas acopladas al cementerio/removido (botones masivos "Todas
 
 ## Consumo de cuota Supabase — "Cached Egress" (modelos 3D)
 Síntoma: el panel de Supabase marcaba **Cached Egress 6.1 / 5 GB (122 %)** mientras que `Egress` (base de datos) solo iba al 9 %. El "Cached Egress" es el CDN de **Storage**, no la BD.
-- **Causa 1:** cada asistente pesa ~2.7 MB (`models/<ts>_<rand>/<Nombre>.bin`) + texturas JPG (~0.3–1 MB). Los objetos se sirven con `cache-control: private, no-cache` y `cf-cache-status: DYNAMIC`.
+- **Causa 1:** cada asistente pesa ~2.7 MB (`models/<ts>_<rand>/<Nombre>.bin`) + texturas JPG (~0.3–1 MB) y se servían con `cache-control: public, max-age=3600`: a la hora, cada visitante los volvía a descargar. Ver la sección *Cached Egress — causa real y arreglo* al final: la cabecera ahora es de 1 año.
 - **Causa 2:** el Service Worker solo se registraba en 15 de 45 vistas, así que en el resto el modelo se bajaba completo en cada navegación. Ahora se registra desde `js/supabase-config.js` (lo cargan 37 vistas).
 - **Causa 3:** las rejillas de asistentes montaban un `<model-viewer>` por asistente (`admin.js` → `#spirits-grid`, `app.js` → `loadPublicSpirits`, `play.html`, `duel.html`). Con 41 asistentes eso son ~150 MB por visita. Ahora pintan el póster (`poster_url`, en Cloudinary) y el modelo se monta solo al abrirlo: en admin con `.btn-preview-spirit-3d` → `#gltf-overlay`; en público el click de `.spirit-card` ya abría ese overlay y lee `data-poster`.
 - `sw.js`: el cache-first ya no depende de la extensión; cualquier ruta con `/storage/v1/object/public/spirits/` se guarda en `IMAGE_CACHE` (por eso `STATIC_CACHE` v253 no la borra al subir de versión).
-- `docs/J_storage_cache_control.sql` (opcional) marca los objetos con `Cache-Control: public, max-age=31536000, immutable`; los nombres de archivo son únicos por subida, así que es seguro.
+- `docs/J_storage_cache_control.sql` (opcional) solo actualiza el espejo de la BD; **no** cambia la cabecera servida (se cambia con la copia en servidor descrita al final del archivo).
 - **No** volver a montar un `model-viewer` por elemento de una lista: con `loading="lazy"` igual descarga varios modelos al hacer scroll.
 - Notificaciones (`js/notifications.js`): sondeo cada 60 s (antes 15 s), se detiene con `document.hidden` y se refresca en `visibilitychange`/`focus`; los `select` piden solo las columnas usadas.
 
@@ -281,3 +281,43 @@ Síntoma: el panel de Supabase marcaba **Cached Egress 6.1 / 5 GB (122 %)** mien
   - Subastas, eventos, decks/mazos, wishlist, accesorios y (solo admin) clientes.
 - **Admin vs público**: en `public.html` (o `?store=`) `is_admin` es siempre `false`; se filtran binders/álbumes/categorías privadas, cartas no públicas, agotadas y vendidas, y NUNCA se envían costos/ganancias. En admin se incluye todo.
 - **Lectura solamente**: el bot no escribe en Supabase. Si piden modificar algo, guía; no confirma cambios falsos. Acciones reales requerirían tool-calling validado.
+
+## Cached Egress de Supabase — causa real y arreglo (cabecera de 1 año)
+Medido con `curl` sobre objetos de `spirits`:
+- `GET /storage/v1/object/public/spirits/...` devolvía **`cache-control: public, max-age=3600`**. Con 1 hora, cada visitante que vuelve después de 1 h descarga otra vez el modelo completo (1.2–12 MB), y Supabase lo cuenta como **Cached Egress** (su doc lo define como el egress servido por su CDN con cache hits). Por eso el contador subía aunque hubiera Service Worker: el SW solo cubre a quien ya lo tiene instalado y cuya petición pasa por él.
+- El `metadata->>'cacheControl'` de `storage.objects` **no** es la fuente de la cabecera servida: manda el `CacheControl` del objeto en S3. Ese espejo puede decir `public, max-age=31536000, immutable` y aun así servirse `3600` (pasaba en casi todos los modelos).
+- **El valor de `cacheControl` se manda tal cual a la cabecera.** Pasar `cacheControl: '31536000'` produce `cache-control: public, 31536000` (inválido, sin `max-age=`) y el CDN acaba sirviendo 3600. Hay que pasar el valor completo: **`public, max-age=31536000, immutable`**.
+- Arreglo aplicado (2026-11): los 228 objetos de `spirits` se marcaron con `public, max-age=31536000, immutable`. Se hace con **copia en el servidor**, sin descargar ni re-subir bytes:
+  `POST /storage/v1/object/copy` con `{bucketId, sourceKey, destinationKey: sourceKey, metadata:{cacheControl:'public, max-age=31536000, immutable'}, copyMetadata:false}` y `x-upsert: true`.
+  Es un `S3 CopyObject` con `MetadataDirective: REPLACE`: conserva bytes, `size`, `eTag` (salvo objetos multipart, que pasan a MD5 simple) y `mimetype`. Verificado: 228/228 OK, 0 fallos, modelo sigue cargando en `model-viewer`.
+  - OJO: `PUT /storage/v1/object/{bucket}/{path}` **no** sirve para esto: reemplaza el contenido por el body (con body vacío deja el objeto en 0 bytes).
+- En el panel: botón **"Reparar caché de modelos"** (`#btn-fix-spirits-cache`, en Mis Asistentes) → recorre el bucket y hace la copia. Es idempotente y se puede repetir.
+- Las subidas nuevas usan ya el valor completo (`cacheControl: 'public, max-age=31536000, immutable'`) en `admin.js`, `build.js` y `packages.html`.
+- `J_storage_cache_control.sql` (metadata en la BD) **no** cambia la cabecera servida; se conserva solo como documentación.
+- Cloudinary queda como opción secundaria (selector en el modal, `uploadModelFiles`, botón "Copiar modelos a Cloudinary"). El plan gratuito limita a **10 MiB por archivo raw** (`File size too large... Maximum is 10485760`) y ~25 GB/mes de banda. `.bin` se sube como `.glbin` porque Cloudinary rechaza esa extensión.
+- `michatbot.js` revalida el asistente en segundo plano (`lookupSpiritFromDb` + `refreshCornerModelUrl`) para que un `localStorage` con URL vieja no siga pidiendo el host anterior.
+
+## Modelos 3D pesados — compresión (GLB + Draco)
+Los `.bin` de los asistentes no estaban "sin comprimir": ya venían con `KHR_draco_mesh_compression`, pero con **3.1 millones de triángulos** para un visor de 150–320 px. Ahí no hay margen de compresión: el único lever es **simplificar la malla**.
+- Comando usado (fuera del repo, con `@gltf-transform/cli`):
+  `gltf-transform optimize in.gltf out.glb --compress draco --simplify true --simplify-ratio 0.08 --simplify-error 0.001 --texture-compress false`
+- Resultado: Eveningstar 12.98 MB → **1.97 MB**, alluber 8.99 → **1.46 MB**, ghostOgre 8.98 → **1.73 MB** (≈6–7×). Se suben como `.glb` (un solo archivo, un solo request) al mismo folder con `cache-control: public, max-age=31536000, immutable`.
+- Calidad verificada: render a 320 px original vs comprimido es indistinguible (diferencias solo de antialiasing/encuadre). Carga OK en model-viewer (escritorio) y en three.js `GLTFLoader` + `DRACOLoader` (móvil, `michatbot-mobile3d.js` ya configura el decoder de gstatic).
+- `docs/L_use_compressed_models.sql` apunta `spirits.gltf_url` de esos 3 registros al `.glb`. Los originales no se borran.
+- OJO: `models/1787119012509_745` ("mago BETA", 12.19 MB) **no está referenciado** por ninguna fila de `spirits`: es un upload huérfano y no genera egress.
+- `--simplify-error` >= 0.015 rompe el encoder con `[KHR_draco_mesh_compression] Unknown geometry type`; 0.001–0.01 funciona.
+
+
+## Storage — subir a Supabase o a Cloudinary (repartir la carga)
+- El modal de asistente tiene `#input-spirit-storage` con **Supabase (por defecto)** y **Cloudinary (opcional)**. Es por modelo, así que se puede repartir la carga entre los dos hosts.
+- La tarjeta de cada asistente en Admin → Mis Asistentes muestra un badge con el host (`Supabase` / `Cloudinary`) leyendo `gltf_url`, para ver el reparto de un vistazo.
+- Cloudinary: `.gltf` + `.bin` + texturas en una carpeta única, `.bin` → `.glbin` con reescritura de `buffers[].uri`, límite 10 MiB/archivo.
+
+
+## Storage — RLS (cerrar escritura anónima)
+- La clave anónima podía subir/sobreescribir/borrar en `spirits` sin sesión (probado con `POST`/`DELETE` desde fuera del navegador). `docs/K_storage_rls_spirits.sql` lo cierra:
+  - helper `public.is_admin()` (`security definer`, `usuarios.role='admin'`);
+  - borra las políticas de `storage.objects` que mencionan `spirits`/`accessories` y las de escritura totalmente abiertas a `anon`/`public`;
+  - recrea: `spirits/models/*` solo admin, `spirits/build_models/<uid>/*` solo su dueño, `accessories/*` solo admin, `select` de `spirits` para el admin (botón Reparar caché).
+- La lectura pública (`/storage/v1/object/public/...`) no usa RLS, así que la web sigue igual.
+- Los `PATCH` a la tabla `spirits` con la clave anónima ya estaban bloqueados; el panel los hace con el JWT del admin.

@@ -1,24 +1,36 @@
 -- ============================================================================
--- Cache-Control largo para los archivos de Storage (modelos 3D y accesorios)
+-- Cache-Control en los objetos de Storage (modelos 3D y accesorios)
 -- ============================================================================
--- Problema: los objetos del bucket `spirits` se sirven con
---   cache-control: private, no-cache
---   cf-cache-status: DYNAMIC
--- así que el navegador (y el CDN de Supabase) vuelven a pedir el archivo en
--- cada visita. Cada asistente pesa ~2.7 MB (.bin) + texturas, y eso infló el
--- "Cached Egress" del plan hasta pasarse del límite.
+-- OJO / IMPORTANTE (verificado en producción):
+--   Este script actualiza la columna `storage.objects.metadata->>'cacheControl'`
+--   (el "espejo" en la base de datos), pero NO cambia la cabecera que se sirve
+--   en /storage/v1/object/public/... En el Storage actual (backend S3) la
+--   cabecera Cache-Control sale del `CacheControl` del objeto en S3.
 --
--- Este script marca los objetos como inmutables durante un año. Los archivos
--- se guardan con un nombre único por subida (models/<timestamp>_<random>/...),
--- así que son seguros de cachear para siempre: si se reemplaza un modelo,
--- cambia la ruta.
+--   Cómo se arregla de verdad (sin descargar ni re-subir bytes):
+--     POST /storage/v1/object/copy
+--     { "bucketId": "spirits", "sourceKey": "<path>", "destinationKey": "<path>",
+--       "metadata": { "cacheControl": "public, max-age=31536000, immutable" },
+--       "copyMetadata": false }
+--     con header `x-upsert: true`.
+--   Es un S3 CopyObject con MetadataDirective=REPLACE: conserva contenido,
+--   tamaño y mimetype y solo cambia los metadatos. En admin.html -> Mis
+--   Asistentes -> "Reparar caché de modelos" se hace para todo el bucket.
 --
--- OJO con el esquema: las instalaciones nuevas de Supabase ya no tienen la
--- columna `storage.objects.cache_control`; el valor vive en
--- `storage.objects.metadata->>'cacheControl'`. El bloque de abajo detecta cuál
--- existe y usa la que corresponda, así que sirve en ambos casos.
+--   También hay que subir los archivos nuevos con el valor COMPLETO:
+--     cacheControl: 'public, max-age=31536000, immutable'
+--   Si se pasa solo '31536000', la cabecera sale `public, 31536000` (inválida)
+--   y el CDN termina sirviendo 3600.
 --
--- Es idempotente: se puede ejecutar las veces que haga falta.
+--   "Cached Egress" es el egress servido por el CDN con cache hits. Con la
+--   cabecera de 1 año el navegador no vuelve a pedir el modelo, así que cada
+--   visitante solo lo descarga una vez.
+--
+--   Cloudinary sigue disponible como opción secundaria (selector del modal y
+--   botón "Copiar modelos a Cloudinary"), pero ya no es necesaria.
+--
+-- Este script se mantiene porque deja el metadato de la BD coherente y algunas
+-- herramientas (dashboard/SDK) lo leen. Es idempotente.
 -- Ejecutar en Supabase → SQL Editor.
 -- ============================================================================
 
@@ -54,8 +66,7 @@ BEGIN
 END
 $$;
 
--- Comprobación: debe mostrar "con_cache_largo" = "objetos" en cada bucket.
--- to_jsonb(o) funciona con los dos esquemas (con o sin columna cache_control).
+-- Comprobación del metadato en la BD (NO es lo que se sirve por HTTP).
 SELECT bucket_id,
        count(*) AS objetos,
        count(*) FILTER (

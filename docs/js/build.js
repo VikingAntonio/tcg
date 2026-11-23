@@ -298,12 +298,25 @@ async function saveAsset() {
         if (droppedPoster) posterUrl = await CloudinaryUpload.uploadImage(droppedPoster);
 
         if (droppedGltf) {
-            const folder = Date.now();
-            const mainPath = `build_models/${currentUser.id}/${folder}/${droppedGltf.name}`;
-            await _supabase.storage.from('spirits').upload(mainPath, droppedGltf, { cacheControl: '31536000' });
-            gltfUrl = _supabase.storage.from('spirits').getPublicUrl(mainPath).data.publicUrl;
-            for (const f of droppedExtras) {
-                await _supabase.storage.from('spirits').upload(`build_models/${currentUser.id}/${folder}/${f.name}`, f, { cacheControl: '31536000' });
+            // Cloudinary primero: los modelos 3D no deben consumir el egress de
+            // Supabase (plan de 5 GB). Si falla, se sube a Supabase como antes.
+            try {
+                if (window.CloudinaryUpload && typeof window.CloudinaryUpload.uploadModelFiles === 'function') {
+                    const result = await window.CloudinaryUpload.uploadModelFiles([droppedGltf, ...droppedExtras]);
+                    gltfUrl = result.url;
+                }
+            } catch (e) {
+                console.warn('Cloudinary no pudo subir el modelo, se usa Supabase:', e);
+            }
+
+            if (!gltfUrl) {
+                const folder = Date.now();
+                const mainPath = `build_models/${currentUser.id}/${folder}/${droppedGltf.name}`;
+                await _supabase.storage.from('spirits').upload(mainPath, droppedGltf, { cacheControl: 'public, max-age=31536000, immutable' });
+                gltfUrl = _supabase.storage.from('spirits').getPublicUrl(mainPath).data.publicUrl;
+                for (const f of droppedExtras) {
+                    await _supabase.storage.from('spirits').upload(`build_models/${currentUser.id}/${folder}/${f.name}`, f, { cacheControl: 'public, max-age=31536000, immutable' });
+                }
             }
         }
 
