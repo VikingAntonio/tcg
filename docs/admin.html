@@ -2518,13 +2518,13 @@
                     </label>
                 </div>
                 <div class="form-group">
-                    <label>Almacenamiento del Modelo</label>
+                    <label>Servidor del Modelo</label>
                     <select id="input-spirit-storage">
-                        <option value="supabase" selected>Supabase Storage (recomendado, caché 1 año)</option>
-                        <option value="cloudinary">Cloudinary (opcional, no consume Supabase)</option>
+                        <option value="primary" selected>Servidor principal (recomendado)</option>
+                        <option value="alternate">Servidor alterno</option>
                     </select>
                     <p style="font-size: 11px; color: #888; margin-top: 6px; line-height: 1.4;">
-                        Supabase sirve los modelos con caché de 1 año, así que cada visitante solo los descarga una vez.
+                        Los modelos se guardan con caché de 1 año, así que cada visitante solo los descarga una vez.
                         Se acepta .glb (un solo archivo) o .gltf con sus texturas.
                     </p>
                 </div>
@@ -3325,7 +3325,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/confirmDate/confirmDate.js"></script>
-    <script src="js/cloudinary-upload.js"></script>
+    <script src="js/media-upload.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="js/cart.js"></script>
     <script src="js/viking-data.js"></script>

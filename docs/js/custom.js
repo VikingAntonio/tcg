@@ -155,7 +155,7 @@ async function initSession() {
             }
         }
     } catch (e) {
-        console.warn('Supabase auth session check failed, using fallback:', e);
+        console.warn('Auth session check failed, using fallback:', e);
     }
 
     const savedSession = localStorage.getItem('tcg_session');
@@ -204,7 +204,7 @@ async function loadCustomizations() {
             if (data.grid_mobile && Object.keys(data.grid_mobile).length > 0) state.gridMobile = data.grid_mobile;
         }
     } catch (e) {
-        console.warn('Error fetching store_customizations from Supabase:', e);
+        console.warn('Error fetching store_customizations:', e);
     }
 
     renderStickersPicker();

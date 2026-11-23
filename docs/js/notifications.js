@@ -1155,7 +1155,7 @@ async function claimGiftItem(giftCampaign) {
             } else if (raw.includes('AUTH_REQUIRED')) {
                 Swal.fire('Inicia Sesión', 'Debes iniciar sesión para reclamar este regalo.', 'info');
             } else if (raw.includes('Could not find the function') || raw.includes('does not exist')) {
-                Swal.fire('Falta configuración', 'El servidor de regalos aún no está activado. Ejecuta la migración SQL I_stripe_purchases_durability_and_security.sql en Supabase.', 'error');
+                Swal.fire('Falta configuración', 'El servidor de regalos aún no está activado. Ejecuta la migración SQL I_stripe_purchases_durability_and_security.sql en el panel de la base de datos.', 'error');
             } else {
                 throw claimErr;
             }

@@ -189,8 +189,8 @@ async function handleInvExtraImages(files) {
 
     for (const file of files) {
         try {
-            // Reusing cloudinary logic from js/cloudinary-upload.js
-            const url = await CloudinaryUpload.uploadImage(file);
+            // Reutiliza la lógica de subida de js/media-upload.js
+            const url = await MediaUpload.uploadImage(file);
             if (url) {
                 currentInvExtraImages.push(url);
             }

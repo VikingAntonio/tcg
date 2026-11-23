@@ -93,8 +93,9 @@ Sustituye a `model-viewer` **solo en móvil/GPU débil** (`useMobile3D()`), porq
 - Los modales usan `.overlay-content` (de `style.css`), que trae `align-items: center`. Como `.inv-modal-header` es un hijo flex en columna, quedaba encogido a su contenido y centrado → la X (`.inv-close-btn`, `position:absolute`) aparecía a ~350-450px del borde derecho. Arreglo: `align-items: stretch` en `#investment-card-modal .overlay-content` y en `.inv-ledger-content`, y `width: 100%` en `.inv-modal-header`. Resultado: X a 16px (13px móvil) de la esquina, sin overflow.
 - Los `.inv-tab-link` con sus data-tab deben seguir siendo 5; el buscador vive en la pestaña DATOS (`#inv-tab-datos`), por eso al probar con Playwright hay que activar esa pestaña antes de `fill()`.
 
-## Cloudinary — `window.CloudinaryUpload` (bug de subida)
-`js/cloudinary-upload.js` declara `const CloudinaryUpload = {...}`. Un `const` en el top-level crea un **global léxico**, NO una propiedad de `window`; por eso `window.CloudinaryUpload` era `undefined` aunque `typeof CloudinaryUpload === 'object'`. El código que guarda con `if (window.CloudinaryUpload && ...)` (p. ej. `packages.html` → `handleBddFileSelected`) saltaba la subida, intentaba el fallback a Supabase Storage (bucket `accessories`, bloqueado por RLS → 403) y acababa guardando un `URL.createObjectURL(file)` = `blob:https://...` **muerto** en `image_url`. Resultado: cartas guardadas con imagen rota. Arreglo: `window.CloudinaryUpload = CloudinaryUpload;` al final del archivo. El resto de vistas usan la referencia léxica (`CloudinaryUpload.uploadImage`) y ya funcionaban.
+## Subida de medios — `window.MediaUpload` (bug de subida)
+`js/media-upload.js` declara `const MediaUpload = {...}`. Un `const` en el top-level crea un **global léxico**, NO una propiedad de `window`; por eso `window.MediaUpload` era `undefined` aunque `typeof MediaUpload === 'object'`. El código que guarda con `if (window.MediaUpload && ...)` (p. ej. `packages.html` → `handleBddFileSelected`) saltaba la subida, intentaba el fallback al bucket `accessories` (bloqueado por RLS → 403) y acababa guardando un `URL.createObjectURL(file)` = `blob:https://...` **muerto** en `image_url`. Resultado: cartas guardadas con imagen rota. Arreglo: `window.MediaUpload = MediaUpload;` al final del archivo. El resto de vistas usan la referencia léxica (`MediaUpload.uploadImage`) y ya funcionaban.
+- El archivo se llamaba `cloudinary-upload.js` y el global `CloudinaryUpload`; se renombraron para no exponer el proveedor en el código servido.
 
 ## Inversiones — bugs de gráfica, preview, slots y reordenamiento (binder)
 - **Gráfica temblorosa en el modal (RESUMEN):** `renderPriceHistoryChart` crea un Chart.js con `responsive:true, maintainAspectRatio:false`, que dimensiona el canvas a partir del padre. El contenedor usaba `height: calc(100% - 30px)` dentro de un `flex:1`, así que canvas↔contenedor se redimensionaban mutuamente en bucle (el modal oscilaba 756→735… sin parar). Arreglo: `.inv-detail-chart-container` con **altura fija** (`200px`) y `position:relative`; el canvas se adapta dentro, no al revés. No volver a usar `%`/`flex` como altura de un contenedor de Chart.js responsive.
@@ -309,9 +310,10 @@ Los `.bin` de los asistentes no estaban "sin comprimir": ya venían con `KHR_dra
 
 
 ## Storage — subir a Supabase o a Cloudinary (repartir la carga)
-- El modal de asistente tiene `#input-spirit-storage` con **Supabase (por defecto)** y **Cloudinary (opcional)**. Es por modelo, así que se puede repartir la carga entre los dos hosts. Lo que se sube a Cloudinary **no pasa por el CDN de Supabase** (no gasta su Cached Egress).
+- El modal de asistente tiene `#input-spirit-storage` con **Servidor principal** (`primary`, por defecto) y **Servidor alterno** (`alternate`). Es por modelo, así que se puede repartir la carga entre los dos hosts. Lo que se sube al alterno **no gasta el Cached Egress del principal**.
+- REGLA DEL USUARIO: **nada de nombres de proveedor en la interfaz**. Ni "Supabase" ni "Cloudinary" en etiquetas, badges, Swal, placeholders ni logs de consola. En el código solo quedan los identificadores funcionales (`_supabase`, URLs `api.cloudinary.com`, `res.cloudinary.com` de imágenes por defecto, claves de localStorage).
 - No hay botones de "reparar caché" ni de "copiar a Cloudinary": el usuario los pidió quitar. La cabecera ya quedó reparada en producción y los modelos nuevos se suben con la cabecera correcta desde el propio modal.
-- La tarjeta de cada asistente en Admin → Mis Asistentes muestra un badge con el host (`Supabase` / `Cloudinary`) leyendo `gltf_url`, para ver el reparto de un vistazo.
+- NO poner badges ni etiquetas que revelen dónde está guardado el modelo (se quitó el badge de host a petición del usuario).
 - Cloudinary: `.gltf` + `.bin` + texturas en una carpeta única, `.bin` → `.glbin` con reescritura de `buffers[].uri`, límite 10 MiB/archivo.
 
 

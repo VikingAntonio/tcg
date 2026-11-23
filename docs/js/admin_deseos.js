@@ -519,14 +519,14 @@ async function saveWishlistSlotName(index, name) {
 }
 
 async function deleteWishlistItemAdmin(id, $element = null) {
-    // Deletion of custom masks from Cloudinary
+    // Borrado de máscaras personalizadas del CDN
     const maskUrl = $element ? $element.attr('data-mask') : '';
     if (maskUrl) {
         const maskUrls = maskUrl.split(';');
         for (const url of maskUrls) {
             if (url && url.includes('cloudinary.com')) {
-                if (typeof CloudinaryUpload !== 'undefined' && CloudinaryUpload.deleteImage) {
-                    CloudinaryUpload.deleteImage(url);
+                if (typeof MediaUpload !== 'undefined' && MediaUpload.deleteImage) {
+                    MediaUpload.deleteImage(url);
                 }
             }
         }

@@ -48,7 +48,7 @@ $(document).ready(async function() {
 async function handleFileUpload(file) {
     try {
         Swal.fire({ title: 'Subiendo...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
-        const url = await CloudinaryUpload.uploadImage(file);
+        const url = await MediaUpload.uploadImage(file);
         $('#input-image-url').val(url);
         $('#img-preview').attr('src', url).show();
         $('#drop-text').hide();

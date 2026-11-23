@@ -852,7 +852,7 @@ async function handleInvMainImage(file) {
     if (!file) return;
     Swal.fire({ title: 'Subiendo imagen...', didOpen: () => Swal.showLoading() });
     try {
-        const url = await CloudinaryUpload.uploadImage(file);
+        const url = await MediaUpload.uploadImage(file);
         if (url) {
             $('#inv-card-image-url').val(url);
             syncAddPreview();
@@ -870,8 +870,8 @@ async function handleInvExtraImages(files) {
 
     for (const file of files) {
         try {
-            // Reusing cloudinary logic from js/cloudinary-upload.js
-            const url = await CloudinaryUpload.uploadImage(file);
+            // Reutiliza la lógica de subida de js/media-upload.js
+            const url = await MediaUpload.uploadImage(file);
             if (url) {
                 currentInvExtraImages.push(url);
             }

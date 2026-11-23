@@ -16,7 +16,7 @@
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
     <script src="js/supabase-config.js"></script>
     <script src="js/cart.js"></script>
-    <script src="js/cloudinary-upload.js"></script>
+    <script src="js/media-upload.js"></script>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -1047,7 +1047,7 @@
                         Imágenes 2D (.PNG, .JPG, .WEBP)
                     </div>
                     <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 4px;">
-                        Subida automática a Cloudinary para accesorios (Dados 6 imágenes, Monedas 2 imágenes, Contadores 1:1).
+                        Subida automática de imágenes para accesorios (Dados 6 imágenes, Monedas 2 imágenes, Contadores 1:1).
                     </div>
                     <input type="file" id="input-accessory-file" accept="image/*" multiple style="display: none;">
                 </div>
@@ -1273,7 +1273,7 @@
                                 <div class="pack-image-dropzone" id="bdd-file-dropzone" style="min-height: 140px; border: 2px dashed rgba(0, 210, 255, 0.4); border-radius: 12px; background: rgba(0, 0, 0, 0.25); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; padding: 20px; text-align: center;">
                                     <i class="fas fa-cloud-upload-alt" style="font-size: 2.2rem; color: #00d2ff; margin-bottom: 8px;"></i>
                                     <p style="margin: 0; font-size: 0.9rem; color: #cbd5e1; font-weight: 600;">Arrastra y suelta tu archivo o haz clic para subir</p>
-                                    <p style="margin: 4px 0 0 0; font-size: 0.78rem; color: #64748b;">Imágenes se optimizan en Cloudinary • Modelos 3D se almacenan con model-viewer</p>
+                                    <p style="margin: 4px 0 0 0; font-size: 0.78rem; color: #64748b;">Imágenes optimizadas • Modelos 3D con model-viewer</p>
                                     <input type="file" id="bdd-file-input" accept="image/*,.gltf,.glb" style="display: none;">
                                 </div>
                                 <input type="hidden" id="bdd-uploaded-url">
@@ -1828,7 +1828,7 @@
 
             try {
                 for (const file of validFiles) {
-                    const url = await CloudinaryUpload.uploadImage(file);
+                    const url = await MediaUpload.uploadImage(file);
                     const cleanName = file.name.replace(/\.[^/.]+$/, '').trim() || 'Sticker';
 
                     const payload = {
@@ -2247,7 +2247,7 @@
             $('#accessory-drag-label').html('<i class="fas fa-spinner fa-spin"></i> Subiendo accesorios...');
             Swal.fire({
                 title: 'Cargando accesorios...',
-                html: `Procesando <b>${validFiles.length}</b> imagen(es) a Cloudinary...`,
+                html: `Procesando <b>${validFiles.length}</b> imagen(es)...`,
                 allowOutsideClick: false,
                 didOpen: () => Swal.showLoading()
             });
@@ -2258,7 +2258,7 @@
                 for (let i = 0; i < validFiles.length; i++) {
                     const file = validFiles[i];
                     const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
-                    const secureUrl = await CloudinaryUpload.uploadImage(file);
+                    const secureUrl = await MediaUpload.uploadImage(file);
 
                     const payload = {
                         name: cleanName.charAt(0).toUpperCase() + cleanName.slice(1),
@@ -2369,8 +2369,8 @@
             });
 
             try {
-                const url0 = await CloudinaryUpload.uploadImage(fileList[0]);
-                const url1 = await CloudinaryUpload.uploadImage(fileList[1]);
+                const url0 = await MediaUpload.uploadImage(fileList[0]);
+                const url1 = await MediaUpload.uploadImage(fileList[1]);
 
                 const coinPayloadData = {
                     heads: formValues.face0 === 'heads' ? url0 : url1,
@@ -2481,7 +2481,7 @@
             try {
                 const dicePayloadData = {};
                 for (let i = 0; i < fileList.length; i++) {
-                    const url = await CloudinaryUpload.uploadImage(fileList[i]);
+                    const url = await MediaUpload.uploadImage(fileList[i]);
                     const face = formValues.mapping[i] || (i + 1);
                     dicePayloadData[face] = url;
                 }
@@ -2974,7 +2974,7 @@
             $('#notification-file-label').html('<i class="fas fa-spinner fa-spin"></i> Subiendo imagen...');
 
             try {
-                const url = await CloudinaryUpload.uploadImage(file);
+                const url = await MediaUpload.uploadImage(file);
                 $('#msg-image-url').val(url);
                 $('#notification-file-label').text('Imagen subida: ' + file.name);
                 Swal.fire({ icon: 'success', title: 'Imagen lista', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false });
@@ -3779,7 +3779,7 @@
                                 <div id="pack-cover-drop-label">
                                     <i class="fas fa-cloud-upload-alt" style="font-size: 1.8rem; color: #00d2ff; margin-bottom: 6px;"></i>
                                     <div style="font-weight: 700; color: #fff; font-size: 0.88rem;">Arrastra aquí la imagen de muestra o haz clic</div>
-                                    <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 3px;">PNG, WebP o JPG (Subida directa a Cloudinary)</div>
+                                    <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 3px;">PNG, WebP o JPG</div>
                                 </div>
                                 <input type="file" id="input-pack-cover-file" accept="image/*" style="display: none;">
                             </div>
@@ -3871,9 +3871,9 @@
 
                     const handleCoverUpload = async (file) => {
                         if (!file) return;
-                        $('#pack-cover-drop-label').html('<i class="fas fa-spinner fa-spin" style="font-size: 1.8rem; color: #00d2ff;"></i><div style="margin-top: 6px;">Subiendo imagen a Cloudinary...</div>');
+                        $('#pack-cover-drop-label').html('<i class="fas fa-spinner fa-spin" style="font-size: 1.8rem; color: #00d2ff;"></i><div style="margin-top: 6px;">Subiendo imagen...</div>');
                         try {
-                            const url = await CloudinaryUpload.uploadImage(file);
+                            const url = await MediaUpload.uploadImage(file);
                             uploadedPackCoverUrl = url;
                             $('#pack-cover-preview-img').attr('src', url);
                             $('#pack-cover-preview-box').show();
@@ -4185,14 +4185,14 @@
 
             try {
                 let fileUrl = '';
-                const cdn = window.CloudinaryUpload;
-                // Los modelos 3D van a Cloudinary para no gastar el egress de
-                // Supabase. `uploadModelFiles` acepta .glb y .gltf.
+                const cdn = window.MediaUpload;
+                // Los modelos 3D van al servidor alterno para no gastar el egress del
+                // principal. `uploadModelFiles` acepta .glb y .gltf.
                 if (isGltf && cdn && typeof cdn.uploadModelFiles === 'function') {
                     try {
                         fileUrl = (await cdn.uploadModelFiles([file])).url;
                     } catch (e) {
-                        console.warn('Cloudinary no pudo subir el modelo 3D:', e);
+                        console.warn('El servidor alterno no pudo subir el modelo 3D:', e);
                     }
                 } else if (cdn && typeof cdn.uploadImage === 'function') {
                     fileUrl = await cdn.uploadImage(file);
