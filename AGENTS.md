@@ -343,3 +343,13 @@ Antes se servían los originales: sticker PNG 1.09 MB, sleeves 0.5–1.8 MB (39 
 
 ## Login de `binders.html`
 Resolvía el correo **solo** con `${usuario}@vikingtcg.xyz`, así que las cuentas con correo real o `@tcgdual.com` no podían entrar. Ahora usa `get_login_email` y cae al pseudo-correo histórico.
+
+## Modelos 3D — compresión masiva de los 40 `.gltf` (173.6 MB → 43.3 MB)
+Estado real medido en producción (no estimado): **43 filas** de `spirits` con `gltf_url`; 40 eran `.gltf` + `.bin` + texturas (173.6 MB) y 3 ya eran `.glb` (4.9 MB). Los `.bin` son el 85 % del peso y traen 3+ millones de triángulos para un visor de 150–320 px: no hay margen con compresión, hay que **simplificar la malla**.
+- Comando: `npx gltf-transform optimize in.gltf out.glb --compress draco --simplify true --simplify-ratio 0.08 --simplify-error 0.001 --texture-compress false --texture-size 1024` (v4.5.1). `--texture-size 1024` baja las texturas de 2048 y es invisible a ese tamaño de visor.
+- Resultado: 173.6 → 43.3 MB (−75 %), mayor archivo 2.40 MB, un solo archivo por modelo.
+- Los `.glb` se subieron al servidor alterno (Cloudinary, raw, preset `vikingdevBdd`, `public_id: spirits/models/compressed_<ts>/<id>.glb`). Verificado: 40/40 HTTP 200 + `access-control-allow-origin: *` + `magic=glTF`. `docs/N_use_compressed_models_all.sql` repunta `spirits.gltf_url` (los originales NO se borran; la ruta vieja queda en un comentario para revertir).
+- **8 modelos tenían una textura que nunca se subió** (`<nombre>1.jpg` → 404 con `content-type: application/json`): al comprimir se sustituyó por un PNG blanco 1x1. Ids 6, 9, 11, 12, 15, 16, 17, 26. OJO al parchear: hay que cambiar también `images[].mimeType` a `image/png` o gltf-transform falla con "Invalid JPG, marker table corrupted".
+- OJO al descargar: los `.bin` con espacios en el nombre (`kurikara divincarnate.bin`) hay que pedirlos con la URL codificada; si no, `curl` falla en silencio y el modelo no compila.
+- Draco queda en `extensionsRequired`: model-viewer lo soporta nativo y `michatbot-mobile3d.js` ya configura `DRACOLoader` (gstatic 1.5.7).
+- `gltf-transform` 4.5.1 tarda ~7 s por modelo; los 40 en ~5 min.
