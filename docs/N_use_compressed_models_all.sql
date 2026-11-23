@@ -8,7 +8,7 @@
 --     --simplify-ratio 0.08 --simplify-error 0.001 --texture-compress false \
 --     --texture-size 1024
 --
--- Resultado global: 163.0 MB -> 43.3 MB (‑73 %). Un solo archivo por modelo en
+-- Resultado global: 173.6 MB -> 43.3 MB (−75 %). Un solo archivo por modelo en
 -- vez de .gltf + .bin + texturas, con `cache-control` de 1 año en el servidor
 -- alterno, así que el CDN no vuelve a pedirlo en cada visita.
 --
