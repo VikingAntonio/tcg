@@ -4403,9 +4403,11 @@ async function loadSpirits() {
         // Se muestra el póster (imagen ya cacheada) en vez de montar un
         // model-viewer por asistente: cada .bin pesa ~2.7 MB y la rejilla
         // descargaba decenas de modelos por visita (egress de Storage).
+        const modelHost = /cloudinary\.com/.test(spirit.gltf_url || '') ? 'Cloudinary' : 'Supabase';
         const modelViewerHTML = `
             <div class="spirit-card-media" style="position: relative; width: 100%; height: 250px; border-radius: 15px; overflow: hidden; margin-bottom: 15px; background: radial-gradient(circle, #1a1a1a 0%, #000 100%);">
                 <img class="spirit-poster" src="${spirit.poster_url || spirit.texture_url || ''}" alt="${spirit.name}" loading="lazy" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                <span title="Servidor del modelo 3D" style="position: absolute; left: 8px; top: 8px; padding: 3px 8px; border-radius: 999px; background: rgba(0,0,0,0.65); color: #fff; font-size: 10px; letter-spacing: .4px;">${modelHost}</span>
                 <button type="button" class="btn-preview-spirit-3d" title="Ver en 3D" style="position: absolute; right: 8px; bottom: 8px; width: 34px; height: 34px; border-radius: 50%; border: none; background: rgba(0,0,0,0.65); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                     <i class="fas fa-cube"></i>
                 </button>

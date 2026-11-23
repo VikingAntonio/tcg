@@ -296,3 +296,28 @@ Medido con `curl` sobre objetos de `spirits`:
 - `J_storage_cache_control.sql` (metadata en la BD) **no** cambia la cabecera servida; se conserva solo como documentación.
 - Cloudinary queda como opción secundaria (selector en el modal, `uploadModelFiles`, botón "Copiar modelos a Cloudinary"). El plan gratuito limita a **10 MiB por archivo raw** (`File size too large... Maximum is 10485760`) y ~25 GB/mes de banda. `.bin` se sube como `.glbin` porque Cloudinary rechaza esa extensión.
 - `michatbot.js` revalida el asistente en segundo plano (`lookupSpiritFromDb` + `refreshCornerModelUrl`) para que un `localStorage` con URL vieja no siga pidiendo el host anterior.
+
+## Modelos 3D pesados — compresión (GLB + Draco)
+Los `.bin` de los asistentes no estaban "sin comprimir": ya venían con `KHR_draco_mesh_compression`, pero con **3.1 millones de triángulos** para un visor de 150–320 px. Ahí no hay margen de compresión: el único lever es **simplificar la malla**.
+- Comando usado (fuera del repo, con `@gltf-transform/cli`):
+  `gltf-transform optimize in.gltf out.glb --compress draco --simplify true --simplify-ratio 0.08 --simplify-error 0.001 --texture-compress false`
+- Resultado: Eveningstar 12.98 MB → **1.97 MB**, alluber 8.99 → **1.46 MB**, ghostOgre 8.98 → **1.73 MB** (≈6–7×). Se suben como `.glb` (un solo archivo, un solo request) al mismo folder con `cache-control: public, max-age=31536000, immutable`.
+- Calidad verificada: render a 320 px original vs comprimido es indistinguible (diferencias solo de antialiasing/encuadre). Carga OK en model-viewer (escritorio) y en three.js `GLTFLoader` + `DRACOLoader` (móvil, `michatbot-mobile3d.js` ya configura el decoder de gstatic).
+- `docs/L_use_compressed_models.sql` apunta `spirits.gltf_url` de esos 3 registros al `.glb`. Los originales no se borran.
+- OJO: `models/1787119012509_745` ("mago BETA", 12.19 MB) **no está referenciado** por ninguna fila de `spirits`: es un upload huérfano y no genera egress.
+- `--simplify-error` >= 0.015 rompe el encoder con `[KHR_draco_mesh_compression] Unknown geometry type`; 0.001–0.01 funciona.
+
+
+## Storage — subir a Supabase o a Cloudinary (repartir la carga)
+- El modal de asistente tiene `#input-spirit-storage` con **Supabase (por defecto)** y **Cloudinary (opcional)**. Es por modelo, así que se puede repartir la carga entre los dos hosts.
+- La tarjeta de cada asistente en Admin → Mis Asistentes muestra un badge con el host (`Supabase` / `Cloudinary`) leyendo `gltf_url`, para ver el reparto de un vistazo.
+- Cloudinary: `.gltf` + `.bin` + texturas en una carpeta única, `.bin` → `.glbin` con reescritura de `buffers[].uri`, límite 10 MiB/archivo.
+
+
+## Storage — RLS (cerrar escritura anónima)
+- La clave anónima podía subir/sobreescribir/borrar en `spirits` sin sesión (probado con `POST`/`DELETE` desde fuera del navegador). `docs/K_storage_rls_spirits.sql` lo cierra:
+  - helper `public.is_admin()` (`security definer`, `usuarios.role='admin'`);
+  - borra las políticas de `storage.objects` que mencionan `spirits`/`accessories` y las de escritura totalmente abiertas a `anon`/`public`;
+  - recrea: `spirits/models/*` solo admin, `spirits/build_models/<uid>/*` solo su dueño, `accessories/*` solo admin, `select` de `spirits` para el admin (botón Reparar caché).
+- La lectura pública (`/storage/v1/object/public/...`) no usa RLS, así que la web sigue igual.
+- Los `PATCH` a la tabla `spirits` con la clave anónima ya estaban bloqueados; el panel los hace con el JWT del admin.
