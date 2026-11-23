@@ -1885,6 +1885,7 @@ $(document).ready(async function() {
         $('#input-spirit-scale').val(1.8);
         $('#input-spirit-poster-url').val('');
         $('#input-spirit-particle-asset').val(''); // Clear hidden input
+        $('#input-spirit-storage').val('cloudinary');
         $('#drop-zone-spirit-poster .file-name').text('');
         $('#drop-zone-spirit-particle .file-name').text('');
         $('#spirit-poster-search-input').val('');
@@ -1931,31 +1932,49 @@ $(document).ready(async function() {
         try {
             let gltfUrl = null;
             let textureUrl = null;
+            let cloudinaryError = null;
+            const storage = $('#input-spirit-storage').val() || 'cloudinary';
 
             if (gltfFile) {
-                // 1. Upload into a unique folder to preserve relative paths
-                const folderId = Date.now() + '_' + Math.floor(Math.random() * 1000);
+                // Cloudinary saca los modelos del Storage de Supabase (cuyo plan
+                // de 5 GB de egress se agotaba con los .bin de hasta 12 MB).
+                if (storage === 'cloudinary' && window.CloudinaryUpload?.uploadModelFiles) {
+                    try {
+                        const result = await window.CloudinaryUpload.uploadModelFiles([gltfFile, ...extraFiles]);
+                        gltfUrl = result.url;
+                        const texture = result.files.find(f => /\.(png|jpe?g|webp)$/i.test(f.name));
+                        if (texture) textureUrl = texture.url;
+                    } catch (err) {
+                        cloudinaryError = err;
+                        console.warn('Cloudinary no pudo subir el modelo, se usa Supabase:', err);
+                    }
+                }
 
-                // Upload main GLTF
-                const gltfPath = `models/${folderId}/${gltfFile.name}`;
-                const { data: gltfData, error: gltfErr } = await _supabase.storage
-                    .from('spirits')
-                    .upload(gltfPath, gltfFile, { cacheControl: '31536000' });
+                if (!gltfUrl) {
+                    // 1. Upload into a unique folder to preserve relative paths
+                    const folderId = Date.now() + '_' + Math.floor(Math.random() * 1000);
 
-                if (gltfErr) throw gltfErr;
-                gltfUrl = _supabase.storage.from('spirits').getPublicUrl(gltfPath).data.publicUrl;
-
-                // 2. Upload extra files (textures, bin, etc.) into the SAME folder
-                for (const file of extraFiles) {
-                    const path = `models/${folderId}/${file.name}`;
-                    const { error: extraErr } = await _supabase.storage
+                    // Upload main GLTF
+                    const gltfPath = `models/${folderId}/${gltfFile.name}`;
+                    const { data: gltfData, error: gltfErr } = await _supabase.storage
                         .from('spirits')
-                        .upload(path, file, { cacheControl: '31536000' });
-                    if (extraErr) console.warn("Error subiendo archivo extra:", file.name, extraErr);
+                        .upload(gltfPath, gltfFile, { cacheControl: '31536000' });
 
-                    // If it's an image, we might use it as the main texture if needed
-                    if (file.type.startsWith('image/')) {
-                        textureUrl = _supabase.storage.from('spirits').getPublicUrl(path).data.publicUrl;
+                    if (gltfErr) throw gltfErr;
+                    gltfUrl = _supabase.storage.from('spirits').getPublicUrl(gltfPath).data.publicUrl;
+
+                    // 2. Upload extra files (textures, bin, etc.) into the SAME folder
+                    for (const file of extraFiles) {
+                        const path = `models/${folderId}/${file.name}`;
+                        const { error: extraErr } = await _supabase.storage
+                            .from('spirits')
+                            .upload(path, file, { cacheControl: '31536000' });
+                        if (extraErr) console.warn("Error subiendo archivo extra:", file.name, extraErr);
+
+                        // If it's an image, we might use it as the main texture if needed
+                        if (file.type.startsWith('image/')) {
+                            textureUrl = _supabase.storage.from('spirits').getPublicUrl(path).data.publicUrl;
+                        }
                     }
                 }
             }
@@ -1994,7 +2013,13 @@ $(document).ready(async function() {
 
             if (dbErr) throw dbErr;
 
-            Swal.fire('¡Éxito!', editId ? 'Compañero actualizado correctamente' : 'Compañero subido correctamente', 'success');
+            Swal.fire({
+                icon: 'success',
+                title: editId ? 'Compañero actualizado correctamente' : 'Compañero subido correctamente',
+                html: cloudinaryError
+                    ? `Se guardó en Supabase porque Cloudinary no lo aceptó:<br><small>${escapeHtml(cloudinaryError.message || String(cloudinaryError))}</small>`
+                    : undefined
+            });
             $('#spirit-upload-modal').removeClass('active');
             loadSpirits();
         } catch (err) {
@@ -2002,6 +2027,126 @@ $(document).ready(async function() {
             Swal.fire('Error', 'No se pudo guardar el asistente: ' + (err.message || ''), 'error');
         }
     });
+
+    // Migra los modelos 3D que aún viven en Supabase Storage a Cloudinary.
+    // El plan gratuito de Supabase solo da 5 GB de egress de CDN y los .bin de
+    // los asistentes pesan varios MB, así que se agotaba cada mes.
+    $('#btn-migrate-spirits-cloudinary').click(async function() {
+        const cdn = window.CloudinaryUpload;
+        if (!cdn || typeof cdn.uploadModelFiles !== 'function') {
+            Swal.fire('No disponible', 'El cargador de Cloudinary no está cargado en esta vista.', 'error');
+            return;
+        }
+
+        const { data: spirits, error } = await _supabase.from('spirits').select('id,name,gltf_url,texture_url');
+        if (error) {
+            Swal.fire('Error', 'No se pudieron leer los asistentes: ' + error.message, 'error');
+            return;
+        }
+
+        const isSupabaseModel = url => /\/storage\/v1\/object\/public\/spirits\//.test(url || '');
+        const pending = (spirits || []).filter(s => isSupabaseModel(s.gltf_url));
+        if (pending.length === 0) {
+            Swal.fire('Todo listo', 'Todos los modelos ya están en Cloudinary.', 'success');
+            return;
+        }
+
+        const confirm = await Swal.fire({
+            title: 'Migrar modelos a Cloudinary',
+            html: `Se copiarán <b>${pending.length}</b> modelos y se actualizará su URL.<br>No cierres esta pestaña mientras dura la migración.`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Migrar',
+            cancelButtonText: 'Cancelar'
+        });
+        if (!confirm.isConfirmed) return;
+
+        Swal.fire({
+            title: 'Migrando modelos...',
+            html: '<div id="migrate-spirits-status">Preparando...</div>',
+            allowOutsideClick: false,
+            showConfirmButton: false
+        });
+
+        const setStatus = text => {
+            const el = document.getElementById('migrate-spirits-status');
+            if (el) el.innerHTML = text;
+        };
+
+        let done = 0;
+        const failed = [];
+
+        for (const spirit of pending) {
+            setStatus(`<b>${done + 1}/${pending.length}</b> · ${escapeHtml(spirit.name || spirit.id)}`);
+            try {
+                const result = await uploadSupabaseModelToCloudinary(spirit, cdn);
+                const update = { gltf_url: result.url };
+                if (result.textureUrl) update.texture_url = result.textureUrl;
+                const { error: updateErr } = await _supabase.from('spirits').update(update).eq('id', spirit.id);
+                if (updateErr) throw updateErr;
+                done++;
+            } catch (err) {
+                console.error('Migración fallida:', spirit.name, err);
+                failed.push(`${spirit.name || spirit.id}: ${err.message || err}`);
+            }
+        }
+
+        if (failed.length) {
+            Swal.fire({
+                title: 'Migración terminada con errores',
+                html: `${done} modelos migrados.<br><br>Fallaron:<br>${failed.map(escapeHtml).join('<br>')}` +
+                    '<br><br><small>El plan gratuito de Cloudinary acepta archivos de hasta 10 MB. ' +
+                    'Los modelos que lo superan hay que optimizarlos (por ejemplo .glb con Draco/meshopt) o dejarlos en Supabase.</small>',
+                icon: 'warning'
+            });
+        } else {
+            Swal.fire('¡Listo!', `${done} modelos migrados a Cloudinary.`, 'success');
+        }
+        loadSpirits();
+    });
+
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    async function downloadAsFile(url, name) {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`No se pudo descargar ${name} (${response.status})`);
+        const blob = await response.blob();
+        return new File([blob], name, { type: blob.type || 'application/octet-stream' });
+    }
+
+    async function uploadSupabaseModelToCloudinary(spirit, cdn) {
+        const gltfUrl = spirit.gltf_url;
+        const fileName = decodeURIComponent(gltfUrl.split('/').pop().split('?')[0]);
+        const folderUrl = gltfUrl.slice(0, gltfUrl.lastIndexOf('/'));
+
+        if (/\.glb$/i.test(fileName)) {
+            const file = await downloadAsFile(gltfUrl, fileName);
+            return { url: (await cdn.uploadModelFiles([file])).url };
+        }
+
+        const gltfFile = await downloadAsFile(gltfUrl, fileName);
+        const json = JSON.parse(await gltfFile.text());
+        const uris = [...(json.buffers || []), ...(json.images || [])]
+            .map(item => item.uri)
+            .filter(uri => uri && !uri.startsWith('data:') && !/^[a-z]+:\/\//i.test(uri));
+
+        const files = [gltfFile];
+        for (const uri of [...new Set(uris)]) {
+            files.push(await downloadAsFile(new URL(uri, folderUrl + '/').href, uri));
+        }
+
+        const result = await cdn.uploadModelFiles(files);
+
+        let textureUrl = null;
+        if (spirit.texture_url && spirit.texture_url.startsWith(folderUrl)) {
+            const textureName = decodeURIComponent(spirit.texture_url.split('/').pop().split('?')[0]);
+            const match = result.files.find(f => f.original === textureName);
+            if (match) textureUrl = match.url;
+        }
+        return { url: result.url, textureUrl };
+    }
 
     // Toggle Public/Private from list (Albums, Decks, Spirits)
     // --- Chatbot Config Actions ---
@@ -2205,6 +2350,7 @@ function editSpirit(spirit) {
     $('#input-spirit-scale').val(spirit.scale || 1.8);
     $('#input-spirit-public').prop('checked', spirit.is_public !== false);
     $('#input-spirit-poster-url').val(spirit.poster_url || '');
+    $('#input-spirit-storage').val(/cloudinary\.com/.test(spirit.gltf_url || '') ? 'cloudinary' : 'supabase');
 
     // UI Status
     $('#drop-zone-spirit-poster .file-name').text(spirit.poster_url ? '¡Cargado!' : '').css('color', '#00ff88');

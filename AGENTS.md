@@ -281,3 +281,24 @@ Síntoma: el panel de Supabase marcaba **Cached Egress 6.1 / 5 GB (122 %)** mien
   - Subastas, eventos, decks/mazos, wishlist, accesorios y (solo admin) clientes.
 - **Admin vs público**: en `public.html` (o `?store=`) `is_admin` es siempre `false`; se filtran binders/álbumes/categorías privadas, cartas no públicas, agotadas y vendidas, y NUNCA se envían costos/ganancias. En admin se incluye todo.
 - **Lectura solamente**: el bot no escribe en Supabase. Si piden modificar algo, guía; no confirma cambios falsos. Acciones reales requerirían tool-calling validado.
+
+## Cached Egress de Supabase — por qué seguía subiendo y cómo se arregla
+Medido con curl sobre los objetos de `spirits`:
+- `GET /storage/v1/object/public/spirits/...` → `cache-control: public, max-age=3600` (`cf-cache-status: MISS`).
+- `HEAD` del mismo objeto → `cache-control: private, no-cache`.
+- El `metadata->>'cacheControl'` de `storage.objects` **sí** dice `public, max-age=31536000, immutable`, pero **no** es lo que se sirve: el Storage actual usa backend S3 y la cabecera sale de los metadatos del objeto en S3, que solo se fijan al subir (`cacheControl` en `storage.upload`). `J_storage_cache_control.sql` deja el espejo de la BD coherente pero no cambia la respuesta HTTP. Para cambiarla hay que re-subir el objeto.
+- Según la doc de Supabase, **Cached Egress = egress servido por su CDN con cache hits**. Es decir, el contador sube justo cuando Cloudflare responde `HIT`. Cachear más tiempo en el CDN no lo baja; solo baja si el navegador no llega a pedir el archivo (caché local/SW) o si se sirve desde otro host (Cloudinary).
+- Tamaño real: 220 archivos, 207 MB; los `.bin` van de 1.2 MB a 12 MB. Con 5 GB de plan, se agota con pocos visitantes nuevos (el modelo de la esquina se descarga completo en `admin.html` y `public.html`).
+
+Solución implementada: servir los modelos desde Cloudinary.
+- `js/cloudinary-upload.js` → `uploadRaw(file, publicId)` y `uploadModelFiles(files)`.
+  - Cloudinary **rechaza la extensión `.bin`** ("resources with extension bin are not allowed"): se sube como `.glbin` y se reescribe `buffers[].uri` del `.gltf` antes de subirlo.
+  - Todo va a `spirits/models/<timestamp>_<rand>/` con `public_id` explícito (NO mandar `folder` + `public_id`: se duplica la ruta). Las rutas relativas del `.gltf` resuelven dentro de la misma carpeta; Cloudinary ignora el `v<version>` de la URL para raw, así que también funciona aunque el `.bin` tenga otra versión.
+  - Delivery raw: `cache-control: public, no-transform, immutable, max-age=2592000` (30 días), `access-control-allow-origin: *`; `.glb` se sirve como `model/gltf-binary`, `.gltf` como `model/gltf+json`, `.glbin` como `application/octet-stream` (con `content-disposition: attachment`, que no afecta a `fetch`).
+  - Verificado con Node (subida real de `wingedKuriboh`) y con `model-viewer` en Chromium headless: `loaded === true` sirviendo el `.gltf` desde Cloudinary con el buffer `.glbin`.
+- `admin.html` → modal de asistente: selector `#input-spirit-storage` (`cloudinary` por defecto, `supabase` como respaldo). Si Cloudinary falla, se cae a Supabase sin romper el guardado.
+- `admin.html` → Mis Asistentes → `#btn-migrate-spirits-cloudinary`: recorre los `spirits` cuyo `gltf_url` está en Supabase, descarga `.gltf` + `buffers`/`images` referenciados, los sube a Cloudinary y actualiza `gltf_url` (y `texture_url` si estaba en la misma carpeta). Es por modelo: si uno falla, se reporta y se sigue con el resto.
+- Cloudinary gratuito ≈ 25 GB de banda/mes (5× el plan de Supabase) y el SW ya cachea todo `cloudinary.com` en `IMAGE_CACHE` (cache-first).
+- Ojo: `new URL(uri, folderUrl + '/')` es la forma correcta de descargar dependencias con espacios (`mago BETA.bin` → `mago%20BETA.bin`).
+- `STATIC_CACHE` subido a `viking-static-v257`.
+- **Límite real de Cloudinary (plan gratuito): 10 MiB por archivo raw.** Medido: `File size too large. Got 13000000. Maximum is 10485760.` `CloudinaryUpload.maxRawBytes` lo comprueba antes de subir (evita dejar archivos sueltos). Los `.bin` de `mago BETA` (12.19 MB) y `Eveningstar` (12.03 MB) **no** se pueden migrar así: hay que optimizarlos a `.glb` con Draco/meshopt o dejarlos en Supabase. El guardado del admin cae a Supabase y avisa en el Swal.

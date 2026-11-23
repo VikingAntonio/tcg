@@ -4185,9 +4185,20 @@
 
             try {
                 let fileUrl = '';
-                if (window.CloudinaryUpload && typeof window.CloudinaryUpload.uploadImage === 'function' && !isGltf) {
-                    fileUrl = await window.CloudinaryUpload.uploadImage(file);
-                } else if (window._supabase && window._supabase.storage) {
+                const cdn = window.CloudinaryUpload;
+                // Los modelos 3D van a Cloudinary para no gastar el egress de
+                // Supabase. `uploadModelFiles` acepta .glb y .gltf.
+                if (isGltf && cdn && typeof cdn.uploadModelFiles === 'function') {
+                    try {
+                        fileUrl = (await cdn.uploadModelFiles([file])).url;
+                    } catch (e) {
+                        console.warn('Cloudinary no pudo subir el modelo 3D:', e);
+                    }
+                } else if (cdn && typeof cdn.uploadImage === 'function') {
+                    fileUrl = await cdn.uploadImage(file);
+                }
+
+                if (!fileUrl && window._supabase && window._supabase.storage) {
                     const ext = file.name.split('.').pop();
                     const path = `bdd_uploads/${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
                     const { data: uploadData, error: uploadErr } = await _supabase.storage.from('accessories').upload(path, file, { cacheControl: '31536000' });

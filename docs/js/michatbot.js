@@ -169,6 +169,57 @@ function setCachedSpirit(spirit) {
     } catch (e) {}
 }
 
+// Reintentos acotados cuando todavía no hay asistente (antes reintentaba cada
+// 2 s para siempre, martilleando la BD en tiendas sin asistentes públicos).
+let spiritLookupRetries = 0;
+
+// Lee el asistente seleccionado de la BD (tienda pública o usuario logueado).
+// Devuelve null si no hay sesión o si la consulta falla.
+async function lookupSpiritFromDb() {
+    if (typeof _supabase === 'undefined') return null;
+    try {
+        const isPublicSpace = window.location.pathname.includes('public.html') || !!window.currentStoreId;
+
+        if (isPublicSpace && window.currentStoreId) {
+            const { data: userRow } = await _supabase.from('usuarios').select('selected_spirit_id').eq('id', window.currentStoreId).maybeSingle();
+            if (userRow?.selected_spirit_id) {
+                const { data: spirit } = await _supabase.from('spirits').select('*').eq('id', userRow.selected_spirit_id).maybeSingle();
+                if (spirit) return spirit;
+            }
+        } else {
+            let sessionUser = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : null;
+            if (!sessionUser) { const stored = localStorage.getItem('tcg_session'); if (stored) sessionUser = JSON.parse(stored); }
+            if (sessionUser) {
+                const { data: userRow } = await _supabase.from('usuarios').select('selected_spirit_id').eq('id', sessionUser.id).maybeSingle();
+                if (userRow?.selected_spirit_id) {
+                    const { data: spirit } = await _supabase.from('spirits').select('*').eq('id', userRow.selected_spirit_id).maybeSingle();
+                    if (spirit) return spirit;
+                }
+            }
+        }
+
+        const { data } = await _supabase.from('spirits').select('*').eq('is_public', true).limit(1).maybeSingle();
+        return data || null;
+    } catch (e) {
+        return null;
+    }
+}
+
+// Cambia el modelo del visor de la esquina sin reconstruirlo. Reintenta hasta
+// que el visor móvil (asíncrono) exista.
+function refreshCornerModelUrl(url, attempt = 0) {
+    if (useMobile3D() && window.MichatbotMobile3D && window.MichatbotMobile3D.isCreated()) {
+        window.MichatbotMobile3D.setModel(url);
+        return;
+    }
+    const viewer = document.getElementById('michatbot-viewer');
+    if (viewer) {
+        if (viewer.getAttribute('src') !== url) viewer.setAttribute('src', url);
+        return;
+    }
+    if (attempt < 10) setTimeout(() => refreshCornerModelUrl(url, attempt + 1), 300);
+}
+
 if (!window.currentSpirit) {
     const cached = getCachedSpirit();
     if (cached && cached.gltf_url) {
@@ -1175,43 +1226,19 @@ async function initMichatbot(forceRefresh = false) {
             }
         }
 
-        if (typeof _supabase !== 'undefined') {
-            try {
-                const isPublicSpace = window.location.pathname.includes('public.html') || !!window.currentStoreId;
-
-                if (isPublicSpace && window.currentStoreId) {
-                    const { data: userRow } = await _supabase.from('usuarios').select('selected_spirit_id').eq('id', window.currentStoreId).maybeSingle();
-                    if (userRow?.selected_spirit_id) {
-                        const { data: spirit } = await _supabase.from('spirits').select('*').eq('id', userRow.selected_spirit_id).maybeSingle();
-                        if (spirit) {
-                            window.currentSpirit = spirit;
-                            setCachedSpirit(spirit);
-                        }
-                    }
-                } else {
-                    let sessionUser = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : null;
-                    if (!sessionUser) { const stored = localStorage.getItem('tcg_session'); if (stored) sessionUser = JSON.parse(stored); }
-                    if (sessionUser) {
-                        const { data: userRow } = await _supabase.from('usuarios').select('selected_spirit_id').eq('id', sessionUser.id).maybeSingle();
-                        if (userRow?.selected_spirit_id) {
-                            const { data: spirit } = await _supabase.from('spirits').select('*').eq('id', userRow.selected_spirit_id).maybeSingle();
-                            if (spirit) {
-                                window.currentSpirit = spirit;
-                                setCachedSpirit(spirit);
-                            }
-                        }
-                    }
-                }
-                if (!window.currentSpirit) {
-                    const { data } = await _supabase.from('spirits').select('*').eq('is_public', true).limit(1).maybeSingle();
-                    if (data) {
-                        window.currentSpirit = data;
-                        setCachedSpirit(data);
-                    }
-                }
-            } catch (e) {}
+        const fresh = await lookupSpiritFromDb();
+        if (fresh) {
+            window.currentSpirit = fresh;
+            setCachedSpirit(fresh);
         }
-        if (!window.currentSpirit) { setTimeout(() => initMichatbot(), 2000); return; }
+        if (!window.currentSpirit) {
+            if (spiritLookupRetries < 5) {
+                spiritLookupRetries++;
+                setTimeout(() => initMichatbot(), 2000 * spiritLookupRetries);
+            }
+            return;
+        }
+        spiritLookupRetries = 0;
     } else {
         setCachedSpirit(window.currentSpirit);
     }
@@ -1229,6 +1256,21 @@ async function initMichatbot(forceRefresh = false) {
             });
     } else {
         buildCornerModelViewer(gltfUrl, forceRefresh);
+    }
+
+    // El localStorage del visitante puede tener una URL vieja (por ejemplo si
+    // el modelo se migró de Supabase a Cloudinary). Se revalida en segundo
+    // plano y, si cambió, se cambia el modelo en el visor ya montado: así deja
+    // de pedirse el archivo a Supabase en las siguientes visitas.
+    if (!window._michatbotSpiritRevalidated) {
+        window._michatbotSpiritRevalidated = true;
+        lookupSpiritFromDb().then((fresh) => {
+            if (!fresh || !fresh.gltf_url) return;
+            const oldUrl = window.currentSpirit && window.currentSpirit.gltf_url;
+            window.currentSpirit = fresh;
+            setCachedSpirit(fresh);
+            if (oldUrl && oldUrl !== fresh.gltf_url) refreshCornerModelUrl(fresh.gltf_url);
+        }).catch(() => {});
     }
 
     // The tap-to-open-menu gesture lives on the model container so it works for

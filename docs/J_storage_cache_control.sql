@@ -1,24 +1,37 @@
 -- ============================================================================
--- Cache-Control largo para los archivos de Storage (modelos 3D y accesorios)
+-- Cache-Control en los objetos de Storage (modelos 3D y accesorios)
 -- ============================================================================
--- Problema: los objetos del bucket `spirits` se sirven con
---   cache-control: private, no-cache
---   cf-cache-status: DYNAMIC
--- así que el navegador (y el CDN de Supabase) vuelven a pedir el archivo en
--- cada visita. Cada asistente pesa ~2.7 MB (.bin) + texturas, y eso infló el
--- "Cached Egress" del plan hasta pasarse del límite.
+-- OJO / IMPORTANTE (verificado en producción):
+--   Este script actualiza la columna `storage.objects.metadata->>'cacheControl'`
+--   (el "espejo" en la base de datos), pero NO cambia la cabecera que se sirve
+--   en /storage/v1/object/public/... En el Storage actual (backend S3) la
+--   cabecera Cache-Control sale de los metadatos del objeto en S3, que solo se
+--   fijan al SUBIR el archivo (header `cache-control`).
+--   Resultado real medido con curl:
+--     GET  /object/public/spirits/...  ->  cache-control: public, max-age=3600
+--     HEAD /object/public/spirits/...  ->  cache-control: private, no-cache
+--   Es decir: los objetos antiguos siguen con 1 hora de caché aunque este
+--   script diga `max-age=31536000`.
 --
--- Este script marca los objetos como inmutables durante un año. Los archivos
--- se guardan con un nombre único por subida (models/<timestamp>_<random>/...),
--- así que son seguros de cachear para siempre: si se reemplaza un modelo,
--- cambia la ruta.
+--   Para que un objeto tenga caché larga de verdad hay que volver a subirlo:
+--     supabase.storage.from('spirits').upload(path, file, {
+--       cacheControl: '31536000', upsert: true
+--     })
+--   (storage-js envía `cache-control: max-age=31536000`).
 --
--- OJO con el esquema: las instalaciones nuevas de Supabase ya no tienen la
--- columna `storage.objects.cache_control`; el valor vive en
--- `storage.objects.metadata->>'cacheControl'`. El bloque de abajo detecta cuál
--- existe y usa la que corresponda, así que sirve en ambos casos.
+--   La solución recomendada para los modelos 3D es NO servirlos desde Supabase:
+--   el plan gratuito solo incluye 5 GB de "Cached Egress" y los .bin pesan
+--   varios MB. En admin.html -> Mis Asistentes -> "Migrar modelos a Cloudinary"
+--   se copian los modelos a Cloudinary (25 GB gratis) y se actualiza su URL.
 --
--- Es idempotente: se puede ejecutar las veces que haga falta.
+--   Además, según la documentación de Supabase, "Cached Egress" es justo el
+--   egress servido por su CDN con cache hits. Es decir, el contador sube cuando
+--   Cloudflare responde HIT. Cachear más tiempo en el CDN no reduce la cuota:
+--   solo reduce peticiones si el navegador ya tiene el archivo en su caché (o
+--   en el Service Worker), o si el archivo se sirve desde otro host.
+--
+-- Este script se mantiene porque deja el metadato de la BD coherente y algunas
+-- herramientas (dashboard/SDK) lo leen. Es idempotente.
 -- Ejecutar en Supabase → SQL Editor.
 -- ============================================================================
 
@@ -54,8 +67,7 @@ BEGIN
 END
 $$;
 
--- Comprobación: debe mostrar "con_cache_largo" = "objetos" en cada bucket.
--- to_jsonb(o) funciona con los dos esquemas (con o sin columna cache_control).
+-- Comprobación del metadato en la BD (NO es lo que se sirve por HTTP).
 SELECT bucket_id,
        count(*) AS objetos,
        count(*) FILTER (
