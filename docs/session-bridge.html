@@ -265,14 +265,11 @@
 
                     if (!emailOrUser.includes('@') && supabaseClient) {
                         // Check usuarios table by username, store_name, or email
-                        const { data: userRow } = await supabaseClient
-                            .from('usuarios')
-                            .select('email, username, store_name')
-                            .or(`username.eq."${emailOrUser}",store_name.eq."${emailOrUser}"`)
-                            .maybeSingle();
+                        const { data: resolvedEmail } = await supabaseClient
+                            .rpc('get_login_email', { p_identifier: emailOrUser });
 
-                        if (userRow && userRow.email) {
-                            emailToUse = userRow.email;
+                        if (resolvedEmail) {
+                            emailToUse = resolvedEmail;
                         } else {
                             emailToUse = `${emailOrUser}@tcgdual.com`;
                         }

@@ -640,7 +640,7 @@
 
                 const $itemRow = $(`
                     <div class="cart-item">
-                        <img src="${item.image_url || 'https://via.placeholder.com/100x140?text=Producto'}" alt="${item.name}">
+                        <img src="(window.optImg?window.optImg(item.image_url, 200):item.image_url) || 'https://via.placeholder.com/100x140?text=Producto'" alt="${item.name}">
                         <div class="cart-item-info">
                             <h3>${item.name}</h3>
                             <div class="cart-tags">${tagsHtml}</div>

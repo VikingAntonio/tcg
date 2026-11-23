@@ -3113,14 +3113,14 @@ function renderAccessoriesGrid(accessories) {
             const price = Math.max(5, Number(acc.price_mxn) || 25);
 
             const faces = getAccessoryFaces(acc.image_url);
-            const displayUrl = getAccessoryDisplayUrl(acc.image_url);
+            const displayUrl = window.optImg(getAccessoryDisplayUrl(acc.image_url), 300);
             const isMulti = faces.length > 1;
 
             let mediaHtml = '';
             if (isMulti) {
                 mediaHtml = `
                     <div class="acc-multiface-slot" style="position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
-                        <img src="${faces[0].url}" alt="${escapeHtml(acc.name)}" class="acc-slot-active-img" style="width: 100%; height: 100%; object-fit: contain;">
+                        <img src="${window.optImg(faces[0].url, 300)}" alt="${escapeHtml(acc.name)}" class="acc-slot-active-img" style="width: 100%; height: 100%; object-fit: contain;">
                         <div class="acc-slot-nav" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; padding: 2px; pointer-events: none; z-index: 5;">
                             <button type="button" class="btn-acc-slot-prev" style="pointer-events: auto; background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(0,210,255,0.3); color: #fff; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; cursor: pointer; opacity: 0.7; transition: opacity 0.2s;"><i class="fas fa-chevron-left"></i></button>
                             <button type="button" class="btn-acc-slot-next" style="pointer-events: auto; background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(0,210,255,0.3); color: #fff; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; cursor: pointer; opacity: 0.7; transition: opacity 0.2s;"><i class="fas fa-chevron-right"></i></button>
@@ -4202,7 +4202,7 @@ async function loadSpirits() {
         // descargaba decenas de modelos por visita (egress de Storage).
         const modelViewerHTML = `
             <div class="spirit-card-media" style="position: relative; width: 100%; height: 250px; border-radius: 15px; overflow: hidden; margin-bottom: 15px; background: radial-gradient(circle, #1a1a1a 0%, #000 100%);">
-                <img class="spirit-poster" src="${spirit.poster_url || spirit.texture_url || ''}" alt="${spirit.name}" loading="lazy" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                <img class="spirit-poster" src="${window.optImg(spirit.poster_url || spirit.texture_url || '', 300)}" alt="${spirit.name}" loading="lazy" style="width: 100%; height: 100%; object-fit: cover; display: block;">
                 <button type="button" class="btn-preview-spirit-3d" title="Ver en 3D" style="position: absolute; right: 8px; bottom: 8px; width: 34px; height: 34px; border-radius: 50%; border: none; background: rgba(0,0,0,0.65); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                     <i class="fas fa-cube"></i>
                 </button>

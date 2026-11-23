@@ -11,6 +11,7 @@
     let initialLoadDone = false;
     let salesPollingInterval = null;
     let activeNotifications = [];
+    let binderSalesUnavailable = false;
 
     function injectNotificationStyles() {
         if ($('#viking-notification-styles').length > 0) return;
@@ -411,12 +412,17 @@
                 .order('created_at', { ascending: false })
                 .limit(15);
 
-            const binderSalesPromise = _supabase
-                .from('binder_sales')
-                .select('id, items, buyer_username, total_amount, status, is_read, created_at')
-                .eq('seller_id', user.id)
-                .order('created_at', { ascending: false })
-                .limit(15);
+            // `binder_sales` todavía no existe en la base: se intenta una vez y,
+            // si falla, se deja de consultar en esta sesión para no repetir un
+            // 404 cada minuto.
+            const binderSalesPromise = binderSalesUnavailable
+                ? Promise.resolve({ data: [] })
+                : _supabase
+                    .from('binder_sales')
+                    .select('id, items, buyer_username, total_amount, status, is_read, created_at')
+                    .eq('seller_id', user.id)
+                    .order('created_at', { ascending: false })
+                    .limit(15);
 
             // 2. Fetch Broadcast App Notifications
             const targetFilter = (user.role === 'admin' || user.role === 'admin_store') ? 'all' : (user.role || 'starter');
@@ -454,6 +460,8 @@
                 giftClaimsPromise,
                 statesPromise
             ]);
+
+            if (binderSalesRes && binderSalesRes.error) binderSalesUnavailable = true;
 
             const sales = salesRes.data || [];
             const binderSales = binderSalesRes.data || [];

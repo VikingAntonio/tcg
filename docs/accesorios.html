@@ -906,7 +906,7 @@
                             if (isMulti && faces.length > 0) {
                                 return `
                                     <div class="acc-card-image-box ${category === 'coin' || category === 'dice' ? 'type-coin' : ''} acc-slider-container" data-faces='${JSON.stringify(faces).replace(/'/g, "&apos;")}' title="Ver en grande" style="position: relative;">
-                                        <img src="${faces[0].url}" alt="${escapeHtml(item.name || 'Accesorio')}" class="acc-slider-current-img" style="width: 100%; height: 100%; object-fit: contain; transition: transform 0.25s ease;">
+                                        <img src="${window.optImg(faces[0].url, 320)}" alt="${escapeHtml(item.name || 'Accesorio')}" class="acc-slider-current-img" style="width: 100%; height: 100%; object-fit: contain; transition: transform 0.25s ease;">
                                         <div class="acc-in-image-controls" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; padding: 6px; pointer-events: none; z-index: 6;">
                                             <button type="button" class="btn-acc-card-slide-prev in-image-arrow" style="pointer-events: auto; background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(0, 210, 255, 0.3); color: #fff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; cursor: pointer; backdrop-filter: blur(4px); opacity: 0.7; transition: opacity 0.2s;"><i class="fas fa-chevron-left"></i></button>
                                             <button type="button" class="btn-acc-card-slide-next in-image-arrow" style="pointer-events: auto; background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(0, 210, 255, 0.3); color: #fff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; cursor: pointer; backdrop-filter: blur(4px); opacity: 0.7; transition: opacity 0.2s;"><i class="fas fa-chevron-right"></i></button>
@@ -916,7 +916,7 @@
                             } else {
                                 return `
                                     <div class="acc-card-image-box ${category === 'coin' ? 'type-coin' : (category === 'counters' ? 'type-counters' : '')}" data-url="${item.image_url}" title="Ver en grande">
-                                        <img src="${item.image_url}" alt="${escapeHtml(item.name || 'Accesorio')}" onerror="this.src='https://via.placeholder.com/200?text=Accesorio'">
+                                        <img src="${window.optImg(item.image_url, 320)}" alt="${escapeHtml(item.name || 'Accesorio')}" onerror="this.src='https://via.placeholder.com/200?text=Accesorio'">
                                         <div class="acc-card-zoom-hint"><i class="fas fa-search-plus"></i></div>
                                     </div>
                                 `;
@@ -959,13 +959,13 @@
                         $sliderBox.find('.btn-acc-card-slide-prev').on('click', function(e) {
                             e.stopPropagation();
                             curFaceIdx = (curFaceIdx - 1 + facesData.length) % facesData.length;
-                            $curImg.attr('src', facesData[curFaceIdx].url);
+                            $curImg.attr('src', window.optImg(facesData[curFaceIdx].url, 320));
                         });
 
                         $sliderBox.find('.btn-acc-card-slide-next').on('click', function(e) {
                             e.stopPropagation();
                             curFaceIdx = (curFaceIdx + 1) % facesData.length;
-                            $curImg.attr('src', facesData[curFaceIdx].url);
+                            $curImg.attr('src', window.optImg(facesData[curFaceIdx].url, 320));
                         });
                     }
                 }
@@ -1063,7 +1063,7 @@
             const itemsHtml = items.map(it => `
                 <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:8px 12px; border-radius:8px; margin-bottom:6px;">
                     <div style="display:flex; align-items:center; gap:10px;">
-                        <img src="${it.image_url || 'https://vikingtcg.xyz/favi.png'}" style="width:36px; height:36px; object-fit:cover; border-radius:6px;">
+                        <img src="${window.optImg(it.image_url, 200) || 'https://vikingtcg.xyz/favi.png'}" style="width:36px; height:36px; object-fit:cover; border-radius:6px;">
                         <span><b>${it.quantity}x</b> ${escapeHtml(it.name)} (${it.category})</span>
                     </div>
                     <span style="color:#00ff88; font-weight:700;">$${Number(it.price_mxn || 0).toFixed(2)}</span>
@@ -1074,7 +1074,7 @@
                 title: pack.name,
                 html: `
                     <div style="text-align:left; font-size:0.9rem;">
-                        <img src="${pack.image_url}" style="width:100%; max-height:200px; object-fit:cover; border-radius:8px; margin-bottom:12px;">
+                        <img src="${window.optImg(pack.image_url, 400)}" style="width:100%; max-height:200px; object-fit:cover; border-radius:8px; margin-bottom:12px;">
                         <p style="color:#cbd5e1; margin-bottom:12px;">${escapeHtml(pack.description || '')}</p>
                         <h4 style="color:#00d2ff; margin-bottom:8px;">Artículos Incluidos:</h4>
                         <div style="max-height:180px; overflow-y:auto;">

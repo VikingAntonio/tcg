@@ -358,7 +358,7 @@
                         <div class="won-items-table" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px;">
                             ${group.items.map(item => `
                                 <div style="display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.02); padding: 10px 15px; border-radius: 12px;">
-                                    <img src="${item.image_url}" style="width: 40px; height: 40px; object-fit: contain; border-radius: 6px; background: #000;">
+                                    <img src="(window.optImg?window.optImg(item.image_url, 120):item.image_url)" style="width: 40px; height: 40px; object-fit: contain; border-radius: 6px; background: #000;">
                                     <div style="flex: 1;">
                                         <div style="font-weight: 600;">${item.nombre}</div>
                                         ${item.delivery_place ? `<div style="font-size: 0.7rem; color: #aaa;"><i class="fas fa-map-marker-alt"></i> ${item.delivery_place}</div>` : ''}
@@ -587,8 +587,8 @@
             if (!user || !pass) return Swal.fire('Atención', 'Completa los campos', 'warning');
             let email = user.includes('@') ? user : `${user}@tcgdual.com`;
             if (!user.includes('@')) {
-                const { data } = await _supabase.from('usuarios').select('email').eq('username', user).maybeSingle();
-                if (data) email = data.email;
+                const { data: resolvedEmail } = await _supabase.rpc('get_login_email', { p_identifier: user });
+                if (resolvedEmail) email = resolvedEmail;
             }
             const { error } = await _supabase.auth.signInWithPassword({ email, password: pass });
             if (error) Swal.fire('Error', error.message, 'error'); else location.reload();

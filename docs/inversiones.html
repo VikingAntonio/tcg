@@ -686,14 +686,11 @@
 
             let emailToUse = userInput;
             if (!userInput.includes('@')) {
-                const { data: userRow } = await _supabase
-                    .from('usuarios')
-                    .select('email')
-                    .eq('username', userInput)
-                    .maybeSingle();
+                const { data: resolvedEmail } = await _supabase
+                .rpc('get_login_email', { p_identifier: userInput });
 
-                if (userRow && userRow.email) {
-                    emailToUse = userRow.email;
+            if (resolvedEmail) {
+                emailToUse = resolvedEmail;
                 } else {
                     emailToUse = `${userInput}@tcgdual.com`;
                 }

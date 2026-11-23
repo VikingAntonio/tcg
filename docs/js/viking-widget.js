@@ -2234,7 +2234,7 @@
 
             card.innerHTML = `
                 <div class="vk-auction-img-wrapper">
-                    <img src="${a.image_url || 'https://via.placeholder.com/300x200?text=Sin+Imagen'}" alt="${a.nombre || 'Subasta'}">
+                    <img src="(window.optImg?window.optImg(a.image_url, 500):a.image_url) || 'https://via.placeholder.com/300x200?text=Sin+Imagen'" alt="${a.nombre || 'Subasta'}">
                     ${isEnded ? '<div class="vk-ended-seal">FINALIZADA</div>' : ''}
                     <div class="vk-auction-bid-badge">$${parseFloat(currentBid).toFixed(2)}</div>
                 </div>
