@@ -2598,6 +2598,9 @@ function renderDeckShell(deck) {
                 <button class="btn btn-sm btn-toggle-deck-view" data-deck-id="${deck.id}" title="Ver Lista">
                     <i class="fas fa-th"></i> Modo Lista
                 </button>
+                <button class="btn btn-sm btn-try-deck-inline" data-deck-id="${deck.id}" title="Probar Deck">
+                    <i class="fas fa-play"></i> Probar Deck
+                </button>
             </div>
         </div>
     `);
@@ -2758,6 +2761,9 @@ async function selectDeck(deckId, skipPush = false) {
 
         if (error) throw error;
         deck.deck_cards = cards;
+        // renderDeckCards sale temprano si isRendered: al reabrir el mismo deck
+        // hay que permitir que vuelva a pintar las cartas.
+        deck.isRendered = false;
 
         const totalSum = (cards || []).reduce((sum, card) => {
             const priceStr = card.price || '0';
@@ -4234,6 +4240,14 @@ function loadPublicWishlist() {
     }
     });
 }
+
+$(document).on('click', '.btn-try-deck-inline', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const deckId = $(this).data('deck-id');
+    const isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    window.location.href = `${isMobile ? 'configDuelMobile.html' : 'configDuel.html'}?deckId=${deckId}`;
+});
 
 $(document).on('click', '.btn-toggle-deck-view', function() {
     const deckId = $(this).data('deck-id');

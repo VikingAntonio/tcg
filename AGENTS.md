@@ -437,4 +437,14 @@ Medido con Playwright + `curl` + REST con la anon key. **Cached Egress = bytes s
 ## Constructor de Decks para PC
 - `docs/constrcutorDecks.html` (sic, con el typo) es el constructor de escritorio: layout Nexus de 3 columnas (`#deck-editor-pc-layout`: preview / deck / buscador), login, "Mis Decks" y editor. Carga `js/admin.js` + `js/inversiones.js` etc., así que reutiliza el editor de decks del panel.
 - `docs/deckbuilding.html` es el de móvil/horizontal (291 líneas, aviso de rotar el dispositivo); `admin.html` enlaza a ese.
-- `constrcutorDecks.html` **no está enlazado desde ninguna vista**; se entra directo por URL (`/constrcutorDecks.html`, opcional `?deckId=`).
+- `constrcutorDecks.html` es la **entrada de "Mis Decks" en PC** (tile de `admin.html`, menú de `expanciones.html`, `editDeck()` del panel). Acepta `?deckId=` para abrir un deck directo. `admin.html` conserva su editor intacto, pero ya no se llega a él por la UI.
+- **En móvil se abre `deckbuilding.html`**: `admin.html` expone `window.deckBuilderUrl(deckId)` (PC → `constrcutorDecks.html`, móvil → `deckbuilding.html`) y `admin.js` la usa; además `constrcutorDecks.html` lleva un guard al inicio del `<body>` que hace `location.replace('deckbuilding.html?deckId=...')` en móvil (cubre enlaces directos y el menú de `expanciones.html`).
+- **El hook de arranque va fuera de `$(document).ready`.** `admin.js` llama a `showAuthenticatedContent()` desde `checkSession()` y esa promesa se resuelve antes que los ready posteriores: si el override se instala dentro de `ready`, corre el original y la vista queda vacía. Se instala en un IIFE al final del documento y se envuelve el original en `try/catch` para abrir igual la lista aunque una consulta falle.
+- `js/subastas_v2.js` → `checkAuctionSession()` solo redirige a `admin.html` si hay UI de subastas (`#admin-auction-tabs`) **y** no estamos ya en `admin.html` (`shouldRedirectToAdminPage()`). Sin esa segunda condición, `admin.html` entra en bucle de recargas al no haber sesión.
+- Layout Nexus: `#view-deck-editor .nexus-layout` usa `minmax(260px,300px) minmax(0,1fr) minmax(340px,520px)`. Con `300px 820px 520px` fijo, entre 1441 y 1680px la columna izquierda se salía por la izquierda (recortada por `overflow:hidden`).
+
+## Link público de un deck (`public.html`, `view=decks`)
+- Solo se muestran **las cartas**: el bundle de accesorios del deck (mat, sleeves, deckbox, moneda, contadores) se quitó de `renderDeckShell`. No volver a inyectarlo ahí; los accesorios son del constructor, no de la vista pública.
+- Botones: en escritorio "Probar Deck" es flotante (`#btn-try-deck`, abajo-derecha). En móvil ese flotante se oculta y aparece `.btn-try-deck-inline` dentro de `.deck-toggle-container`, junto a "Modo Lista" (con `flex-wrap` a 360px se apilan). Así no tapa la carta ni el botón de lista.
+- `body.modal-open #btn-try-deck { display:none }` evita que el flotante quede encima de la lista de cartas (`#deck-list-overlay`).
+- `configDuelMobile.html?deckId=` en móvil, `configDuel.html?deckId=` en escritorio.

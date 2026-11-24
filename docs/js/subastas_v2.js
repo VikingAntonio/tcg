@@ -92,6 +92,14 @@ $(document).ready(async function() {
     });
 });
 
+function hasAuctionAdminUi() {
+    return !!document.getElementById('admin-auction-tabs');
+}
+
+function shouldRedirectToAdminPage() {
+    return hasAuctionAdminUi() && !window.location.pathname.endsWith('admin.html');
+}
+
 async function checkAuctionSession() {
     const { data: { session } } = await _supabase.auth.getSession();
     if (session) {
@@ -99,10 +107,10 @@ async function checkAuctionSession() {
         if (user) {
             auctionUser = user;
             loadLiveAuctions();
-        } else if (!window.location.pathname.endsWith('admin.html')) {
+        } else if (shouldRedirectToAdminPage()) {
             window.location.href = 'admin.html';
         }
-    } else if (!window.location.pathname.endsWith('admin.html')) {
+    } else if (shouldRedirectToAdminPage()) {
         window.location.href = 'admin.html';
     }
 }

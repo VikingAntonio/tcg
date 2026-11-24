@@ -6950,6 +6950,40 @@ body.modal-open #decks-view.active {
     margin-top: 5px !important;
 }
 
+/* Con un modal abierto (p. ej. la lista de cartas) el botón flotante sobraba encima. */
+body.modal-open #btn-try-deck {
+    display: none !important;
+}
+
+/* En móvil "Probar Deck" va junto a "Modo Lista", no flotando sobre el deck. */
+.btn-try-deck-inline {
+    display: none !important;
+}
+
+@media (max-width: 768px) {
+    #btn-try-deck {
+        display: none !important;
+    }
+
+    .deck-toggle-container {
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .btn-try-deck-inline {
+        display: inline-flex !important;
+        align-items: center;
+        gap: 6px;
+        background: linear-gradient(135deg, #8e2de2, #4a00e0) !important;
+        border: 1px solid #8e2de2 !important;
+        color: #fff !important;
+        border-radius: 50px !important;
+        padding: 8px 20px !important;
+        font-size: 0.9rem !important;
+        font-weight: 800 !important;
+    }
+}
+
 @media (max-width: 640px) {
     #selected-deck-view .deck-public-item {
         padding: 8px 12px !important;

@@ -205,7 +205,7 @@
             #deck-editor-mobile-layout { display: none; }
             #view-deck-editor .nexus-layout {
                 display: grid;
-                grid-template-columns: 300px 820px 520px;
+                grid-template-columns: minmax(260px, 300px) minmax(0, 1fr) minmax(340px, 520px);
                 justify-content: center;
                 gap: 20px;
                 width: 100% !important;
@@ -672,6 +672,13 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+    <script>
+        // Este constructor es de escritorio: en móvil se usa deckbuilding.html.
+        if (window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            const deckId = new URLSearchParams(window.location.search).get('deckId');
+            window.location.replace('deckbuilding.html' + (deckId ? '?deckId=' + encodeURIComponent(deckId) : ''));
+        }
+    </script>
 <!-- Floating User Panel -->
     <div class="top-left-panel" id="top-panel" style="display: none;">
         <div class="pill-panel">
@@ -1936,19 +1943,30 @@
 
     <!-- Constructor Decks Initialization Logic -->
     <script>
-        $(document).ready(function() {
-            // Check if there is a deckId in query parameters
-            const urlParams = new URLSearchParams(window.location.search);
-            const targetDeckId = urlParams.get('deckId');
-
-            // Hook into showAuthenticatedContent
+        // Se instala antes de DOMContentLoaded: admin.js llama a
+        // showAuthenticatedContent desde checkSession() y debe usar esta versión.
+        (function() {
+            const targetDeckId = new URLSearchParams(window.location.search).get('deckId');
             const origShowAuth = window.showAuthenticatedContent;
+
+            const showDeckList = async function() {
+                try {
+                    await showView('decks');
+                    await loadDecks();
+                } catch (error) {
+                    console.warn('Constructor: no se pudo cargar la lista de decks:', error);
+                }
+            };
+
             window.showAuthenticatedContent = async function() {
-                if (typeof origShowAuth === 'function') {
-                    await origShowAuth.apply(this, arguments);
+                try {
+                    if (typeof origShowAuth === 'function') {
+                        await origShowAuth.apply(this, arguments);
+                    }
+                } catch (error) {
+                    console.warn('Constructor: carga del panel incompleta, se abre igual:', error);
                 }
 
-                // Override default view to show decks list or open specific deck
                 if (targetDeckId) {
                     showView('deck-editor');
                     try {
@@ -1959,21 +1977,45 @@
                             .single();
                         if (deckData && !error) {
                             editDeck(deckData);
-                        } else {
-                            showView('decks');
-                            loadDecks();
+                            return;
                         }
                     } catch (e) {
                         console.error('Error opening deck from URL parameter:', e);
-                        showView('decks');
-                        loadDecks();
                     }
-                } else {
-                    showView('decks');
-                    loadDecks();
                 }
+                await showDeckList();
             };
 
+            // admin.js redirige a admin.html al iniciar sesión; aquí la sesión
+            // debe quedarse en el constructor.
+            window.handleLogin = async function() {
+                const user = $('#login-username').val().trim();
+                const pass = $('#login-password').val().trim();
+                if (!user || !pass) {
+                    Swal.fire('Atención', 'Por favor, completa todos los campos', 'warning');
+                    return;
+                }
+
+                let emails = [user];
+                if (!user.includes('@')) {
+                    const { data: resolvedEmail } = await _supabase.rpc('get_login_email', { p_identifier: user });
+                    emails = [...new Set([resolvedEmail, `${user}@tcgdual.com`, `${user}@vikingtcg.xyz`].filter(Boolean))];
+                }
+
+                let lastError = null;
+                for (const email of emails) {
+                    const { error } = await _supabase.auth.signInWithPassword({ email, password: pass });
+                    if (!error) {
+                        window.location.reload();
+                        return;
+                    }
+                    lastError = error;
+                }
+                Swal.fire('Error', 'Error al iniciar sesión: ' + (lastError?.message || 'Credenciales incorrectas'), 'error');
+            };
+        })();
+
+        $(document).ready(function() {
             // Back button override to return to admin.html
             $(document).on('click', '.btn-back-main, #btn-back-to-main', function(e) {
                 e.preventDefault();
