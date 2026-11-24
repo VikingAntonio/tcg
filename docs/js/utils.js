@@ -1992,6 +1992,14 @@ window.checkVikingMaintenance = async function(zoneKey) {
     }
 };
 
+// bfcache: al volver con el botón atrás el navegador restaura la página sin
+// ejecutar los scripts. Se avisa a las vistas para que refresquen lo que
+// dependa de la BD (y no queden datos de una sesión anterior en pantalla).
+window.addEventListener('pageshow', function(event) {
+    if (!event.persisted) return;
+    try { window.dispatchEvent(new CustomEvent('tcg:bfcache-restore')); } catch (e) {}
+});
+
 // Dynamically auto-load notifications manager across platform views
 $(document).ready(function() {
     if ($('script[src*="notifications.js"]').length === 0) {

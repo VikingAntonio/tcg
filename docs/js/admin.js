@@ -221,6 +221,12 @@ $(document).ready(async function() {
                             }
                             if (spiritData?.id) {
                                 currentUser.selected_spirit_id = spiritData.id;
+                                try { localStorage.setItem('tcg_session', JSON.stringify(currentUser)); } catch (_) {}
+                                if (spiritData.gltf_url) {
+                                    window.currentSpirit = spiritData;
+                                    if (typeof setCachedSpirit === 'function') setCachedSpirit(spiritData, 'user:' + currentUser.id);
+                                    if (typeof initMichatbot === 'function') initMichatbot(true);
+                                }
                             }
                             loadSpirits();
                         },
@@ -4318,6 +4324,12 @@ async function loadSpirits() {
                 Swal.fire('Error', 'No se pudo seleccionar el asistente', 'error');
             } else {
                 window.currentSpirit = spirit;
+                // Keep the cached profile and the instant cache in sync with the
+                // DB, otherwise a later fallback to the cached session brings
+                // back the previously selected assistant.
+                currentUser.selected_spirit_id = spirit.id;
+                try { localStorage.setItem('tcg_session', JSON.stringify(currentUser)); } catch (_) {}
+                if (typeof setCachedSpirit === 'function') setCachedSpirit(spirit, 'user:' + currentUser.id);
                 if (typeof initMichatbot === 'function') initMichatbot(true);
                 Swal.fire({
                     title: '¡Asistente Seleccionado!',
@@ -5779,3 +5791,24 @@ async function applyStoreCustomizationsToAdmin() {
         console.warn('Error applying store customizations to admin:', err);
     }
 }
+
+// bfcache: si el navegador restaura la página con el botón atrás, los scripts
+// no se ejecutan y la sesión/perfil en memoria pueden ser de una selección
+// anterior. Se refresca el perfil (incluido selected_spirit_id) sin resetear
+// la vista y se vuelve a pintar la rejilla de asistentes.
+window.addEventListener('tcg:bfcache-restore', async function() {
+    try {
+        const { data: { session } } = await _supabase.auth.getSession();
+        if (!session || !session.user) return;
+        const { data: profile } = await _supabase
+            .from('usuarios')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+        if (profile) {
+            currentUser = profile;
+            try { localStorage.setItem('tcg_session', JSON.stringify(profile)); } catch (_) {}
+        }
+    } catch (e) {}
+    if (typeof loadSpirits === 'function') loadSpirits();
+});

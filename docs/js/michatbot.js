@@ -152,21 +152,73 @@ function buildCornerModelViewer(gltfUrl, forceRefresh) {
     }
 }
 
+// Owner of the currently shown assistant (store id on public pages, user id in
+// the panel). The cached spirit is scoped to it so browsing another store can
+// never leave its assistant as the fallback here.
+function spiritCacheOwnerId() {
+    try {
+        if (window.currentStoreId) {
+            // El dueño mirando su propia tienda pública comparte la caché del
+            // panel; un visitante usa una clave por tienda.
+            const stored = localStorage.getItem('tcg_session');
+            if (stored) {
+                const session = JSON.parse(stored);
+                if (session && String(session.id) === String(window.currentStoreId)) return 'user:' + window.currentStoreId;
+            }
+            return 'store:' + window.currentStoreId;
+        }
+        if (typeof currentUser !== 'undefined' && currentUser && currentUser.id) return 'user:' + currentUser.id;
+        const stored = localStorage.getItem('tcg_session');
+        if (stored) {
+            const session = JSON.parse(stored);
+            if (session && session.id) return 'user:' + session.id;
+        }
+    } catch (e) {}
+    return null;
+}
+
 // Helpers to get and set cached spirit instantly without delay
-function getCachedSpirit() {
+function getCachedSpirit(ownerId) {
     try {
         const cached = localStorage.getItem('viking_cached_spirit');
-        return cached ? JSON.parse(cached) : null;
+        if (!cached) return null;
+        const owner = ownerId || spiritCacheOwnerId();
+        const cachedOwner = localStorage.getItem('viking_cached_spirit_owner');
+        if (owner && cachedOwner && String(owner) !== String(cachedOwner)) return null;
+        return JSON.parse(cached);
     } catch (e) {
         return null;
     }
 }
 
-function setCachedSpirit(spirit) {
+function setCachedSpirit(spirit, ownerId) {
     if (!spirit) return;
     try {
         localStorage.setItem('viking_cached_spirit', JSON.stringify(spirit));
+        const owner = ownerId || spiritCacheOwnerId();
+        if (owner) localStorage.setItem('viking_cached_spirit_owner', owner);
     } catch (e) {}
+}
+
+// Drops a cached assistant that belongs to another account/store. Called once
+// the owner is known (on public pages `currentStoreId` arrives after the first
+// paint) so the corner never keeps the previous store's model.
+function discardStaleCachedSpirit() {
+    if (!window.__currentSpiritFromCache || !window.currentSpirit) return false;
+    if (window.currentSpirit !== window.__cachedSpiritRef) return false;
+    if (!spiritCacheOwnerId() || getCachedSpirit()) return false;
+
+    window.currentSpirit = null;
+    window.__cachedSpiritRef = null;
+    window.__currentSpiritFromCache = false;
+
+    const $container = $('#michatbot-model-container');
+    const $viewer = $('#michatbot-viewer');
+    if ($viewer.length && $container.find('#michatbot-viewer').length) {
+        releaseModelViewerContext($viewer[0]);
+        $container.empty();
+    }
+    return true;
 }
 
 // Reintentos acotados cuando todavía no hay asistente (antes reintentaba cada
@@ -181,25 +233,34 @@ async function lookupSpiritFromDb() {
         const isPublicSpace = window.location.pathname.includes('public.html') || !!window.currentStoreId;
 
         if (isPublicSpace && window.currentStoreId) {
-            const { data: userRow } = await _supabase.from('usuarios').select('selected_spirit_id').eq('id', window.currentStoreId).maybeSingle();
+            const { data: userRow, error } = await _supabase.from('usuarios').select('selected_spirit_id').eq('id', window.currentStoreId).maybeSingle();
+            // A read error is not "this store has no assistant": returning a
+            // random public spirit here is what used to swap the chosen model
+            // for an old one. Keep the cached spirit and retry instead.
+            if (error) return null;
             if (userRow?.selected_spirit_id) {
-                const { data: spirit } = await _supabase.from('spirits').select('*').eq('id', userRow.selected_spirit_id).maybeSingle();
+                const { data: spirit, error: spiritError } = await _supabase.from('spirits').select('*').eq('id', userRow.selected_spirit_id).maybeSingle();
+                if (spiritError) return null;
                 if (spirit) return spirit;
             }
         } else {
             let sessionUser = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : null;
             if (!sessionUser) { const stored = localStorage.getItem('tcg_session'); if (stored) sessionUser = JSON.parse(stored); }
             if (sessionUser) {
-                const { data: userRow } = await _supabase.from('usuarios').select('selected_spirit_id').eq('id', sessionUser.id).maybeSingle();
+                const { data: userRow, error } = await _supabase.from('usuarios').select('selected_spirit_id').eq('id', sessionUser.id).maybeSingle();
+                if (error) return null;
                 if (userRow?.selected_spirit_id) {
-                    const { data: spirit } = await _supabase.from('spirits').select('*').eq('id', userRow.selected_spirit_id).maybeSingle();
+                    const { data: spirit, error: spiritError } = await _supabase.from('spirits').select('*').eq('id', userRow.selected_spirit_id).maybeSingle();
+                    if (spiritError) return null;
                     if (spirit) return spirit;
                 }
             }
         }
 
-        const { data } = await _supabase.from('spirits').select('*').eq('is_public', true).limit(1).maybeSingle();
-        return data || null;
+        // Only reached when there is no user context or the user never picked
+        // an assistant, never when reading the selection failed.
+        const { data, error } = await _supabase.from('spirits').select('*').eq('is_public', true).limit(1).maybeSingle();
+        return error ? null : (data || null);
     } catch (e) {
         return null;
     }
@@ -220,10 +281,56 @@ function refreshCornerModelUrl(url, attempt = 0) {
     if (attempt < 10) setTimeout(() => refreshCornerModelUrl(url, attempt + 1), 300);
 }
 
+// Revalida el asistente elegido y actualiza el visor ya montado. Se usa al
+// iniciar, al volver con el botón atrás (bfcache) y al recuperar red o foco:
+// así una lectura fallida no deja el modelo de una sesión anterior pegado.
+let spiritRevalidateInFlight = null;
+let spiritRevalidateRetries = 0;
+let lastSpiritRevalidateAt = 0;
+
+function scheduleSpiritRetry() {
+    if (spiritRevalidateRetries >= 4 || document.hidden) return;
+    const delays = [2000, 5000, 10000, 20000];
+    const delay = delays[spiritRevalidateRetries] || 20000;
+    spiritRevalidateRetries++;
+    setTimeout(() => {
+        if (!document.hidden) revalidateSpiritFromDb({ force: true });
+    }, delay);
+}
+
+async function revalidateSpiritFromDb(opts = {}) {
+    const force = !!opts.force;
+    const minInterval = typeof opts.minInterval === 'number' ? opts.minInterval : 30000;
+    if (!force && Date.now() - lastSpiritRevalidateAt < minInterval) return window.currentSpirit || null;
+    if (spiritRevalidateInFlight) return spiritRevalidateInFlight;
+
+    lastSpiritRevalidateAt = Date.now();
+    spiritRevalidateInFlight = (async () => {
+        const fresh = await lookupSpiritFromDb();
+        if (!fresh || !fresh.gltf_url) {
+            scheduleSpiritRetry();
+            return null;
+        }
+        spiritRevalidateRetries = 0;
+        const old = window.currentSpirit;
+        const changed = !old || String(old.id) !== String(fresh.id) || old.gltf_url !== fresh.gltf_url;
+        window.currentSpirit = fresh;
+        window.__currentSpiritFromCache = false;
+        window.__cachedSpiritRef = null;
+        setCachedSpirit(fresh);
+        if (changed) refreshCornerModelUrl(fresh.gltf_url);
+        return fresh;
+    })().finally(() => { spiritRevalidateInFlight = null; });
+    return spiritRevalidateInFlight;
+}
+window.revalidateSpiritFromDb = revalidateSpiritFromDb;
+
 if (!window.currentSpirit) {
     const cached = getCachedSpirit();
     if (cached && cached.gltf_url) {
         window.currentSpirit = cached;
+        window.__cachedSpiritRef = cached;
+        window.__currentSpiritFromCache = true;
     }
 }
 
@@ -1217,19 +1324,51 @@ async function initMichatbot(forceRefresh = false) {
 
     setupImageUploadAndVoiceHandlers();
 
+    // El modelo puede venir de la caché de otra cuenta u otra tienda. Si el
+    // dueño no coincide, se descarta y se espera a la lectura real.
+    if (window.__currentSpiritFromCache) {
+        if (window.currentSpirit && window.currentSpirit === window.__cachedSpiritRef) {
+            const scoped = getCachedSpirit();
+            if (scoped && scoped.gltf_url) {
+                window.currentSpirit = scoped;
+                window.__cachedSpiritRef = scoped;
+            } else {
+                discardStaleCachedSpirit();
+            }
+        } else {
+            // Otra vista ya cargó el asistente real desde la BD.
+            window.__currentSpiritFromCache = false;
+        }
+    }
+
+    // En páginas públicas el id de la tienda llega después del primer pintado.
+    // Se re-comprueba el dueño de la caché un poco más tarde para no dejar el
+    // modelo de otra tienda si `loadStoreData` falla o tarda.
+    if (window.__currentSpiritFromCache && !window.__staleOwnerRecheck) {
+        window.__staleOwnerRecheck = setTimeout(() => {
+            window.__staleOwnerRecheck = null;
+            if (discardStaleCachedSpirit()) revalidateSpiritFromDb({ force: true });
+        }, 3000);
+    }
+
     if (forceRefresh || !window.currentSpirit) {
         // First check fast local cache to avoid visual delay & flickering
         if (!window.currentSpirit) {
             const cached = getCachedSpirit();
             if (cached && cached.gltf_url) {
                 window.currentSpirit = cached;
+                window.__cachedSpiritRef = cached;
+                window.__currentSpiritFromCache = true;
             }
         }
 
         const fresh = await lookupSpiritFromDb();
         if (fresh) {
             window.currentSpirit = fresh;
+            window.__currentSpiritFromCache = false;
+            window.__cachedSpiritRef = null;
             setCachedSpirit(fresh);
+            lastSpiritRevalidateAt = Date.now();
         }
         if (!window.currentSpirit) {
             if (spiritLookupRetries < 5) {
@@ -1251,27 +1390,20 @@ async function initMichatbot(forceRefresh = false) {
         if (!$modelContainer.find('.michatbot-mobile-viewer').length) $modelContainer.empty();
         window.MichatbotMobile3D.create($modelContainer[0], { autoRotate: true })
             .then((v) => {
-                if (v) v.setModel(gltfUrl);
-                else buildCornerModelViewer(gltfUrl, forceRefresh);
+                // Read the URL at resolve time: the viewer starts asynchronously
+                // and a revalidation may have replaced the model meanwhile.
+                const resolvedUrl = (window.currentSpirit && window.currentSpirit.gltf_url) || gltfUrl;
+                if (v) v.setModel(resolvedUrl);
+                else buildCornerModelViewer(resolvedUrl, forceRefresh);
             });
     } else {
         buildCornerModelViewer(gltfUrl, forceRefresh);
     }
 
-    // El localStorage del visitante puede tener una URL vieja (por ejemplo si
-    // el modelo se migró a otro host). Se revalida en segundo
-    // plano y, si cambió, se cambia el modelo en el visor ya montado: así deja
-    // de pedirse el archivo a Supabase en las siguientes visitas.
-    if (!window._michatbotSpiritRevalidated) {
-        window._michatbotSpiritRevalidated = true;
-        lookupSpiritFromDb().then((fresh) => {
-            if (!fresh || !fresh.gltf_url) return;
-            const oldUrl = window.currentSpirit && window.currentSpirit.gltf_url;
-            window.currentSpirit = fresh;
-            setCachedSpirit(fresh);
-            if (oldUrl && oldUrl !== fresh.gltf_url) refreshCornerModelUrl(fresh.gltf_url);
-        }).catch(() => {});
-    }
+    // El localStorage del visitante puede tener una URL vieja o el asistente de
+    // una sesión anterior. Se revalida en segundo plano (y se reintenta si la
+    // lectura falla) para que el visor cambie sin recargar la página.
+    revalidateSpiritFromDb({});
 
     // The tap-to-open-menu gesture lives on the model container so it works for
     // both model-viewer (desktop) and the Three.js canvas (mobile).
@@ -2712,6 +2844,23 @@ const cleanupOnPageExit = () => {
 
 window.addEventListener('pagehide', cleanupOnPageExit);
 window.addEventListener('beforeunload', cleanupOnPageExit);
+
+// El botón atrás puede restaurar la página desde el bfcache: los scripts no se
+// vuelven a ejecutar, el pagehide liberó los visores 3D y el asistente queda
+// como estaba en esa sesión. Se reconstruye y se revalida contra la BD.
+window.addEventListener('pageshow', (event) => {
+    if (!event.persisted) return;
+    initMichatbot(true);
+});
+
+// Si una lectura falló (red intermitente, token refrescándose...), se reintenta
+// al volver a la pestaña o al recuperar conexión, sin obligar a recargar.
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) return;
+    if (spiritRevalidateRetries > 0) revalidateSpiritFromDb({ force: true });
+    else revalidateSpiritFromDb({ minInterval: 60000 });
+});
+window.addEventListener('online', () => revalidateSpiritFromDb({ force: true }));
 
 $(document).ready(() => {
     initMichatbot();
