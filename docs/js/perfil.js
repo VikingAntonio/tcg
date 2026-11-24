@@ -63,7 +63,7 @@ $(document).ready(async function() {
             $('#profile-ubicacion').val(currentUser.ubicacion || '');
 
             if (currentUser.store_logo) {
-                $('#profile-logo-preview').attr('src', currentUser.store_logo);
+                $('#profile-logo-preview').attr('src', (window.storeLogoUrl?window.storeLogoUrl(currentUser.store_logo):currentUser.store_logo));
             }
         } else {
             $('.store-only-field').hide();
@@ -125,7 +125,7 @@ $(document).ready(async function() {
 
     function updateHeader() {
         if (currentUser.is_store) {
-            $('#dropdown-user-logo').show().attr('src', currentUser.store_logo || 'https://midominio.com/placeholder-logo.png');
+            $('#dropdown-user-logo').show().attr('src', (window.storeLogoUrl?window.storeLogoUrl(currentUser.store_logo):currentUser.store_logo) || 'https://midominio.com/placeholder-logo.png');
             $('#dropdown-user-name').text(currentUser.store_name || currentUser.username);
             $('#dropdown-user-role').hide();
         } else {
@@ -203,22 +203,31 @@ $(document).ready(async function() {
             let logoUrl = currentUser.store_logo;
 
             // 1. Upload Logo if changed (Only for stores)
+            // El logo se sube al servidor de imágenes: se sirve redimensionado y
+            // en el mejor formato del navegador. Antes iba a Storage y se
+            // descargaba entero (y con caché de solo 1 hora) en cada página.
             if (currentUser.is_store && selectedLogoFile) {
-                const fileExt = selectedLogoFile.name.split('.').pop();
-                const fileName = `${currentUser.id}_${Date.now()}.${fileExt}`;
-                const filePath = `${fileName}`;
+                let uploadedUrl = null;
+                if (window.MediaUpload?.uploadImage) {
+                    try {
+                        uploadedUrl = await window.MediaUpload.uploadImage(selectedLogoFile);
+                    } catch (err) {
+                        console.warn('No se pudo subir el logo al servidor de imágenes, se usa Storage:', err);
+                    }
+                }
 
-                const { data, error: uploadError } = await _supabase.storage
-                    .from('logos')
-                    .upload(filePath, selectedLogoFile);
+                if (!uploadedUrl) {
+                    const fileExt = selectedLogoFile.name.split('.').pop();
+                    const fileName = `${currentUser.id}_${Date.now()}.${fileExt}`;
+                    const { data, error: uploadError } = await _supabase.storage
+                        .from('logos')
+                        .upload(fileName, selectedLogoFile, { upsert: true, cacheControl: 'public, max-age=31536000, immutable' });
 
-                if (uploadError) throw uploadError;
+                    if (uploadError) throw uploadError;
+                    uploadedUrl = _supabase.storage.from('logos').getPublicUrl(fileName).data.publicUrl;
+                }
 
-                const { data: publicData } = _supabase.storage
-                    .from('logos')
-                    .getPublicUrl(filePath);
-
-                logoUrl = publicData.publicUrl;
+                logoUrl = uploadedUrl;
             }
 
             const domainVal = $('#profile-domain').val().trim();

@@ -106,7 +106,7 @@
             super();
             this.activeStoreId = null;
             this.selectedSpiritId = null;
-            this.currentSpirit = { name: DEFAULT_SPIRIT_NAME, gltf_url: DEFAULT_GLTF_URL };
+            this.currentSpirit = { name: DEFAULT_SPIRIT_NAME, gltf_url: '' };
             this.storeName = 'VikingTCG';
             this.conversationHistory = [];
             this._realtimeChannel = null;
@@ -215,18 +215,17 @@
                     this.activeStoreId = matchedUserId;
 
                     // Fetch user details, active spirit, and subscription status
-                    const { data: userRow } = await this._supabase
-                        .from('usuarios')
-                        .select('id, username, store_name, selected_spirit_id, subscription_status, role')
-                        .eq('id', this.activeStoreId)
-                        .maybeSingle();
+                    const userRow = await this.fetchStoreRow(this.activeStoreId);
 
                     if (userRow) {
                         // Validate active access: Allowed if admin, active Stripe subscription, OR domain explicitly authorized in dominios.html
                         const subStatus = userRow.subscription_status || 'inactive';
                         const isAdmin = userRow.role === 'admin';
+                        // La clave anónima no puede leer `subscription_status` (RLS por
+                        // columna). Si no viene, la autorización del dominio manda.
+                        const subKnown = userRow.subscription_status !== undefined;
 
-                        if (!isAdmin && subStatus !== 'active' && subStatus !== 'trialing' && !isDomainAuthorizedInTable) {
+                        if (subKnown && !isAdmin && subStatus !== 'active' && subStatus !== 'trialing' && !isDomainAuthorizedInTable) {
                             console.warn('[VikingChatbot] Suscripción/Acceso no activo para usuario:', this.activeStoreId, 'Estado:', subStatus);
                             this.renderSubscriptionRequiredBlock();
                             return;
@@ -259,6 +258,35 @@
             }
         }
 
+        // `subscription_status` no lo puede leer la clave anónima, así que el
+        // select directo devolvía 400 y el widget nunca cargaba el asistente de
+        // la tienda. Se intenta la RPC y, si no existe, se pide el resto de
+        // columnas sin el estado de suscripción.
+        async fetchStoreRow(userId) {
+            if (!this._supabase || !userId) return null;
+            try {
+                const { data, error } = await this._supabase.rpc('get_widget_store', { p_user_id: userId });
+                if (!error && data) {
+                    const row = Array.isArray(data) ? data[0] : data;
+                    if (row) return row;
+                }
+            } catch (e) {}
+
+            const attempts = [
+                'id, username, store_name, selected_spirit_id, role',
+                'id, store_name, selected_spirit_id'
+            ];
+            for (const columns of attempts) {
+                const { data, error } = await this._supabase
+                    .from('usuarios')
+                    .select(columns)
+                    .eq('id', userId)
+                    .maybeSingle();
+                if (!error && data) return data;
+            }
+            return null;
+        }
+
         async fetchSpiritById(spiritId) {
             if (!spiritId || !this._supabase) return;
             const { data: spirit } = await this._supabase
@@ -279,6 +307,7 @@
                 .from('spirits')
                 .select('*')
                 .eq('is_public', true)
+                .order('id', { ascending: true })
                 .limit(1)
                 .maybeSingle();
 
@@ -343,16 +372,61 @@
             }
         }
 
+        // Un modelo por defecto pesa ~1.8 MB. Antes se montaba en cada visita
+        // (aunque la tienda tuviera su propio asistente) y eso disparaba el
+        // egress de Storage. Ahora solo se monta un <model-viewer> cuando ya se
+        // conoce el modelo real; mientras tanto se pinta el póster.
+        mediaMarkup(gltfUrl, kind) {
+            const extra = kind === 'stage'
+                ? 'exposure="1.2"'
+                : 'id="vk-viewer" exposure="1" field-of-view="auto" min-field-of-view="5deg" max-field-of-view="45deg" interpolation-decay="200" auto-rotate-delay="0" rotation-speed="0.5"';
+            return `<model-viewer ${extra} src="${gltfUrl}" loading="eager" auto-rotate camera-controls shadow-intensity="1" environment-image="neutral" interaction-prompt="none" camera-orbit="auto 75deg auto" camera-target="auto auto auto" bounds="tight" disable-zoom disable-pan style="width: 100%; height: 100%; display: block; margin: auto; background: transparent;"></model-viewer>`;
+        }
+
+        placeholderMarkup() {
+            return `<svg class="vk-spirit-placeholder" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8.01" y2="16"/><line x1="16" y1="16" x2="16.01" y2="16"/></svg>`;
+        }
+
+        fillMedia(container, kind) {
+            const gltf = this.currentSpirit?.gltf_url || '';
+            const poster = this.currentSpirit?.poster_url || this.currentSpirit?.texture_url || '';
+            const viewer = container.querySelector('model-viewer');
+
+            if (gltf) {
+                if (!viewer) { container.innerHTML = this.mediaMarkup(gltf, kind); return; }
+                if (viewer.getAttribute('src') !== gltf) viewer.setAttribute('src', gltf);
+                return;
+            }
+            if (viewer) viewer.remove();
+            if (poster) {
+                let img = container.querySelector('img.vk-spirit-poster');
+                if (!img) container.innerHTML = `<img class="vk-spirit-poster" src="${poster}" alt="" loading="lazy">`;
+                else if (img.getAttribute('src') !== poster) img.setAttribute('src', poster);
+            } else if (!container.querySelector('.vk-spirit-placeholder')) {
+                container.innerHTML = this.placeholderMarkup();
+            }
+        }
+
+        syncMedia() {
+            const companion = this.querySelector('#vk-model-container');
+            if (companion) this.fillMedia(companion, 'companion');
+            const stage = this.querySelector('#vk-gltf-stage');
+            if (stage && this._chatOpen) this.fillMedia(stage, 'stage');
+        }
+
+        // Se llama solo cuando el visitante interactúa (abre el chat): hasta ese
+        // momento no se descarga ningún modelo de relleno.
+        ensureModel() {
+            if (!this.currentSpirit?.gltf_url) {
+                this.currentSpirit = { name: DEFAULT_SPIRIT_NAME, gltf_url: DEFAULT_GLTF_URL };
+            }
+            this.syncMedia();
+        }
+
         updateWidgetData() {
             const spiritName = this.currentSpirit?.name || DEFAULT_SPIRIT_NAME;
-            const gltfUrl = this.currentSpirit?.gltf_url || DEFAULT_GLTF_URL;
 
-            const viewers = this.querySelectorAll('model-viewer');
-            viewers.forEach(v => {
-                if (gltfUrl && v.getAttribute('src') !== gltfUrl) {
-                    v.setAttribute('src', gltfUrl);
-                }
-            });
+            this.syncMedia();
 
             const storeEl = this.querySelector('#vk-store-name-label');
             if (storeEl) storeEl.textContent = this.storeName;
@@ -368,7 +442,6 @@
 
         renderWidget() {
             const spiritName = this.currentSpirit?.name || DEFAULT_SPIRIT_NAME;
-            const gltfUrl = this.currentSpirit?.gltf_url || DEFAULT_GLTF_URL;
 
             // Embedded SVG icons for guaranteed rendering regardless of external FontAwesome CSS loading
             const svgDrag = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>`;
@@ -457,6 +530,21 @@
                         align-items: center !important;
                         justify-content: center !important;
                         overflow: hidden !important;
+                    }
+
+                    .vk-spirit-poster {
+                        width: 100% !important;
+                        height: 100% !important;
+                        object-fit: contain;
+                        pointer-events: none;
+                        filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.55));
+                    }
+
+                    .vk-spirit-placeholder {
+                        width: 58%;
+                        height: 58%;
+                        opacity: 0.55;
+                        pointer-events: none;
                     }
 
                     #vk-model-container model-viewer, #vk-gltf-stage model-viewer {
@@ -664,31 +752,7 @@
                     <div id="vk-companion-wrapper">
                         <div id="vk-drag-handle" title="Mover">${svgDrag}</div>
                         <div id="vk-bubble"><span>¡Hola!</span></div>
-                        <div id="vk-model-container">
-                            <model-viewer
-                                id="vk-viewer"
-                                src="${gltfUrl}"
-                                loading="eager"
-                                auto-rotate
-                                camera-controls
-                                shadow-intensity="1"
-                                environment-image="neutral"
-                                exposure="1"
-                                interaction-prompt="none"
-                                camera-orbit="auto 75deg auto"
-                                camera-target="auto auto auto"
-                                field-of-view="auto"
-                                min-field-of-view="5deg"
-                                max-field-of-view="45deg"
-                                disable-zoom
-                                disable-pan
-                                bounds="tight"
-                                interpolation-decay="200"
-                                auto-rotate-delay="0"
-                                rotation-speed="0.5"
-                                style="width: 100%; height: 100%; display: block; margin: auto; background: transparent;">
-                            </model-viewer>
-                        </div>
+                        <div id="vk-model-container"></div>
 
                         <!-- Companion Popup Menu -->
                         <div id="vk-menu">
@@ -717,25 +781,7 @@
                             <div class="vk-chat-close" id="vk-chat-close">&times;</div>
                         </div>
 
-                        <div id="vk-gltf-stage">
-                            <model-viewer
-                                src="${gltfUrl}"
-                                loading="eager"
-                                auto-rotate
-                                camera-controls
-                                shadow-intensity="1"
-                                environment-image="neutral"
-                                exposure="1.2"
-                                interaction-prompt="none"
-                                disable-zoom
-                                disable-pan
-                                camera-orbit="auto 75deg auto"
-                                camera-target="auto auto auto"
-                                field-of-view="auto"
-                                bounds="tight"
-                                style="width: 100%; height: 100%; display: block; margin: auto; background: transparent;">
-                            </model-viewer>
-                        </div>
+                        <div id="vk-gltf-stage"></div>
 
                         <div class="vk-chat-messages" id="vk-chat-messages"></div>
 
@@ -749,6 +795,7 @@
                 </div>
             `;
 
+            this.syncMedia();
             this.bindEvents();
             this.makeDraggable();
         }
@@ -802,8 +849,12 @@
             if (optChat) {
                 optChat.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    menu.style.display = 'none';
+                    if (menu) menu.style.display = 'none';
                     chatContainer.style.display = 'flex';
+                    // El 3D se monta aquí y no al cargar la página: así una visita
+                    // que no abre el chat no descarga ningún modelo.
+                    this._chatOpen = true;
+                    this.ensureModel();
                 });
             }
 

@@ -64,7 +64,7 @@ async function checkSession() {
 
             // Starter users only see their name, no logo
             if (user.store_logo && user.role !== 'starter') {
-                $('#tpl-logo').attr('src', user.store_logo).show();
+                $('#tpl-logo').attr('src', (window.storeLogoUrl?window.storeLogoUrl(user.store_logo):user.store_logo)).show();
             } else {
                 $('#tpl-logo').hide();
             }

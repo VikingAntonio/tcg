@@ -53,7 +53,7 @@ async function checkAdminClaimSession() {
             adminClaimUser = user;
 
             // UI Update
-            if (user.store_logo) $('#dropdown-user-logo').attr('src', user.store_logo).show();
+            if (user.store_logo) $('#dropdown-user-logo').attr('src', (window.storeLogoUrl?window.storeLogoUrl(user.store_logo):user.store_logo)).show();
             $('#dropdown-user-name').text(user.store_name || user.username);
             $('#dropdown-user-role').text(user.role || 'Vendedor').show();
 

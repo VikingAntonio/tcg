@@ -742,7 +742,7 @@
             $('#top-panel').show();
 
             if (currentUser.is_store) {
-                $('#dropdown-user-logo').show().attr('src', currentUser.store_logo || 'https://midominio.com/placeholder-logo.png');
+                $('#dropdown-user-logo').show().attr('src', (window.storeLogoUrl?window.storeLogoUrl(currentUser.store_logo):currentUser.store_logo) || 'https://midominio.com/placeholder-logo.png');
                 $('#dropdown-user-name').text(currentUser.store_name || currentUser.username);
             } else {
                 $('#dropdown-user-logo').hide();

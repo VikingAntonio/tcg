@@ -200,7 +200,7 @@
             }
 
             if (profile.store_name) $('#user-store-name').text(profile.store_name);
-            if (profile.store_logo) $('#user-store-logo').attr('src', profile.store_logo);
+            if (profile.store_logo) $('#user-store-logo').attr('src', (window.storeLogoUrl?window.storeLogoUrl(profile.store_logo):profile.store_logo));
 
             await loadUsersDropdown();
             await loadRegisteredDomains();
