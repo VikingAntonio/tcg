@@ -5335,8 +5335,18 @@ function renderPublicInvestmentCards() {
     }
 }
 
+// En el link público se muestra el precio de venta (lo que el dueño pide por
+// la carta), no el precio de mercado. Solo si no hay precio de venta fijado
+// se usa el de mercado como respaldo para no mostrar $0.00.
+function publicInvSalePrice(card) {
+    const sale = parseFloat(card && card.sale_price);
+    if (Number.isFinite(sale) && sale > 0) return sale;
+    const market = parseFloat(card && card.current_price);
+    return Number.isFinite(market) && market > 0 ? market : 0;
+}
+
 function publicInvPriceLabel(card) {
-    return `$${parseFloat(card.current_price || 0).toFixed(2)}`;
+    return `$${publicInvSalePrice(card).toFixed(2)}`;
 }
 
 function publicInvIsAvailable(card) {
@@ -5562,7 +5572,7 @@ function openPublicInvestmentCardModal(card) {
     $('#public-inv-modal-img').attr('src', card.image_url || 'https://vikingtcg.xyz/favi.png');
     $('#public-inv-modal-title').text(card.card_name || 'Carta');
     $('#public-inv-modal-set').text(`${card.set_name || ''} ${card.set_number ? '#' + card.set_number : ''}`.trim() || 'Colección');
-    $('#public-inv-modal-price').text(`$${parseFloat(card.current_price || 0).toFixed(2)}`);
+    $('#public-inv-modal-price').text(publicInvPriceLabel(card));
     $('#public-inv-modal-rarity').text(card.rarity || 'Normal');
 
     const isAvailable = publicInvIsAvailable(card);
@@ -5646,7 +5656,7 @@ $(document).on('click', '#btn-public-inv-add-cart', function(e) {
         id: card.id,
         name: card.card_name || 'Carta',
         image_url: card.image_url || '',
-        price: parseFloat(card.current_price || 0).toFixed(2),
+        price: publicInvSalePrice(card).toFixed(2),
         rarity: card.rarity || '',
         expansion: card.set_name || '',
         quantity: maxAvail,
