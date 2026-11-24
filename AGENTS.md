@@ -399,14 +399,15 @@ Síntoma: tras cambiar de asistente, al volver con el botón atrás del navegado
 ## Egress de Storage — causa real del pico y arreglos (nov. 2026)
 Medido con Playwright + `curl` + REST con la anon key. **Cached Egress = bytes servidos por el CDN de Storage**, no la base de datos (la BD es "Egress").
 - Lo que se servía en cada visita sin poder cachearse: el asistente de la esquina montaba **siempre** el modelo por defecto `wingedKuriboh` (`.gltf` 4 KB + **`.bin` 1.25 MB** con `cache-control: private, no-cache` + 3 texturas ~0.57 MB) incluso en tiendas con asistente propio, y en algunas vistas lo montaba **dos veces** (home + chat).
-- El `usuarios.select('..., subscription_status, ...')` del widget devolvía **400** (la columna no es legible con la clave anónima tras la migración `M_`), así que el widget nunca resolvía la tienda y caía al modelo por defecto.
+- El `usuarios.select('..., subscription_status, ...')` del widget devolvía **400** porque **la columna no existía**: `docs/add_stripe_subscriptions.sql` nunca se ejecutó y PostgREST respondía `42703: column u.subscription_status does not exist`. Por eso el widget nunca resolvía la tienda y caía al modelo por defecto. (No era RLS.) `docs/P_widget_store_lookup.sql` ahora crea esas columnas **y** la RPC en un solo archivo. OJO: al existir la columna, la puerta de suscripción empieza a aplicarse de verdad; solo pasan `role='admin'`, `active`/`trialing` o dominios autorizados en `widget_domains`.
 - Lo demás (modelos ya comprimidos, `model-viewer` de rejillas, notificaciones) sí estaba con caché larga y `cf-cache-status: HIT`.
 
 ### 1. Widget (`js/viking-widget.js`): 3D solo cuando hace falta
 - `renderWidget()` ya **no** inyecta `<model-viewer>`; pinta póster (`.vk-spirit-poster`) o un placeholder SVG (`.vk-spirit-placeholder`).
 - `fillMedia()`/`syncMedia()` montan el visor **solo cuando hay `gltf_url` real**; `ensureModel()` (que sí usa `DEFAULT_GLTF_URL`) se llama únicamente al **abrir el chat**. Una visita que no abre el chat descarga **0 bytes** de Storage.
 - Solo se monta **un** visor al principio (el del compañero); el del chat se crea al abrirlo. Antes eran dos contextos WebGL con el mismo modelo.
-- `fetchStoreRow()`: intenta la RPC `get_widget_store` (migración `docs/P_widget_store_lookup.sql`) y, si no existe, pide `id, username, store_name, selected_spirit_id, role` (sin `subscription_status`). La puerta de suscripción solo se aplica si el campo viene (`subKnown`); si no, manda la autorización por dominio.
+- `fetchStoreRow()` / `readStoreAccess()` (a nivel de módulo, la usan los 4 widgets): intentan primero la RPC `get_widget_store` y, si no existe, piden las columnas sin `subscription_status`. La puerta de suscripción solo se aplica si el campo viene (`subKnown`); si no, manda la autorización por dominio. Antes de esto, subastas/claims/álbumes bloqueaban a todos porque el select fallaba y devolvía `null`.
+- `vikingdev-binder` y `vikingdev-binders` **no pueden registrar la misma clase** (`NotSupportedError`); el error abortaba el script y dejaba `vikingdev-subastas` y `vikingdev-claims` sin definir. `vikingdev-binders` usa ahora una subclase.
 - `fetchDefaultSpirit()` usa `.order('id', {ascending:true})` para ser determinista.
 - Verificado (mitiendita.com, Playwright): se carga `compressed_.../10.glb` (Cloudinary) y **0 MB** desde Supabase Storage antes de interactuar.
 
