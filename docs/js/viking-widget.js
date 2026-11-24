@@ -101,6 +101,48 @@
 
     ensureHeadAssets();
 
+    // Acceso de la tienda (usuario, nombre, rol y suscripción) para cualquier
+    // widget. Si el proyecto no tiene todavía la columna `subscription_status`
+    // (migración `docs/P_widget_store_lookup.sql` sin ejecutar), la consulta
+    // devuelve 400: se reintenta sin esa columna y `subscription` queda
+    // `undefined` para que quien llama decida si bloquea o no.
+    async function readStoreAccess(supabase, userId) {
+        if (!supabase || !userId) return null;
+
+        try {
+            const { data, error } = await supabase.rpc('get_widget_store', { p_user_id: userId });
+            if (!error && data) {
+                const row = Array.isArray(data) ? data[0] : data;
+                if (row) {
+                    return {
+                        username: row.username,
+                        store_name: row.store_name,
+                        role: row.role || null,
+                        subscription: row.subscription_status === undefined ? undefined : (row.subscription_status || 'inactive')
+                    };
+                }
+            }
+        } catch (e) {}
+
+        const attempts = ['username, store_name, subscription_status, role', 'username, store_name, role'];
+        for (const columns of attempts) {
+            const { data, error } = await supabase
+                .from('usuarios')
+                .select(columns)
+                .eq('id', userId)
+                .maybeSingle();
+            if (!error && data) {
+                return {
+                    username: data.username,
+                    store_name: data.store_name,
+                    role: data.role || null,
+                    subscription: data.subscription_status
+                };
+            }
+        }
+        return null;
+    }
+
     class VikingChatbotElement extends HTMLElement {
         constructor() {
             super();
@@ -221,8 +263,8 @@
                         // Validate active access: Allowed if admin, active Stripe subscription, OR domain explicitly authorized in dominios.html
                         const subStatus = userRow.subscription_status || 'inactive';
                         const isAdmin = userRow.role === 'admin';
-                        // La clave anónima no puede leer `subscription_status` (RLS por
-                        // columna). Si no viene, la autorización del dominio manda.
+                        // Si la columna `subscription_status` no existe todavía (migración
+                        // sin ejecutar) o no es legible, manda la autorización por dominio.
                         const subKnown = userRow.subscription_status !== undefined;
 
                         if (subKnown && !isAdmin && subStatus !== 'active' && subStatus !== 'trialing' && !isDomainAuthorizedInTable) {
@@ -258,9 +300,9 @@
             }
         }
 
-        // `subscription_status` no lo puede leer la clave anónima, así que el
-        // select directo devolvía 400 y el widget nunca cargaba el asistente de
-        // la tienda. Se intenta la RPC y, si no existe, se pide el resto de
+        // Antes el select directo pedía `subscription_status`, columna que no
+        // existía: PostgREST devolvía 400 y el widget nunca cargaba el asistente
+        // de la tienda. Se intenta la RPC y, si no está, se pide el resto de
         // columnas sin el estado de suscripción.
         async fetchStoreRow(userId) {
             if (!this._supabase || !userId) return null;
@@ -1218,13 +1260,14 @@
             }
 
             if (matchedUserId && this._supabase) {
-                const { data: u } = await this._supabase.from('usuarios').select('username, store_name, subscription_status, role').eq('id', matchedUserId).maybeSingle();
-                if (u) {
-                    userIdentifier = u.store_name || u.username;
-                    const subStatus = u.subscription_status || 'inactive';
-                    const isAdmin = u.role === 'admin';
+                const access = await readStoreAccess(this._supabase, matchedUserId);
+                if (access) {
+                    userIdentifier = access.store_name || access.username || userIdentifier;
+                    const subStatus = access.subscription || 'inactive';
+                    const isAdmin = access.role === 'admin';
+                    const subKnown = access.subscription !== undefined;
 
-                    if (!isAdmin && subStatus !== 'active' && subStatus !== 'trialing' && !isDomainAuthorizedInTable) {
+                    if (subKnown && !isAdmin && subStatus !== 'active' && subStatus !== 'trialing' && !isDomainAuthorizedInTable) {
                         this.renderLockedBlock('Suscripción Requerida', 'Este widget de Álbumes requiere una suscripción activa para funcionar.');
                         return;
                     }
@@ -1314,7 +1357,10 @@
         customElements.define('vikingdev-binder', VikingdevBinderElement);
     }
     if (!customElements.get('vikingdev-binders')) {
-        customElements.define('vikingdev-binders', VikingdevBinderElement);
+        // No se puede registrar la MISMA clase dos veces (el navegador lanza
+        // NotSupportedError y aborta el resto del script, dejando sin definir los
+        // widgets de subastas y claims): se usa una subclase.
+        customElements.define('vikingdev-binders', class extends VikingdevBinderElement {});
     }
 
     class VikingdevSubastasElement extends HTMLElement {
@@ -1460,11 +1506,12 @@
 
             // Check subscription status (Allowed if admin, active Stripe subscription, OR domain explicitly authorized in dominios.html)
             if (this.activeStoreId && this._supabase) {
-                const { data: u } = await this._supabase.from('usuarios').select('subscription_status, role').eq('id', this.activeStoreId).maybeSingle();
-                const subStatus = u?.subscription_status || 'inactive';
-                const isAdmin = u?.role === 'admin';
+                const access = await readStoreAccess(this._supabase, this.activeStoreId);
+                const subStatus = access?.subscription || 'inactive';
+                const isAdmin = access?.role === 'admin';
+                const subKnown = access?.subscription !== undefined;
 
-                if (!isAdmin && subStatus !== 'active' && subStatus !== 'trialing' && !isDomainAuthorizedInTable) {
+                if (subKnown && !isAdmin && subStatus !== 'active' && subStatus !== 'trialing' && !isDomainAuthorizedInTable) {
                     this.innerHTML = `
                         <div style="width: 100%; max-width: 800px; margin: 20px auto; padding: 30px 20px; background: rgba(15, 23, 42, 0.9); border-radius: 18px; border: 1px solid rgba(239, 68, 68, 0.4); text-align: center; color: #f87171; font-family: 'Montserrat', sans-serif;">
                             <div style="font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; color: #f8fafc;">🔒 Suscripción Requerida</div>
@@ -2759,11 +2806,12 @@
 
             // Check subscription status (Allowed if admin, active Stripe subscription, OR domain explicitly authorized in dominios.html)
             if (this.activeStoreId && this._supabase) {
-                const { data: u } = await this._supabase.from('usuarios').select('subscription_status, role').eq('id', this.activeStoreId).maybeSingle();
-                const subStatus = u?.subscription_status || 'inactive';
-                const isAdmin = u?.role === 'admin';
+                const access = await readStoreAccess(this._supabase, this.activeStoreId);
+                const subStatus = access?.subscription || 'inactive';
+                const isAdmin = access?.role === 'admin';
+                const subKnown = access?.subscription !== undefined;
 
-                if (!isAdmin && subStatus !== 'active' && subStatus !== 'trialing' && !isDomainAuthorizedInTable) {
+                if (subKnown && !isAdmin && subStatus !== 'active' && subStatus !== 'trialing' && !isDomainAuthorizedInTable) {
                     this.innerHTML = `
                         <div style="width: 100%; max-width: 800px; margin: 20px auto; padding: 30px 20px; background: rgba(15, 23, 42, 0.9); border-radius: 18px; border: 1px solid rgba(239, 68, 68, 0.4); text-align: center; color: #f87171; font-family: 'Montserrat', sans-serif;">
                             <div style="font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; color: #f8fafc;">🔒 Suscripción Requerida</div>
