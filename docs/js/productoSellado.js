@@ -168,7 +168,7 @@ async function checkSession() {
         currentUser = user;
         $('#dropdown-user-name').text(user.store_name || user.username);
         if (user.store_logo) {
-            $('#dropdown-user-logo').attr('src', user.store_logo).show();
+            $('#dropdown-user-logo').attr('src', (window.storeLogoUrl?window.storeLogoUrl(user.store_logo):user.store_logo)).show();
         }
         console.log("Auth success. Showing content for", user.username);
         $('#top-panel, #authenticated-content').fadeIn();

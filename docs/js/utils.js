@@ -30,6 +30,14 @@ window.optimizeCloudinaryImage = function(url, width = 400) {
     return url.slice(0, idx + marker.length) + `f_auto,q_auto,w_${width},c_limit/` + rest;
 };
 
+// Logo de la tienda: se muestra a ~50 px en el menú del avatar y en la ficha
+// de la tienda, así que no tiene sentido descargar el original. Solo transforma
+// URLs de Cloudinary (`/image/upload/`); las demás se devuelven tal cual.
+window.storeLogoUrl = function (url, width = 200) {
+    if (!url) return url;
+    return window.optImg ? window.optImg(url, width) : url;
+};
+
 // Helper to safely parse and normalize deck counters (single string, JSON array, or list, up to 3)
 window.normalizeDeckCounters = function(rawVal) {
     if (!rawVal) return [];

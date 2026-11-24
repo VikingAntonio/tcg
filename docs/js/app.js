@@ -1713,7 +1713,7 @@ async function loadStoreData() {
 
         if (userData.is_store) {
             if (userData.store_logo) {
-                $('#public-store-logo').show().attr('src', userData.store_logo);
+                $('#public-store-logo').show().attr('src', (window.storeLogoUrl?window.storeLogoUrl(userData.store_logo):userData.store_logo));
                 $('#public-store-icon').hide();
             } else {
                 $('#public-store-logo').hide();
@@ -2845,7 +2845,7 @@ async function checkSession() {
                 localStorage.setItem('tcg_session', JSON.stringify(user));
                 window.currentUser = user;
                 if (user.is_store) {
-                    $('#dropdown-user-logo').show().attr('src', user.store_logo || 'https://midominio.com/placeholder-logo.png');
+                    $('#dropdown-user-logo').show().attr('src', (window.storeLogoUrl?window.storeLogoUrl(user.store_logo):user.store_logo) || 'https://midominio.com/placeholder-logo.png');
                     $('#dropdown-user-name').text(user.store_name || user.username);
                     $('#dropdown-user-role').hide();
                 } else {

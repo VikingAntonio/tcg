@@ -1909,8 +1909,8 @@ $(document).ready(async function() {
     $('#btn-save-spirit').click(async function() {
         const name = $('#input-spirit-name').val();
         const editId = $('#edit-spirit-id').val();
-        const gltfFile = droppedGltfFile;
-        const extraFiles = droppedExtraFiles;
+        let gltfFile = droppedGltfFile;
+        let extraFiles = droppedExtraFiles;
         const animation = $('#input-spirit-animation').val();
         const voiceType = $('#input-spirit-voice').val() || 'hombreAdulto';
         const particleAsset = $('#input-spirit-particle-asset').val() || 'cerezo.png';
@@ -1927,6 +1927,35 @@ $(document).ready(async function() {
         if (!editId && !gltfFile) {
             Swal.fire('Atención', 'El archivo GLTF es obligatorio para nuevos asistentes', 'warning');
             return;
+        }
+
+        // Se comprime el modelo antes de subirlo (malla al 8 %, texturas a 1024 px
+        // y Draco). Si el navegador no puede, se sube el original sin avisar.
+        let optimization = null;
+        let previewFile = null;
+        if (gltfFile && window.ModelOptimizer && window.ModelOptimizer.isAvailable()) {
+            Swal.fire({
+                title: 'Optimizando modelo…',
+                html: '<small id="spirit-optimize-step">Preparando…</small>',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+            const optimized = await window.ModelOptimizer.optimize(
+                [gltfFile, ...extraFiles],
+                (message) => {
+                    const step = document.getElementById('spirit-optimize-step');
+                    if (step) step.textContent = message;
+                },
+                { requestPreview: !posterUrl, nameHint: gltfFile.name }
+            );
+            if (optimized.stats) {
+                gltfFile = optimized.files[0];
+                extraFiles = [];
+                previewFile = optimized.preview;
+                optimization = optimized.stats;
+            } else {
+                console.info('[Asistentes] Se sube sin optimizar:', optimized.skipped);
+            }
         }
 
         Swal.fire({
@@ -1984,6 +2013,18 @@ $(document).ready(async function() {
                 }
             }
 
+            // El modelo optimizado es un único .glb con las texturas dentro, así
+            // que ya no queda una imagen suelta que usar de miniatura. Si no hay
+            // póster, se sube la textura del modelo reducida para que las rejillas
+            // nunca tengan que pedir la textura original a Storage.
+            if (gltfUrl && !textureUrl && !posterUrl && previewFile && window.MediaUpload?.uploadImage) {
+                try {
+                    textureUrl = await window.MediaUpload.uploadImage(previewFile);
+                } catch (err) {
+                    console.warn('No se pudo subir la miniatura del modelo:', err);
+                }
+            }
+
             // 3. Save to DB
             const spiritData = {
                 name: name,
@@ -2021,9 +2062,12 @@ $(document).ready(async function() {
             Swal.fire({
                 icon: 'success',
                 title: editId ? 'Compañero actualizado correctamente' : 'Compañero subido correctamente',
-                html: alternateError
-                    ? `Se guardó en el servidor principal porque el alterno no lo aceptó:<br><small>${escapeHtml(alternateError.message || String(alternateError))}</small>`
-                    : undefined
+                html: [
+                    optimization ? `Modelo optimizado: <b>${window.ModelOptimizer.formatStats(optimization)}</b>` : null,
+                    alternateError
+                        ? `Se guardó en el servidor principal porque el alterno no lo aceptó:<br><small>${escapeHtml(alternateError.message || String(alternateError))}</small>`
+                        : null
+                ].filter(Boolean).join('<br><br>') || undefined
             });
             $('#spirit-upload-modal').removeClass('active');
             loadSpirits();
@@ -2388,7 +2432,7 @@ async function showAuthenticatedContent() {
     // Update floating panel
     $('#top-panel').show();
     if (currentUser.is_store) {
-        $('#dropdown-user-logo').show().attr('src', currentUser.store_logo || 'https://midominio.com/placeholder-logo.png');
+        $('#dropdown-user-logo').show().attr('src', (window.storeLogoUrl?window.storeLogoUrl(currentUser.store_logo):currentUser.store_logo) || 'https://midominio.com/placeholder-logo.png');
         $('#dropdown-user-name').text(currentUser.store_name || currentUser.username);
         $('#dropdown-user-role').hide();
     } else {

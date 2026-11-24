@@ -718,7 +718,7 @@
                 $('#dropdown-user-role').text((currentUser.role || 'Starter').toUpperCase()).show();
             }
             if (currentUser.store_logo) {
-                $('#dropdown-user-logo').attr('src', currentUser.store_logo).show();
+                $('#dropdown-user-logo').attr('src', (window.storeLogoUrl?window.storeLogoUrl(currentUser.store_logo):currentUser.store_logo)).show();
             }
         }
 

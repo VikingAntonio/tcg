@@ -967,7 +967,7 @@
                 if (profile.store_name) $('#user-store-name').text(profile.store_name);
                 else if (profile.username) $('#user-store-name').text(profile.username);
 
-                if (profile.store_logo) $('#user-store-logo').attr('src', profile.store_logo);
+                if (profile.store_logo) $('#user-store-logo').attr('src', (window.storeLogoUrl?window.storeLogoUrl(profile.store_logo):profile.store_logo));
 
                 const publicIdentifier = profile.store_name || profile.username || currentUserId;
                 $('#btn-public-link').attr('href', `public.html?id=${encodeURIComponent(publicIdentifier)}&view=learn`);

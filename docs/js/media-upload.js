@@ -65,8 +65,23 @@ const MediaUpload = {
     // buffers se suben como .glbin y se reescribe la referencia dentro del
     // .gltf. Todo va a una carpeta única para que las rutas relativas sigan
     // funcionando y la URL sea inmutable (se sirve con max-age=30d).
-    async uploadModelFiles(files) {
-        const list = Array.from(files || []);
+    async uploadModelFiles(files, options = {}) {
+        let list = Array.from(files || []);
+        let previewFile = null;
+
+        // El modelo se comprime antes de subir: menos peso en Storage, una sola
+        // petición y visores que cargan mucho antes.
+        if (window.ModelOptimizer && window.ModelOptimizer.isAvailable()) {
+            const optimized = await window.ModelOptimizer.optimize(
+                list,
+                options.onProgress || (() => {}),
+                { requestPreview: !!options.requestPreview, nameHint: options.nameHint || '' }
+            );
+            list = optimized.files;
+            previewFile = optimized.preview;
+            if (typeof options.onStats === 'function') options.onStats(optimized.stats, optimized.skipped);
+        }
+
         const main = list.find(f => /\.(gltf|glb)$/i.test(f.name || ''));
         if (!main) throw new Error('Falta el archivo principal .gltf o .glb');
 
@@ -110,7 +125,7 @@ const MediaUpload = {
         }
 
         const data = await this.uploadRaw(mainBody, `${folder}/${main.name}`);
-        return { url: data.secure_url, folder, files: uploaded };
+        return { url: data.secure_url, folder, files: uploaded, preview: previewFile };
     },
 
     async deleteImage(secureUrl) {

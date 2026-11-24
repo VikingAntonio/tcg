@@ -262,7 +262,7 @@ $(document).ready(async function() {
             }
 
             if (user.is_store) {
-                $('#dropdown-user-logo').show().attr('src', user.store_logo || 'https://midominio.com/placeholder-logo.png');
+                $('#dropdown-user-logo').show().attr('src', (window.storeLogoUrl?window.storeLogoUrl(user.store_logo):user.store_logo) || 'https://midominio.com/placeholder-logo.png');
                 $('#dropdown-user-name').text(user.store_name || user.username);
                 $('#dropdown-user-role').hide();
             } else {
@@ -337,7 +337,7 @@ $(document).ready(async function() {
                     <div class="store-slide" onclick="openBusinessModal('${store.username}')">
                         <div class="store-logo-circle">
                             ${store.store_logo
-                                ? `<img src="${store.store_logo && store.store_logo.indexOf("/image/upload/") > -1 ? store.store_logo.replace("/image/upload/", "/image/upload/f_auto,q_auto,w_400,c_limit/") : store.store_logo}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`
+                                ? `<img src="${(window.storeLogoUrl ? window.storeLogoUrl(store.store_logo, 400) : store.store_logo)}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`
                                 : `<i class="fas fa-store" style="font-size: 3rem; color: var(--primary); display: flex; justify-content: center; align-items: center; height: 100%;"></i>`
                             }
                         </div>
@@ -388,7 +388,7 @@ $(document).ready(async function() {
 
         const storeDisplay = store.store_name || store.username;
         $('#modal-business-name').text(storeDisplay);
-        $('#modal-business-logo').attr('src', store.store_logo || 'https://midominio.com/placeholder-logo.png');
+        $('#modal-business-logo').attr('src', (window.storeLogoUrl?window.storeLogoUrl(store.store_logo, 400):store.store_logo) || 'https://midominio.com/placeholder-logo.png');
 
         if (store.ubicacion) {
             $('#modal-business-address').text(store.ubicacion);

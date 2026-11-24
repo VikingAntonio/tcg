@@ -366,7 +366,7 @@
             if (activeUser) {
                 $('#dropdown-user-name').text(activeUser.username || 'Usuario');
                 if (activeUser.store_logo && activeUser.role !== 'starter') {
-                    $('#dropdown-user-logo').attr('src', activeUser.store_logo).show();
+                    $('#dropdown-user-logo').attr('src', (window.storeLogoUrl?window.storeLogoUrl(activeUser.store_logo):activeUser.store_logo)).show();
                 } else {
                     $('#dropdown-user-logo').hide();
                 }

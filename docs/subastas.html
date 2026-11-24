@@ -603,7 +603,7 @@
         function showAuthenticatedContent() {
             $('#login-modal').removeClass('active'); $('#authenticated-content').show(); $('#top-panel').show();
             if (currentUser.is_store) {
-                $('#dropdown-user-logo').show().attr('src', currentUser.store_logo || '');
+                $('#dropdown-user-logo').show().attr('src', (window.storeLogoUrl?window.storeLogoUrl(currentUser.store_logo):currentUser.store_logo) || '');
                 $('#dropdown-user-name').text(currentUser.store_name || currentUser.username);
                 $('#dropdown-user-role').show().text(currentUser.role);
             } else {

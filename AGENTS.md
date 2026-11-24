@@ -395,3 +395,33 @@ Síntoma: tras cambiar de asistente, al volver con el botón atrás del navegado
 - Lo que más consulta la BD es `js/notifications.js`: ~6 `select` cada 60 s por pestaña (se detiene con `document.hidden`). Es egress de BD (JSON pequeño), no "cached egress" de Storage.
 - `ProactiveAssistant.trigger('page_load')` invoca la Edge Function `spirit-chat` en cada carga de admin/público (cooldown 12 s). Consume invocaciones/Gemini, no caché de Storage.
 - **Pendiente detectado (2026-11):** el asistente id 57 ("Aluber the Jester of Despia") sigue como `.gltf` + `.glbin` de **8.68 MB** + 3 texturas (~0.3 MB) en el servidor alterno. Es el único que no pasó por la compresión; conviene recompilarlo con el pipeline de `gltf-transform` y repuntar `spirits.gltf_url` a un `.glb`.
+
+## Egress de Storage — causa real del pico y arreglos (nov. 2026)
+Medido con Playwright + `curl` + REST con la anon key. **Cached Egress = bytes servidos por el CDN de Storage**, no la base de datos (la BD es "Egress").
+- Lo que se servía en cada visita sin poder cachearse: el asistente de la esquina montaba **siempre** el modelo por defecto `wingedKuriboh` (`.gltf` 4 KB + **`.bin` 1.25 MB** con `cache-control: private, no-cache` + 3 texturas ~0.57 MB) incluso en tiendas con asistente propio, y en algunas vistas lo montaba **dos veces** (home + chat).
+- El `usuarios.select('..., subscription_status, ...')` del widget devolvía **400** (la columna no es legible con la clave anónima tras la migración `M_`), así que el widget nunca resolvía la tienda y caía al modelo por defecto.
+- Lo demás (modelos ya comprimidos, `model-viewer` de rejillas, notificaciones) sí estaba con caché larga y `cf-cache-status: HIT`.
+
+### 1. Widget (`js/viking-widget.js`): 3D solo cuando hace falta
+- `renderWidget()` ya **no** inyecta `<model-viewer>`; pinta póster (`.vk-spirit-poster`) o un placeholder SVG (`.vk-spirit-placeholder`).
+- `fillMedia()`/`syncMedia()` montan el visor **solo cuando hay `gltf_url` real**; `ensureModel()` (que sí usa `DEFAULT_GLTF_URL`) se llama únicamente al **abrir el chat**. Una visita que no abre el chat descarga **0 bytes** de Storage.
+- Solo se monta **un** visor al principio (el del compañero); el del chat se crea al abrirlo. Antes eran dos contextos WebGL con el mismo modelo.
+- `fetchStoreRow()`: intenta la RPC `get_widget_store` (migración `docs/P_widget_store_lookup.sql`) y, si no existe, pide `id, username, store_name, selected_spirit_id, role` (sin `subscription_status`). La puerta de suscripción solo se aplica si el campo viene (`subKnown`); si no, manda la autorización por dominio.
+- `fetchDefaultSpirit()` usa `.order('id', {ascending:true})` para ser determinista.
+- Verificado (mitiendita.com, Playwright): se carga `compressed_.../10.glb` (Cloudinary) y **0 MB** desde Supabase Storage antes de interactuar.
+
+### 2. Compresión automática al subir modelos (`js/model-optimizer.js` + `.worker.js`)
+- Pipeline = el mismo que se aplicó a mano: `weld → dedup → simplify(ratio 0.08, error 0.001) → prune → texturas a 1024 px → draco(edgebreaker) → writeBinary`. Salida: **un único `.glb`**.
+- Corre en un **Worker** (`type:'module'`, `new URL(..., document.currentScript.src)`) con timeout de 180 s: no congela la pestaña y, si se queda sin memoria, muere el worker, no la pestaña.
+- Dependencias por CDN (no hay build): `esm.sh/@gltf-transform/{core,functions,extensions}@4.5.1`, `esm.sh/meshoptimizer@0.22.0` y `esm.sh/draco3d@1.5.7`. **El encoder Draco necesita `locateFile`** apuntando a `cdn.jsdelivr.net/npm/draco3d@1.5.7/<archivo>.wasm`; sin eso falla con "both async and sync fetching of the wasm failed".
+- Se salta sin tocar nada si: no hay `.gltf/.glb`, el total < 1.2 MB, o el modelo ya tiene **≤ 800 000 vértices** (así un `.glb` ya comprimido no se degrada dos veces). Ante cualquier error se devuelven los **archivos originales** (la subida nunca se rompe).
+- Integrado en `js/admin.js` (`#btn-save-spirit`, ambos servidores) y en `MediaUpload.uploadModelFiles` (servidor alterno y `packages.html`). Un `WeakSet` evita comprimir dos veces el mismo `File`. Si el modelo no trae póster, se sube la textura reducida a 512 px como `texture_url` (Cloudinary) para que las rejillas no pidan la textura a Storage.
+- Medido: Eveningstar **12.38 MB → 1.87 MB (−85 %)**, 2 330 094 → 421 923 vértices, **8.5 s**; el `.glb` carga en `model-viewer` 3.3.0 (verificado con captura).
+
+### 3. Logos de tienda
+- `js/perfil.js` sube el logo a **Cloudinary** (`MediaUpload.uploadImage`) con fallback a Storage `logos` (y `cacheControl` de 1 año en el fallback).
+- `window.storeLogoUrl(url, w)` (en `js/utils.js`) = `optImg`; se usa en todas las vistas que pintan `store_logo` (menú del avatar, cabecera de tienda, modal de negocio, plantillas). Antes se descargaba el original (114 KB) para mostrarlo a 50 px.
+- `index.html` no carga `utils.js`: `js/landing2.js` y `js/landing.js` usan la guarda `(window.storeLogoUrl ? ... : url)`.
+
+### 4. Assets
+`STATIC_CACHE` → `viking-static-v263` (incluye `model-optimizer.js` y `.worker.js`). Al tocar cualquiera de estos archivos, subir la versión.

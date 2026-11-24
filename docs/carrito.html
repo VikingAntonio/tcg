@@ -442,7 +442,7 @@
                     $('#dropdown-user-role').text(currentUser.role).show();
                 }
                 if (currentUser.store_logo) {
-                    $('#dropdown-user-logo').attr('src', currentUser.store_logo).show();
+                    $('#dropdown-user-logo').attr('src', (window.storeLogoUrl?window.storeLogoUrl(currentUser.store_logo):currentUser.store_logo)).show();
                 } else {
                     $('#dropdown-user-logo').hide();
                 }
@@ -705,7 +705,7 @@
                     const title = data.is_store && data.store_name ? data.store_name : (data.username || 'Viking TCG');
                     $('#public-store-name').text(title);
                     if (data.store_logo) {
-                        $('#public-store-logo').attr('src', data.store_logo).show();
+                        $('#public-store-logo').attr('src', (window.storeLogoUrl?window.storeLogoUrl(data.store_logo):data.store_logo)).show();
                     }
                 }
             } catch (e) {
