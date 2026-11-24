@@ -425,4 +425,16 @@ Medido con Playwright + `curl` + REST con la anon key. **Cached Egress = bytes s
 - `index.html` no carga `utils.js`: `js/landing2.js` y `js/landing.js` usan la guarda `(window.storeLogoUrl ? ... : url)`.
 
 ### 4. Assets
-`STATIC_CACHE` → `viking-static-v263` (incluye `model-optimizer.js` y `.worker.js`). Al tocar cualquiera de estos archivos, subir la versión.
+`STATIC_CACHE` → `viking-static-v264` (incluye `model-optimizer.js` y `.worker.js`). Al tocar cualquiera de estos archivos, subir la versión.
+
+## Vista PÚBLICA de inversiones — precio mostrado = precio de venta
+- En `public.html?view=investments` el precio debe ser **`sale_price`** (lo que el dueño pide), NO `current_price` (mercado). `publicInvSalePrice(card)` en `js/app.js` devuelve `sale_price` y solo cae a `current_price` cuando la carta no tiene precio de venta (evita `$0.00`).
+- Se usa en los 3 modos (álbum/slide/lista vía `publicInvPriceLabel`), en el modal `#public-inv-modal-price` y al añadir al carrito (`Cart.add({price})`).
+- `supabase/functions/create-checkout-session` también cobra `sale_price` (respaldo `current_price`). **Hay que redesplegar la Edge Function** para que el cargo coincida con lo mostrado.
+- La vista privada (`inversiones.html`) sigue mostrando `current_price` a propósito: ahí el precio de mercado alimenta las métricas/gráfica de inversión.
+- Binders públicos (`public.html?view=binders`, `js/public-binders.js`) ya usaban `binder_card_slots.price`, que es "Precio Venta Público"; no requieren cambio (verificado con datos reales).
+
+## Constructor de Decks para PC
+- `docs/constrcutorDecks.html` (sic, con el typo) es el constructor de escritorio: layout Nexus de 3 columnas (`#deck-editor-pc-layout`: preview / deck / buscador), login, "Mis Decks" y editor. Carga `js/admin.js` + `js/inversiones.js` etc., así que reutiliza el editor de decks del panel.
+- `docs/deckbuilding.html` es el de móvil/horizontal (291 líneas, aviso de rotar el dispositivo); `admin.html` enlaza a ese.
+- `constrcutorDecks.html` **no está enlazado desde ninguna vista**; se entra directo por URL (`/constrcutorDecks.html`, opcional `?deckId=`).

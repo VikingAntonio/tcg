@@ -75,11 +75,14 @@ async function resolveCartItem(supabase: any, raw: any, fallbackSellerId: string
   if (isInvestment) {
     const { data } = await supabase
       .from("investment_cards")
-      .select("id, card_name, image_url, current_price, quantity, user_id")
+      .select("id, card_name, image_url, current_price, sale_price, quantity, user_id")
       .eq("id", id)
       .maybeSingle();
     if (!data) return { error: `La carta "${raw?.name || id}" ya no está disponible.` };
-    const price = Number(data.current_price) || 0;
+    // Se cobra el precio de venta público; el de mercado solo es respaldo
+    // cuando la carta no tiene precio de venta fijado.
+    const salePrice = Number(data.sale_price) || 0;
+    const price = salePrice > 0 ? salePrice : (Number(data.current_price) || 0);
     if (price <= 0) return { error: `La carta "${data.card_name || raw?.name || id}" no tiene precio de venta configurado.` };
     const stock = parseInt(data.quantity);
     if (Number.isFinite(stock) && stock <= 0) {
