@@ -7335,3 +7335,13 @@ body.theme-purple .tag-select-adaptive option {
 .deck-accessories-bundle-preview:hover .deck-bundle-counter-img {
     transform: scale(1.1);
 }
+.deck-public-accessories {
+    max-width: 460px;
+    width: 100%;
+    margin: 0 auto 18px;
+    padding: 0 12px;
+    box-sizing: border-box;
+}
+.deck-public-accessories .deck-accessories-bundle-preview {
+    height: 150px;
+}

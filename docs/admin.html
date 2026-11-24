@@ -205,7 +205,7 @@
             #deck-editor-mobile-layout { display: none; }
             #view-deck-editor .nexus-layout {
                 display: grid;
-                grid-template-columns: 300px 820px 520px;
+                grid-template-columns: minmax(260px, 300px) minmax(0, 1fr) minmax(340px, 520px);
                 justify-content: center;
                 gap: 20px;
                 width: 100% !important;
@@ -762,7 +762,7 @@
                 <a href="#" class="tile tile-orange" id="btn-show-expansiones">
                     <span>Expansiones</span>
                 </a>
-                <a href="decks.html" class="tile tile-green tile-wide" id="btn-show-decks">
+                <a href="constrcutorDecks.html" class="tile tile-green tile-wide" id="btn-show-decks">
                     <span>Mis Decks</span>
                 </a>
                 <a href="binders.html" class="tile tile-purple tile-wide" id="btn-show-binders">
@@ -3495,51 +3495,33 @@
         });
     </script>
 
-    <!-- Mobile Detection & Redirection for Mis Decks / Constructor -->
+    <!-- Mis Decks / Constructor: PC abre el constructor Nexus; móvil, el constructor horizontal. -->
     <script>
         $(document).ready(function() {
-            function isMobileDevice() {
-                return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            }
+            const isMobileDeckBuilder = () => window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const deckBuilderUrl = (deckId) => {
+                const base = isMobileDeckBuilder() ? 'deckbuilding.html' : 'constrcutorDecks.html';
+                return base + (deckId ? '?deckId=' + encodeURIComponent(deckId) : '');
+            };
+            window.deckBuilderUrl = deckBuilderUrl;
 
-            // Intercept navigation to "Mis Decks" (from dashboard tile or dropdown menu)
+            // Entrada "Mis Decks" (tile del dashboard o menú)
             $(document).on('click', '#btn-show-decks, #menu-btn-decks, #btn-decks', function(e) {
-                if (isMobileDevice()) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    window.location.href = 'deckbuilding.html';
-                }
+                e.preventDefault();
+                e.stopPropagation();
+                window.location.href = deckBuilderUrl();
             });
 
-            // Intercept deck edit / constructor action
+            // Editar deck desde el listado del panel
             $(document).on('click', '.btn-edit-deck', function(e) {
-                if (isMobileDevice()) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const deckId = $(this).data('id');
-                    if (deckId) {
-                        window.location.href = 'deckbuilding.html?deckId=' + deckId;
-                    } else {
-                        window.location.href = 'deckbuilding.html';
-                    }
-                }
+                e.preventDefault();
+                e.stopPropagation();
+                window.location.href = deckBuilderUrl($(this).data('id'));
             });
 
-            // Wrap window.editDeck function if called programmatically
-            const _origEditDeck = window.editDeck;
+            // Llamadas programáticas a editDeck()
             window.editDeck = function(deck) {
-                if (isMobileDevice()) {
-                    const deckId = deck && deck.id ? deck.id : '';
-                    if (deckId) {
-                        window.location.href = 'deckbuilding.html?deckId=' + deckId;
-                    } else {
-                        window.location.href = 'deckbuilding.html';
-                    }
-                    return;
-                }
-                if (typeof _origEditDeck === 'function') {
-                    return _origEditDeck.apply(this, arguments);
-                }
+                window.location.href = deckBuilderUrl(deck && deck.id);
             };
         });
     </script>

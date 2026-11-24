@@ -2552,6 +2552,63 @@ function renderDeckCards(deckId) {
     console.log(`Deck ${deckId} rendered with progressive loading via observer.`);
 }
 
+function publicDeckAccessoryFaces(rawUrl) {
+    if (!rawUrl) return [];
+    let parsed = rawUrl;
+    if (typeof parsed === 'string' && parsed.trim().startsWith('{')) {
+        try { parsed = JSON.parse(parsed); } catch (e) { return [{ url: rawUrl }]; }
+    }
+    if (parsed && typeof parsed === 'object') {
+        if (parsed.heads || parsed.tails) {
+            return [parsed.heads, parsed.tails].filter(Boolean).map(url => ({ url }));
+        }
+        const keys = Object.keys(parsed).sort();
+        if (keys.length) return keys.map(k => ({ url: parsed[k] }));
+    }
+    return [{ url: rawUrl }];
+}
+
+function publicDeckAccessoryUrl(rawUrl) {
+    const faces = publicDeckAccessoryFaces(rawUrl);
+    return (faces[0] && faces[0].url) || '';
+}
+
+function publicDeckAccessoriesHtml(deck) {
+    const hasAccessories = ['mats', 'sleeves', 'deckbox', 'coin', 'counters'].some(key => deck[key]);
+    if (!hasAccessories) return '';
+
+    const media = (rawUrl, cls) => {
+        const url = publicDeckAccessoryUrl(rawUrl);
+        if (!url) return '';
+        const src = window.optImg ? window.optImg(url, 400) : url;
+        return `<img src="${escapeHtml(src)}" alt="Accesorio" class="${cls}" onerror="this.style.display='none'">`;
+    };
+
+    const mat = deck.mats || 'img/tablero_poke.jpg';
+
+    const counters = window.normalizeDeckCounters
+        ? window.normalizeDeckCounters(deck.counters || null)
+        : (deck.counters ? [deck.counters] : []);
+    const countersHtml = counters.length
+        ? `<div class="deck-bundle-counters-container">${counters.map((cUrl, idx) => {
+            const src = window.optImg ? window.optImg(publicDeckAccessoryUrl(cUrl), 200) : publicDeckAccessoryUrl(cUrl);
+            return `<img src="${escapeHtml(src)}" alt="Contador ${idx + 1}" class="deck-bundle-counter-img" onerror="this.style.display='none'">`;
+        }).join('')}</div>`
+        : '';
+
+    return `
+        <div class="deck-public-accessories">
+            <div class="deck-accessories-bundle-preview" title="Accesorios del Deck: ${escapeHtml(deck.name || '')}">
+                ${media(mat, 'deck-bundle-mat')}
+                ${media(deck.sleeves, 'deck-bundle-sleeves')}
+                ${media(deck.deckbox, 'deck-bundle-box')}
+                ${media(deck.coin, 'deck-bundle-coin')}
+                ${countersHtml}
+            </div>
+        </div>
+    `;
+}
+
 function renderDeckShell(deck) {
     const swiperClass = `deck-swiper-${deck.id}`;
 
@@ -2582,6 +2639,8 @@ function renderDeckShell(deck) {
             <button class="btn-share-item btn-share-floating" onclick="openShareModal('${deck.name.replace(/'/g, "\\'")}', 'decks', '${deck.id}')" title="Compartir Deck">
                 <i class="fas fa-share-alt"></i>
             </button>
+
+            ${publicDeckAccessoriesHtml(deck)}
 
             <div class="container deck-carousel-container">
                 <div class="swiper swiperyg ${swiperClass}">
@@ -2758,6 +2817,9 @@ async function selectDeck(deckId, skipPush = false) {
 
         if (error) throw error;
         deck.deck_cards = cards;
+        // renderDeckCards sale temprano si isRendered: al reabrir el mismo deck
+        // hay que permitir que vuelva a pintar las cartas.
+        deck.isRendered = false;
 
         const totalSum = (cards || []).reduce((sum, card) => {
             const priceStr = card.price || '0';
