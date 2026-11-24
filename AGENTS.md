@@ -370,3 +370,28 @@ Estado real medido en producción (no estimado): **43 filas** de `spirits` con `
 
 ## Cambio de dominio (diciembre) — checklist
 `docs/CHECKLIST_CAMBIO_DOMINIO.md`. Resumen: 78 referencias en 30 archivos (58 son el favicon), `docs/CNAME`, 2 comparaciones de `hostname` en `js/viking-widget.js` (1576 y 2875), el snippet de `widgets.html`, el fallback de `create-checkout-session` y los paneles de Supabase Auth (Site URL + Redirect URLs). **No** tocar `${usuario}@vikingtcg.xyz` de `js/binders.js:641` (es identificador de login). Stripe y Cloudinary no requieren cambios; mantener el dominio viejo con 301 por los snippets de widget ya pegados.
+
+## Asistente de la esquina — modelo viejo al volver atrás (bfcache) o con otra cuenta
+Síntoma: tras cambiar de asistente, al volver con el botón atrás del navegador (o al entrar/salir del carrito) seguía apareciendo el modelo anterior hasta recargar.
+- **Causa 1 (caché sin dueño):** `localStorage['viking_cached_spirit']` era global. Cualquier tienda/visitante podía pintar el asistente cacheado de otra sesión, y ese valor se usaba como primer pintado antes de la lectura real.
+- **Causa 2 (lectura fallida = "no hay asistente"):** `lookupSpiritFromDb()` devolvía el primer espíritu público cuando la lectura de `usuarios`/`spirits` fallaba (red intermitente, token refrescándose). Eso sustituía el elegido por uno viejo.
+- **Causa 3 (bfcache):** al volver con atrás no se re-ejecuta `DOMContentLoaded`; `pagehide`/`beforeunload` ya había liberado los visores 3D y nada los reconstruía ni revalidaba el asistente.
+- **Arreglo (`js/michatbot.js`):**
+  - `spiritCacheOwnerId()`: `user:<id>` en el panel, `store:<id>` en la tienda pública; si el dueño mira su propia tienda, comparte `user:<id>` para no perder el primer pintado.
+  - `getCachedSpirit()`/`setCachedSpirit()` guardan/leen `viking_cached_spirit_owner` y rechazan la caché de otro dueño (la clave sin dueño se acepta como migración).
+  - `discardStaleCachedSpirit()`: si el dueño ya se conoce y la caché no es suya, anula `currentSpirit` y vacía `#michatbot-model-container`. Se re-comprueba a los 3 s porque en público `currentStoreId` llega después del primer pintado.
+  - `lookupSpiritFromDb()`: un `error` de Supabase ya NO cae al espíritu público; devuelve `null` y se conserva el cacheado.
+  - `refreshCornerModelUrl(url)` cambia el `src` del visor ya montado (hasta 10 intentos/300 ms) sin reconstruirlo.
+  - `revalidateSpiritFromDb({force, minInterval})` con deduplicación, reintentos 2/5/10/20 s, `visibilitychange` y `online`.
+  - `pageshow(persisted)` → `initMichatbot(true)` (bfcache).
+- `js/admin.js`: al seleccionar un asistente se actualizan `window.currentSpirit`, `tcg_session.selected_spirit_id` y la caché instantánea; `tcg_item_unlocked` sincroniza la sesión. `pageshow` refresca personalizaciones.
+- `js/utils.js` y `js/notifications.js`: `pageshow` para reanudar sondeo/estado tras bfcache.
+- `sw.js`: `/auth/v1/*` y `/rest/v1/usuarios` ya **no** se cachean en `DATA_CACHE` (servir un perfil/token viejo era otra vía para resucitar `selected_spirit_id`). `STATIC_CACHE` en `viking-static-v262`.
+
+## Consumo de caché/egress (revisión)
+- Modelos 3D en Storage: `GET` devuelve `cache-control: public, max-age=31536000, immutable` + `cf-cache-status: HIT` (verificado). OJO: un `HEAD` devuelve `private, no-cache`; los navegadores usan `GET`.
+- Modelos en el servidor alterno: `max-age=2592000` (30 días) + `immutable` + `access-control-allow-origin: *`.
+- Imágenes: todas las miniaturas pasan por `window.optImg`; solo quedan las 3 imágenes por defecto (`default_box/sleeves/coin.png`) con URL cruda.
+- Lo que más consulta la BD es `js/notifications.js`: ~6 `select` cada 60 s por pestaña (se detiene con `document.hidden`). Es egress de BD (JSON pequeño), no "cached egress" de Storage.
+- `ProactiveAssistant.trigger('page_load')` invoca la Edge Function `spirit-chat` en cada carga de admin/público (cooldown 12 s). Consume invocaciones/Gemini, no caché de Storage.
+- **Pendiente detectado (2026-11):** el asistente id 57 ("Aluber the Jester of Despia") sigue como `.gltf` + `.glbin` de **8.68 MB** + 3 texturas (~0.3 MB) en el servidor alterno. Es el único que no pasó por la compresión; conviene recompilarlo con el pipeline de `gltf-transform` y repuntar `spirits.gltf_url` a un `.glb`.

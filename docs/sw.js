@@ -1,4 +1,4 @@
-const STATIC_CACHE = 'viking-static-v261';
+const STATIC_CACHE = 'viking-static-v262';
 const IMAGE_CACHE = 'viking-images-v1';
 const DATA_CACHE = 'viking-data-v1';
 
@@ -184,6 +184,15 @@ self.addEventListener('fetch', event => {
 
   // 2. Strategy: Supabase Data Handling
   if (url.hostname.includes('supabase.co')) {
+    // Auth responses and the profile row are never cached: serving a stale
+    // token/profile from the SW is what kept an old `selected_spirit_id` alive
+    // after a transient failure. The app has its own explicit offline fallbacks
+    // (tcg_session / viking_cached_spirit).
+    if (url.pathname.includes('/auth/v1/') || /\/rest\/v1\/usuarios$/.test(url.pathname)) {
+      event.respondWith(fetch(event.request));
+      return;
+    }
+
     // If it's a mutation (POST, PUT, DELETE, PATCH), fetch from network.
     // We no longer clear DATA_CACHE here to ensure offline availability of previously fetched data.
     if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(event.request.method)) {

@@ -854,6 +854,13 @@
         }
     });
 
+    window.addEventListener('pageshow', function(event) {
+        if (event.persisted) {
+            checkNotifications();
+            startNotificationsPolling();
+        }
+    });
+
     function escapeHtml(str) {
         if (!str) return '';
         return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
