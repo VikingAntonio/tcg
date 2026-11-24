@@ -442,8 +442,7 @@ $(document).ready(async function() {
 
     $(document).on('click', '#btn-show-decks', function(e) {
         e.preventDefault();
-        showView('decks');
-        loadDecks();
+        window.location.href = typeof window.deckBuilderUrl === 'function' ? window.deckBuilderUrl() : 'constrcutorDecks.html';
     });
 
     $(document).on('click', '#btn-show-spirits', function(e) {
