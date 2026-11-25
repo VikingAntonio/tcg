@@ -141,7 +141,7 @@ $(document).ready(async function() {
     $('<button id="btn-share-slot" class="btn btn-sm" style="margin-left: 10px; background: rgba(255,255,255,0.1);"><i class="fas fa-share-alt"></i> Compartir Slot</button>')
         .appendTo('.wishlist-tabs-container')
         .on('click', () => {
-            window.openShareModal(`Buscamos - Slot ${currentSlot+1}`, 'wishlist', currentSlot);
+            window.openShareModal(`Wanted - Slot ${currentSlot+1}`, 'wishlist', currentSlot);
         });
 
     $('#menu-btn-logout').click(async function(e) {
@@ -438,7 +438,7 @@ async function loadWishlist() {
                         </label>
                     </div>
                     <div class="wishlist-img-container" style="width: 100%; height: 160px; position: relative;">
-                        <img src="(window.optImg?window.optImg(item.image_url, 400):item.image_url)" style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px; background: rgba(0,0,0,0.2);">
+                        <img src="${(window.optImg?window.optImg(item.image_url, 400):item.image_url)}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px; background: rgba(0,0,0,0.2);">
                     </div>
                 </div>
 

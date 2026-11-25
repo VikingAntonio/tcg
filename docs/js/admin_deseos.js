@@ -59,7 +59,7 @@ function initAdminWishlistListeners() {
         $('<button id="btn-share-slot-admin" class="btn btn-sm" style="margin-left: 10px; background: rgba(255,255,255,0.1);"><i class="fas fa-share-alt"></i> Compartir Slot</button>')
             .appendTo('#view-wishlist .wishlist-tabs-container')
             .on('click', () => {
-                window.openShareModal(`Buscamos - Slot ${currentWishlistSlot+1}`, 'wishlist', currentWishlistSlot);
+                window.openShareModal(`Wanted - Slot ${currentWishlistSlot+1}`, 'wishlist', currentWishlistSlot);
             });
     }
 
@@ -244,7 +244,7 @@ async function loadWishlistAdmin() {
                         </label>
                     </div>
                     <div class="wishlist-img-container" style="width: 100%; height: 160px; position: relative;">
-                        <img src="(window.optImg?window.optImg(item.image_url, 400):item.image_url)" style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px; background: rgba(0,0,0,0.2);">
+                        <img src="${(window.optImg?window.optImg(item.image_url, 400):item.image_url)}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px; background: rgba(0,0,0,0.2);">
                     </div>
                 </div>
 

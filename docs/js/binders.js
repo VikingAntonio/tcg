@@ -679,7 +679,7 @@ async function loadAlbums() {
     albums.forEach(album => {
         const $card = $(`
             <div class="album-card album-item" data-id="${album.id}">
-                <img src="(window.optImg?window.optImg(album.cover_image_url, 400):album.cover_image_url) || 'https://via.placeholder.com/300x150'">
+                <img src="${(window.optImg?window.optImg(album.cover_image_url, 400):album.cover_image_url) || 'https://via.placeholder.com/300x150'}">
                 <h3>${album.title}</h3>
                 <div style="display:flex; gap:10px; margin-top:10px;">
                     <button class="btn btn-edit-album" style="flex:1;">Editar</button>
