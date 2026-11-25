@@ -244,7 +244,7 @@ async function loadWishlistAdmin() {
                         </label>
                     </div>
                     <div class="wishlist-img-container" style="width: 100%; height: 160px; position: relative;">
-                        <img src="(window.optImg?window.optImg(item.image_url, 400):item.image_url)" style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px; background: rgba(0,0,0,0.2);">
+                        <img src="${(window.optImg?window.optImg(item.image_url, 400):item.image_url)}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px; background: rgba(0,0,0,0.2);">
                     </div>
                 </div>
 

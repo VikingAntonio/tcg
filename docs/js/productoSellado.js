@@ -439,7 +439,7 @@ function renderAdminProductTable(products) {
         const $tr = $(`
             <tr class="sheet-tr" data-id="${product.id}">
                 <td class="sheet-td" style="text-align: center;">
-                    <img src="(window.optImg?window.optImg(product.image_url, 200):product.image_url) || 'https://via.placeholder.com/100?text=Sin+Imagen'" class="sheet-img-thumb" alt="${product.name}">
+                    <img src="${(window.optImg?window.optImg(product.image_url, 200):product.image_url) || 'https://via.placeholder.com/100?text=Sin+Imagen'}" class="sheet-img-thumb" alt="${product.name}">
                 </td>
                 <td class="sheet-td">
                     <input type="text" class="sheet-input sheet-input-name" value="${product.name || ''}" style="width: 100%; min-width: 180px; pointer-events: ${pointerEvents};" ${disabledAttr}>

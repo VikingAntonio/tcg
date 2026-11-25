@@ -95,7 +95,7 @@ async function loadEvents() {
                     ${featuredBadge}
                     ${e.image_url ? `
                     <div class="product-image-container" style="height: 150px; background: rgba(0,0,0,0.2);">
-                        <img src="(window.optImg?window.optImg(e.image_url, 500):e.image_url)" class="sealed-product-img">
+                        <img src="${(window.optImg?window.optImg(e.image_url, 500):e.image_url)}" class="sealed-product-img">
                     </div>
                     ` : ''}
                     <div style="padding: 10px; flex: 1; display: flex; flex-direction: column;">

@@ -105,7 +105,7 @@ async function loadMyClaims() {
             $grid.append(`
                 <div class="pretty-claim-card">
                     <div class="status-badge">${claim.status}</div>
-                    <div class="card-img-container"><img src="(window.optImg?window.optImg(claim.image_urls[0], 300):claim.image_urls[0])"></div>
+                    <div class="card-img-container"><img src="${(window.optImg?window.optImg(claim.image_urls[0], 300):claim.image_urls[0])}"></div>
                     <div class="card-title">${claim.title}</div>
                     <div class="claim-info">
                         <span class="info-label">PRECIO</span>
@@ -142,7 +142,7 @@ async function loadMyClaims() {
                     <div class="claimed-items-list">
                         ${group.items.map(item => `
                             <div class="claimed-item-mini" style="position: relative; cursor: pointer;" onclick="showClaimDetails('${item.id}')">
-                                <img src="(window.optImg?window.optImg(item.image_urls[0], 200):item.image_urls[0])">
+                                <img src="${(window.optImg?window.optImg(item.image_urls[0], 200):item.image_urls[0])}">
                                 <div class="claimed-item-info">
                                     <div class="claimed-item-title">${item.title}</div>
                                     <div class="claimed-item-price">$${item.price}</div>
@@ -195,7 +195,7 @@ async function loadWonClaims() {
     $list.empty();
     Object.values(groups).forEach(group => {
         const seller = group.seller; const sellerDisplayName = seller.store_name || seller.username || 'Vendedor';
-        $list.append(`<div class="winner-group" style="border-color: #00ff88;"><div class="winner-header"><div class="winner-name" style="color: #00ff88;"><i class="fas fa-store"></i> ${sellerDisplayName}</div><div class="claimed-count">${group.items.length} producto(s)</div></div><div class="claimed-items-list">${group.items.map(item => `<div class="claimed-item-mini" style="cursor: pointer;" onclick="showClaimDetails('${item.id}')"><img src="(window.optImg?window.optImg(item.image_urls[0], 200):item.image_urls[0])"><div class="claimed-item-info"><div class="claimed-item-title">${item.title}</div><div class="claimed-item-price">$${item.price}</div></div></div>`).join('')}</div><div class="contact-buttons">${seller.whatsapp_link ? `<button class="btn btn-wa" onclick="window.open('https://wa.me/${seller.whatsapp_link.replace(/\D/g, '')}', '_blank')"><i class="fab fa-whatsapp"></i> Contactar</button>` : ''}${seller.messenger_link ? `<button class="btn btn-ms" onclick="window.open('https://m.me/${seller.messenger_link}', '_blank')"><i class="fab fa-facebook-messenger"></i> Messenger</button>` : ''}</div></div>`);
+        $list.append(`<div class="winner-group" style="border-color: #00ff88;"><div class="winner-header"><div class="winner-name" style="color: #00ff88;"><i class="fas fa-store"></i> ${sellerDisplayName}</div><div class="claimed-count">${group.items.length} producto(s)</div></div><div class="claimed-items-list">${group.items.map(item => `<div class="claimed-item-mini" style="cursor: pointer;" onclick="showClaimDetails('${item.id}')"><img src="${(window.optImg?window.optImg(item.image_urls[0], 200):item.image_urls[0])}"><div class="claimed-item-info"><div class="claimed-item-title">${item.title}</div><div class="claimed-item-price">$${item.price}</div></div></div>`).join('')}</div><div class="contact-buttons">${seller.whatsapp_link ? `<button class="btn btn-wa" onclick="window.open('https://wa.me/${seller.whatsapp_link.replace(/\D/g, '')}', '_blank')"><i class="fab fa-whatsapp"></i> Contactar</button>` : ''}${seller.messenger_link ? `<button class="btn btn-ms" onclick="window.open('https://m.me/${seller.messenger_link}', '_blank')"><i class="fab fa-facebook-messenger"></i> Messenger</button>` : ''}</div></div>`);
     });
 }
 
@@ -237,7 +237,7 @@ async function showClaimDetails(claimId) {
         title: claim.title,
         html: `
             <div style="text-align: center;">
-                <img src="(window.optImg?window.optImg(claim.image_urls[0], 700):claim.image_urls[0])" style="max-width: 100%; max-height: 300px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);">
+                <img src="${(window.optImg?window.optImg(claim.image_urls[0], 700):claim.image_urls[0])}" style="max-width: 100%; max-height: 300px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);">
                 <div style="font-size: 1.2rem; font-weight: 800; color: var(--primary-color); margin-bottom: 10px;">$${claim.price}</div>
                 <div style="text-align: left; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; font-size: 0.9rem; max-height: 200px; overflow-y: auto;">
                     ${claim.description || 'Sin descripción disponible.'}
