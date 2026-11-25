@@ -59,7 +59,7 @@ function initAdminWishlistListeners() {
         $('<button id="btn-share-slot-admin" class="btn btn-sm" style="margin-left: 10px; background: rgba(255,255,255,0.1);"><i class="fas fa-share-alt"></i> Compartir Slot</button>')
             .appendTo('#view-wishlist .wishlist-tabs-container')
             .on('click', () => {
-                window.openShareModal(`Buscamos - Slot ${currentWishlistSlot+1}`, 'wishlist', currentWishlistSlot);
+                window.openShareModal(`Wanted - Slot ${currentWishlistSlot+1}`, 'wishlist', currentWishlistSlot);
             });
     }
 

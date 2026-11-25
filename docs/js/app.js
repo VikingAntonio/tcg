@@ -759,7 +759,7 @@ $(document).ready(async function() {
             return;
         }
 
-        const message = `¡Hola! Vi tu lista de "Buscamos" en Vikingdev TCG y tengo esta carta: ${window.currentCardData.name} (${window.currentCardData.rarity || 'N/A'}). ¿Te interesa?`;
+        const message = `¡Hola! Vi tu lista de "Wanted" en Vikingdev TCG y tengo esta carta: ${window.currentCardData.name} (${window.currentCardData.rarity || 'N/A'}). ¿Te interesa?`;
         const waNumber = contact.whatsapp.replace(/\D/g, '');
         window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`, '_blank');
     });
@@ -778,7 +778,7 @@ $(document).ready(async function() {
             return;
         }
 
-        const message = `¡Hola! Vi tu lista de "Buscamos" en Vikingdev TCG y tengo esta carta: ${window.currentCardData.name} (${window.currentCardData.rarity || 'N/A'}). ¿Te interesa?`;
+        const message = `¡Hola! Vi tu lista de "Wanted" en Vikingdev TCG y tengo esta carta: ${window.currentCardData.name} (${window.currentCardData.rarity || 'N/A'}). ¿Te interesa?`;
         let messengerLink = contact.messenger;
         if (!messengerLink.startsWith('http')) {
             messengerLink = `https://m.me/${messengerLink}`;
@@ -4122,7 +4122,7 @@ function loadPublicWishlist() {
             .insertAfter('#btn-owner-add-wishlist')
             .on('click', () => {
                 const activeSlot = $('.wishlist-tab.active').data('index') || 0;
-                window.openShareModal(`Buscamos - Slot ${parseInt(activeSlot)+1}`, 'wishlist', activeSlot);
+                window.openShareModal(`Wanted - Slot ${parseInt(activeSlot)+1}`, 'wishlist', activeSlot);
             });
     }
 

@@ -455,3 +455,9 @@ Síntoma: en `wanted.html` (y otras vistas) las cartas guardadas se veían **sin
 - **Arreglo:** restaurar `${...}`: `src="${(window.optImg?window.optImg(item.image_url, 400):item.image_url)}"` (y `${(...) || 'placeholder'}` cuando hay fallback). Afectaba a `js/deseos.js`, `js/admin_deseos.js`, `js/adminClaim.js` (4), `js/binders.js`, `js/eventos.js`, `js/productoSellado.js`, `js/viking-widget.js`, `carrito.html` y `subastas.html`.
 - **Regla:** cualquier `src="..."` que use `window.optImg` dentro de un template literal necesita `${}`. Un `grep -rn 'src="(window\.'` no debe devolver nada.
 - Verificado con Playwright (`wanted.html`, sesión en `localStorage['tcg_session']`, mock de `**/rest/v1/wishlist**`): el `src` sale con la URL real y la imagen carga (`naturalWidth > 0`).
+
+## Wanted: por qué el link público sí mostraba imágenes y `wanted.html` no
+- La vista pública (`public.html?view=wishlist`, `loadPublicWishlist` en `js/app.js`) ya tenía `src="${window.optImg(item.image_url, 400)}"`, por eso las imágenes se veían.
+- La vista privada usa `js/deseos.js` → `loadWishlist()` y ahí estaba el `src` literal sin `${}`. Son dos renders distintos: corregir uno no arregla el otro.
+- El nombre público de la sección pasó de **"Buscamos"** a **"Wanted"**: tile de `public.html` (`.home-menu-item[data-view="wishlist"]`), `js/build.js` (`key:'wishlist'`) y `js/custom.js` (`public-wishlist`). Los títulos de compartir (`openShareModal`) y los mensajes de WhatsApp/Messenger también dicen "Wanted - Slot N" / `"Wanted"`.
+- `STATIC_CACHE` → `viking-static-v268`.

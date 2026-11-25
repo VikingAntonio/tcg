@@ -20,7 +20,7 @@ const VIEW_CONFIG = [
     { key: 'auctions', name: 'Subastas', icon: 'fa-gavel' },
     { key: 'sealed', name: 'Producto Sellado', icon: 'fa-box' },
     { key: 'preorders', name: 'Preventas', icon: 'fa-fire' },
-    { key: 'wishlist', name: 'Buscamos', icon: 'fa-heart' },
+    { key: 'wishlist', name: 'Wanted', icon: 'fa-heart' },
     { key: 'investments', name: 'Inversiones', icon: 'fa-chart-line' },
     { key: 'claims', name: 'Claims', icon: 'fa-hand-holding-heart' },
     { key: 'events', name: 'Eventos', icon: 'fa-calendar-alt' }
