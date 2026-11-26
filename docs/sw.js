@@ -1,4 +1,4 @@
-const STATIC_CACHE = 'viking-static-v268';
+const STATIC_CACHE = 'viking-static-v270';
 const IMAGE_CACHE = 'viking-images-v1';
 const DATA_CACHE = 'viking-data-v1';
 
@@ -70,6 +70,7 @@ const URLS_TO_CACHE = [
   './js/michatbot-mobile3d.js',
   './js/notifications.js',
   './js/inversiones.js',
+  './js/market-prices.js',
   './js/admin_deseos.js',
   './js/animacionesdeseos.js',
   './js/productoSellado.js',
