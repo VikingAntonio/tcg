@@ -603,6 +603,34 @@ $(document).ready(async function() {
         });
     });
 
+    // Precio de mercado de la carta (elige la impresión y la convierte a MXN).
+    $(document).on('click', '#btn-slot-market-price', async function(e) {
+        e.preventDefault();
+        if (!window.MarketPrices) {
+            Swal.fire('No disponible', 'El módulo de precios no se cargó.', 'error');
+            return;
+        }
+        const name = ($('#slot-name').val() || '').trim() || ($('#external-search-input').val() || '').trim();
+        if (!name) {
+            Swal.fire('Falta el nombre', 'Escribe el nombre de la carta para buscar su precio.', 'info');
+            return;
+        }
+        const choice = await window.MarketPrices.openPicker({
+            name,
+            setName: $('#slot-expansion').val() || '',
+            title: 'PRECIO DE MERCADO'
+        });
+        // El código de impresión, si viene dentro del nombre, lo filtra el selector.
+        if (!choice) return;
+        const mxn = await window.MarketPrices.askMxnPrice(choice);
+        if (mxn === null) return;
+        $('#slot-price').val(mxn);
+        const extra = [choice.setName, choice.setNumber, choice.rarity].filter(Boolean).join(' · ');
+        $('#slot-market-hint')
+            .text(`${choice.source || 'TCGplayer'} ${window.MarketPrices.money(choice.price, choice.currency)}${extra ? ' · ' + extra : ''}`)
+            .show();
+    });
+
     $(document).on('click', '.slot-tab-btn', function() {
         const tabId = $(this).data('tab');
         $('.slot-tab-btn').removeClass('active'); $(this).addClass('active');
@@ -783,6 +811,7 @@ async function loadSlotData(pageId, slotIndex) {
     const data = localAlbumSlots.find(s => s.page_id === pageId && s.slot_index === slotIndex);
     $('#slot-image-url, #slot-name, #slot-rarity, #slot-expansion, #slot-condition, #slot-price, #slot-cost-price, #slot-quantity, #slot-language, #slot-edition, #slot-description').val('');
     $('#slot-quantity').val(1);
+    $('#slot-market-hint').hide().text('');
     currentSlotExtraImages = [];
 
     if (data && data.image_url) {
