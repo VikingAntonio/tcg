@@ -1240,7 +1240,6 @@ async function loadInvestmentCards() {
 
     localInvestmentCards = cards || [];
     renderInvestmentCards(currentInvestmentViewMode);
-    autoRefreshVaultMarketPrices();
 }
 
 function renderInvestmentCards(mode) {
@@ -1795,7 +1794,6 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
         updateCardLotHint(card);
     }
 
-    renderInvMarketBox(card || null);
     renderInvExtraImagesPreview();
     syncAddPreview();
     $('#investment-card-modal').addClass('active');
@@ -2469,348 +2467,71 @@ async function openVaultLedger(cat) {
     }
 }
 
-// --- PRECIO DE MERCADO AUTOMÁTICO ---
-// El precio automático vive en market_* y NUNCA sobrescribe current_price:
-// el dueño decide cuándo pasarlo con "Usar precio de mercado".
+// --- PRECIO DE MERCADO POR CÓDIGO ---
+// Al escribir el código de la impresión (RA03-EN123) en Rareza, se consulta el
+// precio de mercado y se rellena "Precio mercado". El valor llega en USD.
 
-const INV_MARKET_PROVIDER_LABEL = {
-    tcgdex: 'Pokémon · TCGplayer',
-    ygoprodeck: 'Yu-Gi-Oh! · TCGplayer',
-    scryfall: 'Magic · TCGplayer'
-};
+const INV_CODE_RE = /^[A-Za-z0-9]{2,6}-[A-Za-z0-9]{0,4}\d{1,4}$/;
+let invCodeLookupTimer = null;
+let invCodeLookupToken = 0;
 
-function invMarketCard() {
-    if (!currentEditingInvCardId) return null;
-    return localInvestmentCards.find(c => c.id === currentEditingInvCardId) || null;
+function invSetPriceCurrencyTag(show, title) {
+    const $tag = $('#inv-price-currency');
+    if (show) {
+        $tag.attr('title', title || 'Precio de mercado en dólares').show();
+    } else {
+        $tag.removeAttr('title').hide();
+    }
 }
 
-function invMarketLinked(card) {
-    return !!(card && card.market_provider && card.market_card_id && card.market_price !== null && card.market_price !== undefined);
-}
-
-function renderInvMarketBox(card) {
-    const $status = $('#inv-market-status');
-    const $hint = $('#inv-market-hint');
-    const mp = window.MarketPrices || {};
-    const linked = !!(card && card.market_provider && card.market_card_id);
-
-    if (!card) {
-        $status.text('SIN VINCULAR').css('color', '#777');
-        $hint.text('Guarda el activo y luego vincula la carta para actualizar su precio solo.');
-        $('#btn-inv-market-apply, #btn-inv-market-refresh').prop('disabled', true);
-        $('#btn-inv-market-link').html('<i class="fas fa-link"></i> VINCULAR');
+async function invFillMarketPriceFromCode() {
+    const code = ($('#inv-card-rarity-input').val() || '').trim();
+    const $price = $('#inv-card-current-price');
+    if (!INV_CODE_RE.test(code) || !window.MarketPrices) {
+        invSetPriceCurrencyTag(false);
         return;
     }
 
-    if (!linked) {
-        $status.text('SIN VINCULAR').css('color', '#777');
-        $hint.text('Vincula la carta a una impresión para actualizar su precio solo.');
-        $('#btn-inv-market-apply, #btn-inv-market-refresh').prop('disabled', true);
-        $('#btn-inv-market-link').html('<i class="fas fa-link"></i> VINCULAR');
-        return;
-    }
+    const token = ++invCodeLookupToken;
+    const before = $price.val();
+    $price.attr('title', 'Buscando precio de mercado…');
 
-    const price = parseFloat(card.market_price);
-    const currency = card.market_price_currency || 'USD';
-    const hasPrice = Number.isFinite(price) && price > 0;
-    const money = mp.money ? mp.money(price, currency) : `$${Number(price).toFixed(2)}`;
-    $status
-        .text(hasPrice ? `MERCADO ${money}` : 'VINCULADA · SIN PRECIO')
-        .css('color', hasPrice ? '#00875a' : '#c0392b');
-    $('#btn-inv-market-link').html('<i class="fas fa-link"></i> CAMBIAR');
-    $('#btn-inv-market-refresh').prop('disabled', false);
-    $('#btn-inv-market-apply').prop('disabled', !hasPrice);
-
-    const bits = [];
-    if (card.set_name || card.set_number) bits.push(`${card.set_name || ''}${card.set_number ? ' · ' + card.set_number : ''}`.trim());
-    if (card.market_variant && mp.variantLabel) {
-        const variantLabel = mp.variantLabel(card.market_variant);
-        if (variantLabel && variantLabel !== card.set_number) bits.push(variantLabel);
-    }
-    if (card.market_price_updated_at && mp.ageLabel) bits.push(`actualizado ${mp.ageLabel(card.market_price_updated_at)}`);
-    $hint.text(`${INV_MARKET_PROVIDER_LABEL[card.market_provider] || card.market_provider}${bits.length ? ' · ' + bits.join(' · ') : ''}`);
-}
-
-// Guarda la vinculación. Si las columnas market_* todavía no existen, las va
-// quitando (una por una, según el error de PostgREST) para no romper el guardado.
-async function persistInvMarketFields(cardId, payload) {
-    const optional = ['market_provider', 'market_card_id', 'market_variant', 'market_price', 'market_price_currency', 'market_price_updated_at'];
-    const body = { ...payload };
-    let degraded = false;
-
-    for (let attempt = 0; attempt < 4; attempt++) {
-        const { error } = await _supabase.from('investment_cards').update(body).eq('id', cardId);
-        if (!error) return { error: null, degraded };
-        const msg = error.message || '';
-        if (!/column|schema cache/i.test(msg)) return { error, degraded };
-
-        degraded = true;
-        const missing = [...msg.matchAll(/'([a-z0-9_]+)'\s+column/gi)].map(m => m[1]);
-        const before = Object.keys(body).length;
-        // Las columnas market_* se crean juntas en la migración, así que si
-        // falta una se quitan todas de una vez (un solo reintento).
-        if (missing.some(col => optional.includes(col))) {
-            optional.forEach(col => delete body[col]);
-        } else if (missing.length) {
-            missing.forEach(col => delete body[col]);
-        } else {
-            optional.forEach(col => delete body[col]);
-        }
-        if (!Object.keys(body).length) return { error: null, degraded };
-        if (Object.keys(body).length === before) return { error, degraded };
-    }
-    return { error: new Error('No se pudo guardar la vinculación'), degraded };
-}
-
-async function linkInvMarketCard() {
-    const card = invMarketCard();
-    if (!card) {
-        Swal.fire({
-            title: 'GUARDA PRIMERO',
-            text: 'Guarda el activo y después vincula la carta a su impresión.',
-            icon: 'info',
-            customClass: { popup: 'inv-swal-popup' }
-        });
-        return;
-    }
-    if (!window.MarketPrices) {
-        Swal.fire({ title: 'NO DISPONIBLE', text: 'El módulo de precios no se cargó.', icon: 'error', customClass: { popup: 'inv-swal-popup' } });
-        return;
-    }
-
-    const choice = await window.MarketPrices.openPicker({
-        name: $('#inv-card-name').val() || card.card_name || '',
-        setName: card.set_name || '',
-        code: card.set_number || '',
-        title: 'VINCULAR CARTA'
-    });
-    if (!choice) return;
-
-    const payload = {
-        market_provider: choice.provider,
-        market_card_id: String(choice.externalId),
-        market_variant: choice.variant || null,
-        market_price: choice.price,
-        market_price_currency: choice.currency || 'USD',
-        market_price_updated_at: new Date().toISOString()
-    };
-    // Completa datos de la impresión solo si la carta no los tenía.
-    const extras = {};
-    if (!card.set_name && choice.setName) extras.set_name = choice.setName;
-    if (!card.set_number && choice.setNumber) extras.set_number = choice.setNumber;
-    if (!card.rarity && choice.rarity) extras.rarity = choice.rarity;
-    if (!card.external_id && choice.externalId) extras.external_id = String(choice.externalId);
-
-    Swal.fire({ title: 'Vinculando carta...', didOpen: () => Swal.showLoading(), customClass: { popup: 'inv-swal-popup' } });
-    const { error, degraded } = await persistInvMarketFields(card.id, { ...payload, ...extras });
-    if (error) {
-        Swal.fire({ title: 'ERROR', text: error.message || String(error), icon: 'error', customClass: { popup: 'inv-swal-popup' } });
-        return;
-    }
-
-    Object.assign(card, payload);
-    Object.assign(card, extras);
-    if (extras.set_name !== undefined) $('#inv-card-set-name').val(extras.set_name);
-    if (extras.set_number !== undefined) $('#inv-card-set-number').val(extras.set_number);
-    if (extras.rarity !== undefined) {
-        $('#inv-card-rarity').val(extras.rarity);
-        $('#inv-card-rarity-input').val(extras.rarity);
-    }
-    if (extras.external_id !== undefined) $('#inv-card-external-id').val(extras.external_id);
-    renderInvMarketBox(card);
-
-    if (degraded) {
-        Swal.fire({
-            title: 'FALTA LA MIGRACIÓN',
-            html: '<div style="text-align:left;font-size:0.9rem;">Ejecuta <b>docs/Q_market_price_links.sql</b> en Supabase para guardar la vinculación. El precio se mostró, pero no quedó guardado.</div>',
-            icon: 'warning',
-            customClass: { popup: 'inv-swal-popup' }
-        });
-        return;
-    }
-    if (choice.price == null) {
-        Swal.fire({
-            title: 'IMPRESIÓN VINCULADA SIN PRECIO',
-            html: '<div style="text-align:left;font-size:0.9rem;">La base pública no tiene precio para esa rareza. La impresión quedó guardada; escribe el precio a mano si lo conoces.</div>',
-            icon: 'info',
-            customClass: { popup: 'inv-swal-popup' }
-        });
-        return;
-    }
-    Swal.fire({ icon: 'success', title: 'CARTA VINCULADA', timer: 1300, showConfirmButton: false, customClass: { popup: 'inv-swal-popup' } });
-}
-
-async function refreshInvMarketPrice() {
-    const card = invMarketCard();
-    if (!card) return;
-    if (!card.market_provider || !card.market_card_id) return linkInvMarketCard();
-
-    Swal.fire({ title: 'Consultando precio...', didOpen: () => Swal.showLoading(), customClass: { popup: 'inv-swal-popup' } });
+    let row = null;
     try {
-        const row = await window.MarketPrices.priceForLinked(card);
-        const payload = {
-            market_price: row.price,
-            market_price_currency: row.currency || 'USD',
-            market_price_updated_at: new Date().toISOString()
-        };
-        const { error } = await persistInvMarketFields(card.id, payload);
-        if (error) throw error;
-        Object.assign(card, payload);
-        renderInvMarketBox(card);
-        Swal.fire({ icon: 'success', title: 'PRECIO ACTUALIZADO', timer: 1300, showConfirmButton: false, customClass: { popup: 'inv-swal-popup' } });
+        row = await window.MarketPrices.lookupCode(code);
     } catch (e) {
-        Swal.fire({ title: 'SIN PRECIO', text: e.message || String(e), icon: 'warning', customClass: { popup: 'inv-swal-popup' } });
+        row = null;
     }
-}
+    if (token !== invCodeLookupToken) return;
 
-async function applyInvMarketPrice() {
-    const card = invMarketCard();
-    if (!card || !invMarketLinked(card)) return;
-    const mxn = await window.MarketPrices.askMxnPrice({
-        name: card.card_name,
-        setName: card.set_name,
-        setNumber: card.set_number,
-        variantLabel: card.market_variant && card.market_variant !== card.set_number
-            ? window.MarketPrices.variantLabel(card.market_variant)
-            : '',
-        price: card.market_price,
-        currency: card.market_price_currency || 'USD'
-    });
-    if (mxn === null) return;
-
-    $('#inv-card-current-price').val(mxn);
-    $('#inv-market-hint').append('<br><b style="color:#00875a;">Precio aplicado al campo. Guarda el activo para confirmarlo.</b>');
-    Swal.fire({
-        icon: 'info',
-        title: 'PRECIO APLICADO',
-        text: 'Se puso en "Precio mercado". Pulsa GUARDAR para confirmarlo.',
-        timer: 2400,
-        showConfirmButton: false,
-        customClass: { popup: 'inv-swal-popup' }
-    });
-}
-
-// Refresco silencioso al abrir el vault: solo cartas vinculadas cuyo precio
-// tiene más de 12 h. Nunca toca current_price ni interrumpe la vista.
-let invMarketAutoRunning = false;
-async function autoRefreshVaultMarketPrices() {
-    if (invMarketAutoRunning || !window.MarketPrices) return;
-    const TTL = 12 * 60 * 60 * 1000;
-    const stale = localInvestmentCards.filter(c => {
-        if (!c.market_provider || !c.market_card_id) return false;
-        const at = c.market_price_updated_at ? new Date(c.market_price_updated_at).getTime() : 0;
-        return !at || (Date.now() - at) > TTL;
-    });
-    if (!stale.length) return;
-
-    invMarketAutoRunning = true;
-    try {
-        const results = await window.MarketPrices.refreshLinked(stale);
-        for (const result of results) {
-            if (!result.ok) continue;
-            const payload = {
-                market_price: result.row.price,
-                market_price_currency: result.row.currency || 'USD',
-                market_price_updated_at: new Date().toISOString()
-            };
-            const { error } = await persistInvMarketFields(result.card.id, payload);
-            if (!error) Object.assign(result.card, payload);
-        }
-        const openCard = invMarketCard();
-        if (openCard) renderInvMarketBox(openCard);
-    } catch (e) {
-        console.warn('No se pudieron refrescar los precios de mercado:', e);
-    } finally {
-        invMarketAutoRunning = false;
-    }
-}
-
-async function refreshVaultMarketPrices() {
-    if (!window.MarketPrices) {
-        Swal.fire({ title: 'NO DISPONIBLE', text: 'El módulo de precios no se cargó.', icon: 'error', customClass: { popup: 'inv-swal-popup' } });
-        return;
-    }
-    if (!localInvestmentCards.length) {
-        Swal.fire({ title: 'VAULT VACÍO', text: 'Agrega cartas antes de actualizar precios.', icon: 'info', customClass: { popup: 'inv-swal-popup' } });
-        return;
-    }
-    const linked = localInvestmentCards.filter(c => c.market_provider && c.market_card_id);
-    if (!linked.length) {
-        const { isConfirmed } = await Swal.fire({
-            title: 'SIN CARTAS VINCULADAS',
-            html: '<div style="text-align:left;font-size:0.9rem;">Vincula una carta a su impresión (una sola vez) y su precio se actualizará solo a partir de ahí.</div>',
+    $price.removeAttr('title');
+    if (!row || row.price == null) {
+        invSetPriceCurrencyTag(false);
+        Swal.fire({
             icon: 'info',
-            showCancelButton: true,
-            confirmButtonText: 'ABRIR PRIMERA CARTA',
-            cancelButtonText: 'CERRAR',
+            title: 'SIN PRECIO',
+            text: `La base no tiene precio para ${code}. Escribe el precio a mano.`,
             customClass: { popup: 'inv-swal-popup' }
         });
-        if (isConfirmed) {
-            $('#inv-mobile-side-panel, #inv-side-panel-overlay').removeClass('active');
-            openInvestmentCardModal(localInvestmentCards[0], 'inv-tab-datos');
-        }
         return;
     }
+    if ($price.val() !== before) return;
 
-    const { isConfirmed } = await Swal.fire({
-        title: 'ACTUALIZAR PRECIOS',
-        html: `<div style="text-align:left;font-size:0.9rem;">Se consultará el precio de mercado de <b>${linked.length}</b> carta(s) vinculada(s).<br><br>No se tocará el precio que usas en tus cálculos: solo se guarda la referencia de mercado.</div>`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'ACTUALIZAR',
-        cancelButtonText: 'CANCELAR',
-        customClass: { popup: 'inv-swal-popup' }
-    });
-    if (!isConfirmed) return;
-
-    Swal.fire({
-        title: 'ACTUALIZANDO PRECIOS',
-        html: `<div id="inv-mp-progress" style="font-size:0.9rem;">0 / ${linked.length}</div><div style="font-size:0.72rem;color:#777;margin-top:6px;">Consultando bases públicas…</div>`,
-        allowOutsideClick: false,
-        showConfirmButton: false,
-        customClass: { popup: 'inv-swal-popup' }
-    });
-
-    const results = await window.MarketPrices.refreshLinked(linked, {
-        onProgress: (done, total) => {
-            const el = document.getElementById('inv-mp-progress');
-            if (el) el.textContent = `${done} / ${total}`;
-        }
-    });
-
-    let ok = 0;
-    const failed = [];
-    for (const result of results) {
-        if (!result.ok) { failed.push(`${result.card.card_name}: ${result.error}`); continue; }
-        const payload = {
-            market_price: result.row.price,
-            market_price_currency: result.row.currency || 'USD',
-            market_price_updated_at: new Date().toISOString()
-        };
-        const { error } = await persistInvMarketFields(result.card.id, payload);
-        if (error) {
-            failed.push(`${result.card.card_name}: ${error.message || error}`);
-            continue;
-        }
-        Object.assign(result.card, payload);
-        ok++;
-    }
-
-    await loadInvestmentCards();
-
-    Swal.fire({
-        title: ok ? 'PRECIOS ACTUALIZADOS' : 'SIN CAMBIOS',
-        html: `<div style="text-align:left;font-size:0.9rem;">
-                <div><b>${ok}</b> carta(s) con precio nuevo.</div>
-                ${failed.length ? `<div style="margin-top:8px;color:#c0392b;"><b>${failed.length}</b> sin precio:<br><span style="font-size:0.78rem;">${escapeHtml(failed.slice(0, 6).join('\n')).replace(/\n/g, '<br>')}${failed.length > 6 ? '<br>…' : ''}</span></div>` : ''}
-                <div style="margin-top:10px;font-size:0.76rem;color:#777;">Tu "Precio mercado" no cambió. Ábrelo en cada carta y pulsa "Usar precio de mercado" si quieres aplicarlo.</div>
-            </div>`,
-        icon: ok ? 'success' : 'warning',
-        customClass: { popup: 'inv-swal-popup' }
-    });
+    $price.val(row.price);
+    const bits = [row.source || 'TCGplayer', row.setName, row.setNumber, row.rarity].filter(Boolean);
+    invSetPriceCurrencyTag(true, bits.join(' · '));
 }
 
-$(document).on('click', '#btn-inv-market-link', function(e) { e.preventDefault(); linkInvMarketCard(); });
-$(document).on('click', '#btn-inv-market-refresh', function(e) { e.preventDefault(); refreshInvMarketPrice(); });
-$(document).on('click', '#btn-inv-market-apply', function(e) { e.preventDefault(); applyInvMarketPrice(); });
-$(document).on('click', '#btn-refresh-market-prices, #btn-refresh-market-prices-mobile', function(e) { e.preventDefault(); refreshVaultMarketPrices(); });
+$('#inv-card-rarity-input').on('input', function () {
+    clearTimeout(invCodeLookupTimer);
+    invCodeLookupTimer = setTimeout(invFillMarketPriceFromCode, 700);
+});
+
+$('#inv-card-rarity-input').on('blur', function () {
+    clearTimeout(invCodeLookupTimer);
+    invFillMarketPriceFromCode();
+});
+
+$('#inv-card-current-price').on('input', function () {
+    invSetPriceCurrencyTag(false);
+});

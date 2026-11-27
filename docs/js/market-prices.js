@@ -1,43 +1,24 @@
 /**
- * Precios de mercado automáticos.
+ * Precio de mercado por código de impresión.
  *
- * Usa solo APIs públicas y gratuitas, sin clave:
- *   - Pokémon  -> TCGdex (precio TCGplayer en USD, Cardmarket en EUR como respaldo)
- *   - Yu-Gi-Oh -> YGOPRODeck (TCGplayer por impresión, en USD)
- *   - Magic    -> Scryfall (TCGplayer en USD)
+ * Se escribe el código (RA03-EN123) y se obtiene el precio de TCGplayer:
+ *   1) Edge Function `market-price` (TCGCSV, incluye rarezas que las bases
+ *      gratuitas no pricean). Es la fuente exacta por impresión.
+ *   2) Respaldo Yu-Gi-Oh!: YGOPRODeck (`cardsets.php` -> set -> carta).
+ *   3) Respaldo Pokémon: TCGdex por id (`swsh9-166`).
  *
- * Cada carta se "vincula" una sola vez a una impresión concreta; a partir de ahí
- * el precio se puede refrescar sin volver a buscarla. El precio se guarda aparte
- * (market_price) y el precio que el dueño usa en sus cálculos no se toca.
+ * Todo llega en USD: la conversión a MXN la decide el dueño.
  */
 (function () {
     'use strict';
 
-    const CACHE_KEY = 'tcg_market_prices_cache_v1';
-    const CACHE_TTL = 12 * 60 * 60 * 1000;
-    const CANDIDATE_TTL = 6 * 60 * 60 * 1000;
-    const CACHE_LIMIT = 250;
+    const CACHE_KEY = 'tcg_market_prices_cache_v2';
+    const CACHE_TTL = 6 * 60 * 60 * 1000;
+    const CACHE_LIMIT = 120;
 
-    const GAME_LABELS = {
-        pokemon: 'Pokémon', yugioh: 'Yu-Gi-Oh!', magic: 'Magic',
-        lorcana: 'Lorcana', onepiece: 'One Piece'
-    };
-
-    const VARIANT_LABELS = {
-        normal: 'Normal',
-        holofoil: 'Holo',
-        'reverse-holofoil': 'Reverse Holo',
-        '1stEditionHolofoil': '1st Edition Holo',
-        '1stEditionNormal': '1st Edition',
-        'unlimitedHolofoil': 'Unlimited Holo',
-        'unlimited': 'Unlimited',
-        usd: 'Normal',
-        usd_foil: 'Foil',
-        avg: 'Cardmarket promedio',
-        default: 'TCGplayer'
-    };
-
-    const CURRENCY_SYMBOL = { USD: 'US$', EUR: '€', MXN: '$' };
+    const YGO_API = 'https://db.ygoprodeck.com/api/v7/cardinfo.php';
+    const YGO_SETS = 'https://db.ygoprodeck.com/api/v7/cardsets.php';
+    const TCGDEX = 'https://api.tcgdex.net/v2/en';
 
     // --- Utilidades -------------------------------------------------------
 
@@ -53,20 +34,25 @@
         .replace(/[^a-z0-9]+/g, ' ')
         .trim();
 
-    const esc = (s) => (s == null ? '' : String(s))
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    const codeKey = (s) => String(s == null ? '' : s).toUpperCase().replace(/[^A-Z0-9]/g, '');
 
-    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    const CODE_RE = /^[A-Za-z0-9]{2,6}-[A-Za-z0-9]{0,4}\d{1,4}$/;
+
+    function isCode(text) {
+        return CODE_RE.test(String(text == null ? '' : text).trim());
+    }
+
+    function money(price, currency) {
+        const n = num(price);
+        if (n === null) return '—';
+        const symbol = { USD: 'US$', EUR: '€', MXN: '$' }[String(currency || '').toUpperCase()] || '';
+        return `${symbol}${n.toFixed(2)}`;
+    }
+
+    // --- Caché ------------------------------------------------------------
 
     function readCache() {
         try { return JSON.parse(localStorage.getItem(CACHE_KEY)) || {}; } catch (e) { return {}; }
-    }
-
-    function getCached(key) {
-        const entry = readCache()[key];
-        if (!entry || !entry.exp || entry.exp < Date.now()) return null;
-        return entry.value;
     }
 
     function setCached(key, value, ttl) {
@@ -81,15 +67,11 @@
         } catch (e) { /* almacenamiento lleno: se ignora */ }
     }
 
-    async function fetchJson(url, options = {}, timeoutMs = 9000) {
+    async function fetchJson(url, timeoutMs = 12000) {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), timeoutMs);
         try {
-            const res = await fetch(url, {
-                ...options,
-                signal: controller.signal,
-                headers: { Accept: 'application/json', ...(options.headers || {}) }
-            });
+            const res = await fetch(url, { signal: controller.signal, headers: { Accept: 'application/json' } });
             if (!res.ok) {
                 const err = new Error(`HTTP ${res.status}`);
                 err.status = res.status;
@@ -101,679 +83,151 @@
         }
     }
 
-    async function cachedJson(cacheKey, loader, ttl) {
-        const hit = getCached(cacheKey);
-        if (hit) return hit;
+    async function cachedJson(key, loader, ttl) {
+        const entry = readCache()[key];
+        if (entry && entry.exp > Date.now()) return entry.value;
         const value = await loader();
-        // Un fallo momentáneo no debe dejar el "sin resultados" cacheado 6 h.
-        const empty = Array.isArray(value) && value.length === 0;
-        if (value !== undefined && value !== null && !empty) setCached(cacheKey, value, ttl);
+        // Un fallo momentáneo no debe quedar cacheado como "sin precio".
+        if (value !== undefined && value !== null) setCached(key, value, ttl);
         return value;
     }
 
-    function money(price, currency) {
-        const n = num(price);
-        if (n === null) return '—';
-        return `${CURRENCY_SYMBOL[currency] || ''}${n.toFixed(2)}`;
+    // --- Fuente 1: Edge Function (TCGCSV) ---------------------------------
+
+    function supabaseBase() {
+        if (window._supabase && window._supabase.supabaseUrl) return window._supabase.supabaseUrl;
+        if (typeof SUPABASE_URL !== 'undefined') return SUPABASE_URL;
+        return '';
     }
 
-    function variantLabel(variant) {
-        return VARIANT_LABELS[variant] || (variant ? String(variant) : 'TCGplayer');
+    async function serverLookup(code) {
+        const base = supabaseBase();
+        if (!base) return null;
+        const url = `${base}/functions/v1/market-price?code=${encodeURIComponent(code)}`;
+        const data = await cachedJson(`srv:${codeKey(code)}`, async () => {
+            try { return await fetchJson(url); } catch (e) { return null; }
+        }, CACHE_TTL);
+        if (!data || !data.found || num(data.price) === null) return null;
+        return {
+            name: data.name || '',
+            setName: data.setName || '',
+            setNumber: data.code || code,
+            rarity: data.rarity || '',
+            variantLabel: data.variant || '',
+            price: num(data.price),
+            currency: data.currency || 'USD',
+            source: data.source || 'TCGplayer',
+            updatedAt: data.updatedAt || null
+        };
     }
 
-    function ageLabel(iso) {
-        if (!iso) return '';
-        const d = new Date(iso);
-        if (isNaN(d.getTime())) return '';
-        const mins = Math.max(0, Math.round((Date.now() - d.getTime()) / 60000));
-        if (mins < 1) return 'hace un momento';
-        if (mins < 60) return `hace ${mins} min`;
-        const hours = Math.round(mins / 60);
-        if (hours < 24) return `hace ${hours} h`;
-        return `hace ${Math.round(hours / 24)} d`;
-    }
+    // --- Fuente 2: YGOPRODeck ---------------------------------------------
 
-    function bestRow(rows, preferred) {
-        const priced = (rows || []).filter((r) => num(r.price) !== null && num(r.price) > 0);
-        if (!priced.length) return null;
-        if (preferred) {
-            const exact = priced.find((r) => r.variant === preferred);
-            if (exact) return exact;
-        }
-        const order = ['holofoil', 'usd', 'normal', 'reverse-holofoil', 'usd_foil', 'avg', 'default'];
-        for (const key of order) {
-            const row = priced.find((r) => r.variant === key);
-            if (row) return row;
-        }
-        return priced[0];
-    }
-
-    // --- Proveedores ------------------------------------------------------
-
-    const TCGDEX = 'https://api.tcgdex.net/v2/en';
-
-    function tcgdexRows(detail) {
-        const rows = [];
-        const set = detail.set || {};
-        (detail.variants_detailed || []).forEach((variant) => {
-            const pricing = variant.pricing || {};
-            const tp = pricing.tcgplayer;
-            if (tp) {
-                Object.keys(tp).forEach((key) => {
-                    const sub = tp[key];
-                    if (!sub || typeof sub !== 'object') return;
-                    const price = num(sub.marketPrice);
-                    if (price === null || price <= 0) return;
-                    rows.push({
-                        provider: 'tcgdex',
-                        game: 'pokemon',
-                        externalId: detail.id,
-                        name: detail.name,
-                        setName: set.name || '',
-                        setNumber: detail.localId || '',
-                        rarity: detail.rarity || '',
-                        variant: key,
-                        variantLabel: variantLabel(key),
-                        price,
-                        currency: tp.unit || 'USD',
-                        source: 'TCGplayer',
-                        updatedAt: tp.updated || null,
-                        image: detail.image ? `${detail.image}/low.webp` : ''
-                    });
-                });
-            }
-            const cm = pricing.cardmarket;
-            if (!tp && cm) {
-                const price = num(cm.avg) ?? num(cm.trend);
-                if (price !== null && price > 0) {
-                    rows.push({
-                        provider: 'tcgdex',
-                        game: 'pokemon',
-                        externalId: detail.id,
-                        name: detail.name,
-                        setName: set.name || '',
-                        setNumber: detail.localId || '',
-                        rarity: detail.rarity || '',
-                        variant: 'avg',
-                        variantLabel: variantLabel('avg'),
-                        price,
-                        currency: cm.unit || 'EUR',
-                        source: 'Cardmarket',
-                        updatedAt: cm.updated || null,
-                        image: detail.image ? `${detail.image}/low.webp` : ''
-                    });
-                }
-            }
-        });
-        const seen = new Set();
-        return rows.filter((r) => {
-            const key = `${r.externalId}|${r.variant}`;
-            if (seen.has(key)) return false;
-            seen.add(key);
-            return true;
-        });
-    }
-
-    async function tcgdexDetail(id) {
-        return cachedJson(`tcgdex:card:${id}`, () => fetchJson(`${TCGDEX}/cards/${encodeURIComponent(id)}`), CACHE_TTL);
-    }
-
-    async function tcgdexSearch(name, limit = 6) {
-        const list = await cachedJson(
-            `tcgdex:search:${norm(name)}`,
-            () => fetchJson(`${TCGDEX}/cards?name=${encodeURIComponent(name)}`).catch(() => []),
-            CANDIDATE_TTL
-        );
-        const wanted = norm(name);
-        const items = (list || [])
-            .filter((c) => c && c.id && norm(c.name).includes(wanted))
-            .sort((a, b) => (norm(a.name) === wanted ? -1 : 0) - (norm(b.name) === wanted ? -1 : 0))
-            .slice(0, limit);
-
-        const rows = [];
-        for (const item of items) {
-            try {
-                const detail = await tcgdexDetail(item.id);
-                if (detail && detail.id) rows.push(...tcgdexRows(detail));
-            } catch (e) { /* se omite la carta */ }
-            await sleep(120);
-        }
-        return rows;
-    }
-
-    const YGO_API = 'https://db.ygoprodeck.com/api/v7/cardinfo.php';
-
-    // Se listan TODAS las impresiones (hasta 80). Las que la base no tiene
-    // priceadas se muestran igual con price null, para no ocultar reimpresiones.
-    function ygoRows(card, maxPrints = 80) {
-        const rows = [];
-        const sets = (card.card_sets || []);
-        sets.slice(0, maxPrints).forEach((s) => {
-            const price = num(s.set_price);
-            rows.push({
-                provider: 'ygoprodeck',
-                game: 'yugioh',
-                externalId: String(card.id),
-                name: card.name,
-                setName: s.set_name || '',
-                setNumber: s.set_code || '',
-                rarity: s.set_rarity || '',
-                variant: s.set_code || 'default',
-                variantLabel: s.set_edition || '',
-                price: price !== null && price > 0 ? price : null,
-                currency: 'USD',
-                source: 'TCGplayer',
-                updatedAt: null,
-                image: (card.card_images && card.card_images[0] && card.card_images[0].image_url_small) || ''
-            });
-        });
-        if (!rows.length) {
-            const price = num(card.card_prices && card.card_prices[0] && card.card_prices[0].tcgplayer_price);
-            if (price !== null && price > 0) {
-                rows.push({
-                    provider: 'ygoprodeck',
-                    game: 'yugioh',
-                    externalId: String(card.id),
-                    name: card.name,
-                    setName: '',
-                    setNumber: '',
-                    rarity: '',
-                    variant: 'default',
-                    variantLabel: variantLabel('default'),
-                    price,
-                    currency: 'USD',
-                    source: 'TCGplayer',
-                    updatedAt: null,
-                    image: (card.card_images && card.card_images[0] && card.card_images[0].image_url_small) || ''
-                });
-            }
-        }
-        return rows;
-    }
-
-    async function ygoSearch(name) {
-        const data = await cachedJson(
-            `ygo:search:${norm(name)}`,
-            () => fetchJson(`${YGO_API}?fname=${encodeURIComponent(name)}`).catch(() => null),
-            CANDIDATE_TTL
-        );
-        const cards = (data && data.data) || [];
-        const wanted = norm(name);
-        return cards
-            .filter((c) => norm(c.name).includes(wanted))
-            .sort((a, b) => (norm(a.name) === wanted ? -1 : 0) - (norm(b.name) === wanted ? -1 : 0))
-            .flatMap((c) => ygoRows(c));
-    }
-
-    const YGO_SETS = 'https://db.ygoprodeck.com/api/v7/cardsets.php';
-
-    // Prefijo de set (RA03) -> nombre del set, en un mapa pequeño cacheado.
-    async function ygoSetNameByPrefix(prefix) {
-        const map = await cachedJson('ygo:setmap', async () => {
-            const sets = await fetchJson(YGO_SETS, {}, 15000);
-            const out = {};
+    async function ygoSetMap() {
+        return cachedJson('ygo:setmap', async () => {
+            const sets = await fetchJson(YGO_SETS, 15000);
+            const map = {};
             (sets || []).forEach((s) => {
                 const code = String(s.set_code || '').toUpperCase();
-                if (code && !out[code]) out[code] = s.set_name;
+                if (code && !map[code]) map[code] = s.set_name;
             });
-            return out;
+            return map;
         }, 7 * 24 * 60 * 60 * 1000);
-        return (map || {})[String(prefix || '').toUpperCase()] || null;
     }
 
-    // Búsqueda por código exacto (RA03-EN123): prefijo -> set -> cartas del set.
-    async function ygoSearchByCode(code) {
-        const upper = String(code || '').toUpperCase().trim();
-        const prefix = upper.split('-')[0];
-        if (!prefix) return [];
-        let setName = null;
-        try { setName = await ygoSetNameByPrefix(prefix); } catch (e) { setName = null; }
-        if (!setName) return [];
+    async function ygoLookup(code) {
+        const prefix = String(code).toUpperCase().split('-')[0];
+        const map = (await ygoSetMap().catch(() => null)) || {};
+        const setName = map[prefix];
+        if (!setName) return null;
 
         const data = await cachedJson(
             `ygo:set:${norm(setName)}`,
-            () => fetchJson(`${YGO_API}?cardset=${encodeURIComponent(setName)}`, {}, 15000).catch(() => null),
-            CANDIDATE_TTL
+            () => fetchJson(`${YGO_API}?cardset=${encodeURIComponent(setName)}`, 15000).catch(() => null),
+            CACHE_TTL
         );
-        const wanted = codeKey(upper);
-        return ((data && data.data) || [])
-            .filter((c) => (c.card_sets || []).some((s) => codeKey(s.set_code) === wanted))
-            .flatMap((c) => ygoRows(c).filter((r) => codeKey(r.setNumber) === wanted));
-    }
+        const wanted = codeKey(code);
+        const card = ((data && data.data) || []).find((c) => (c.card_sets || []).some((s) => codeKey(s.set_code) === wanted));
+        if (!card) return null;
 
-    async function tcgdexByCode(code) {
-        const id = String(code || '').toLowerCase().trim();
-        if (!/^[a-z0-9]+-[a-z0-9]+$/.test(id)) return [];
-        try {
-            const detail = await tcgdexDetail(id);
-            return detail ? tcgdexRows(detail) : [];
-        } catch (e) {
-            return [];
-        }
-    }
-
-    const SCRYFALL = 'https://api.scryfall.com';
-
-    function scryfallRows(card) {
-        const rows = [];
-        const image = (card.image_uris && card.image_uris.small)
-            || (card.card_faces && card.card_faces[0] && card.card_faces[0].image_uris && card.card_faces[0].image_uris.small)
-            || '';
-        const base = {
-            provider: 'scryfall',
-            game: 'magic',
-            externalId: card.id,
+        const print = (card.card_sets || []).find((s) => codeKey(s.set_code) === wanted);
+        const price = num(print.set_price);
+        return {
             name: card.name,
-            setName: card.set_name || '',
-            setNumber: card.collector_number || '',
-            rarity: card.rarity || '',
+            setName: print.set_name || '',
+            setNumber: print.set_code || code,
+            rarity: print.set_rarity || '',
+            variantLabel: print.set_edition || '',
+            price: price !== null && price > 0 ? price : null,
             currency: 'USD',
             source: 'TCGplayer',
-            updatedAt: (card.prices && card.prices.updated_at) || null,
-            image
+            updatedAt: null
         };
-        const usd = num(card.prices && card.prices.usd);
-        if (usd !== null && usd > 0) {
-            rows.push({ ...base, variant: 'usd', variantLabel: variantLabel('usd'), price: usd });
-        }
-        const foil = num(card.prices && card.prices.usd_foil);
-        if (foil !== null && foil > 0) {
-            rows.push({ ...base, variant: 'usd_foil', variantLabel: variantLabel('usd_foil'), price: foil });
-        }
-        return rows;
     }
 
-    async function scryfallSearch(name) {
-        const clean = String(name || '').replace(/"/g, '').trim();
-        if (!clean) return [];
-        const q = encodeURIComponent(`!"${clean}"`);
-        const data = await cachedJson(
-            `scry:search:${norm(clean)}`,
-            () => fetchJson(`${SCRYFALL}/cards/search?q=${q}&unique=prints&order=released`).catch(() => null),
-            CANDIDATE_TTL
+    // --- Fuente 3: TCGdex (Pokémon) ---------------------------------------
+
+    async function tcgdexLookup(code) {
+        const id = String(code).toLowerCase();
+        if (!/^[a-z0-9]+-[a-z0-9]+$/.test(id)) return null;
+        const detail = await cachedJson(
+            `tcgdex:${id}`,
+            () => fetchJson(`${TCGDEX}/cards/${encodeURIComponent(id)}`).catch(() => null),
+            CACHE_TTL
         );
-        return ((data && data.data) || []).slice(0, 100).flatMap(scryfallRows);
-    }
+        if (!detail) return null;
 
-    const SEARCHERS = {
-        pokemon: tcgdexSearch,
-        yugioh: ygoSearch,
-        magic: scryfallSearch
-    };
-
-    const PROVIDER_BY_GAME = { pokemon: 'tcgdex', yugioh: 'ygoprodeck', magic: 'scryfall' };
-
-    function inferProvider(externalId, game) {
-        if (!externalId) return null;
-        if (PROVIDER_BY_GAME[game]) return PROVIDER_BY_GAME[game];
-        const id = String(externalId);
-        if (/^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(id)) return 'scryfall';
-        if (/^\d+$/.test(id)) return 'ygoprodeck';
-        if (/^[a-z0-9]+-[a-z0-9]+$/i.test(id)) return 'tcgdex';
-        return null;
-    }
-
-    // Un código de impresión escrito dentro del nombre (CT2-EN004, swsh9-166)
-    // se usa como filtro y se quita del texto que se busca por nombre.
-    function splitNameCode(raw) {
-        const text = String(raw == null ? '' : raw).trim();
-        // CT2-EN004, MFC-000, swsh9-166, 2X2-334... (siempre con letras y dígitos)
-        const match = text.match(/\b(?=[A-Za-z0-9-]*[A-Za-z])([A-Za-z0-9]{2,6}-[A-Za-z0-9]{0,4}\d{1,4})\b/);
-        if (!match) return { name: text, code: '' };
-        const name = text.replace(match[0], ' ').replace(/\s+/g, ' ').trim();
-        return { name: name || text, code: match[1].toUpperCase() };
-    }
-
-    const codeKey = (s) => String(s == null ? '' : s).toUpperCase().replace(/[^A-Z0-9]/g, '');
-
-    function matchesCode(row, code) {
-        const needle = codeKey(code);
-        if (!needle) return true;
-        return [row.setNumber, row.variant, row.externalId].some((v) => codeKey(v).includes(needle));
-    }
-
-    // --- Búsqueda y precio ------------------------------------------------
-
-    function finalizeRows(rows, wanted, limit) {
-        const seen = new Set();
-        const unique = rows.filter((row) => {
-            const key = `${row.provider}|${row.externalId}|${row.variant}|${row.setNumber}|${row.rarity}`;
-            if (seen.has(key)) return false;
-            seen.add(key);
-            return true;
-        });
-
-        const gameOrder = { yugioh: 0, pokemon: 1, magic: 2 };
-        unique.sort((a, b) => {
-            const aExact = norm(a.name) === wanted ? 0 : 1;
-            const bExact = norm(b.name) === wanted ? 0 : 1;
-            if (aExact !== bExact) return aExact - bExact;
-            // Con precio primero; las que la base no pricea quedan al final.
-            const aPriced = a.price != null ? 0 : 1;
-            const bPriced = b.price != null ? 0 : 1;
-            if (aPriced !== bPriced) return aPriced - bPriced;
-            return (gameOrder[a.game] ?? 9) - (gameOrder[b.game] ?? 9);
-        });
-        return unique.slice(0, limit);
-    }
-
-    async function searchCards({ game = '', name = '', code = '', limit = 200 } = {}) {
-        const raw = String(name || '').trim();
-        const split = splitNameCode(raw);
-        // "RA03-EN123" a secas: no hay nombre que buscar, se resuelve por código.
-        const onlyCode = /^[A-Za-z0-9]{2,6}-[A-Za-z0-9]{0,4}\d{1,4}$/.test(raw);
-        const query = onlyCode ? '' : split.name;
-        const codeFilter = String(code || split.code || '').trim();
-        if (!query && !codeFilter) return [];
-
-        if (onlyCode) {
-            const lists = await Promise.all([
-                (!game || game === 'yugioh') ? ygoSearchByCode(codeFilter).catch(() => []) : [],
-                (!game || game === 'pokemon') ? tcgdexByCode(codeFilter).catch(() => []) : []
-            ]);
-            return finalizeRows(lists.flat(), '', limit);
-        }
-
-        const games = game ? [game] : Object.keys(SEARCHERS);
-        const lists = await Promise.all(games.map(async (g) => {
-            const searcher = SEARCHERS[g];
-            if (!searcher) return [];
-            try { return await searcher(query); } catch (e) { return []; }
-        }));
-
-        let rows = lists.flat();
-        if (codeFilter) rows = rows.filter((row) => matchesCode(row, codeFilter));
-        return finalizeRows(rows, norm(query), limit);
-    }
-
-    async function linkedRow(card) {
-        const provider = card.market_provider || inferProvider(card.external_id, card.tcg_game);
-        const cardId = card.market_card_id || card.external_id;
-        if (!provider || !cardId) {
-            const err = new Error('Sin vincular');
-            err.code = 'NOT_LINKED';
-            throw err;
-        }
-        const variant = card.market_variant || null;
-
-        if (provider === 'tcgdex') {
-            const detail = await tcgdexDetail(cardId);
-            const rows = tcgdexRows(detail);
-            const row = bestRow(rows, variant);
-            if (!row) throw new Error('La carta no tiene precio disponible');
-            return row;
-        }
-
-        if (provider === 'ygoprodeck') {
-            const data = await fetchJson(`${YGO_API}?id=${encodeURIComponent(cardId)}`);
-            const ygoCard = (data && data.data && data.data[0]) || null;
-            if (!ygoCard) throw new Error('Carta no encontrada');
-            if (variant && variant !== 'default') {
-                const print = (ygoCard.card_sets || []).find((s) => s.set_code === variant);
-                if (print) {
-                    const price = num(print.set_price);
-                    const row = ygoRows(ygoCard).find((r) => r.setNumber === variant);
-                    if (price === null || price <= 0) {
-                        throw new Error('La base no tiene precio para esa impresión');
-                    }
-                    if (row) return { ...row, price };
+        let best = null;
+        (detail.variants_detailed || []).forEach((variant) => {
+            const tp = (variant.pricing || {}).tcgplayer;
+            if (!tp) return;
+            Object.keys(tp).forEach((finish) => {
+                const price = num((tp[finish] || {}).marketPrice);
+                if (price !== null && price > 0 && (!best || price > best.price)) {
+                    best = { price, finish };
                 }
-            }
-            const fallback = bestRow(ygoRows(ygoCard));
-            if (!fallback) throw new Error('Sin precio disponible');
-            return fallback;
-        }
-
-        if (provider === 'scryfall') {
-            const data = await fetchJson(`${SCRYFALL}/cards/${encodeURIComponent(cardId)}`);
-            const rows = scryfallRows(data);
-            const row = bestRow(rows, variant);
-            if (!row) throw new Error('Sin precio disponible');
-            return row;
-        }
-
-        throw new Error('Proveedor no soportado');
-    }
-
-    async function refreshLinked(cards, { onProgress } = {}) {
-        const list = (cards || []).filter(Boolean);
-        const results = [];
-        let index = 0;
-        const total = list.length;
-
-        const worker = async () => {
-            while (index < list.length) {
-                const card = list[index++];
-                try {
-                    const row = await linkedRow(card);
-                    results.push({ card, ok: true, row });
-                } catch (e) {
-                    results.push({ card, ok: false, error: e.message || String(e), code: e.code });
-                }
-                if (typeof onProgress === 'function') onProgress(results.length, total, card);
-                await sleep(120);
-            }
-        };
-
-        await Promise.all([worker(), worker(), worker()]);
-        return results;
-    }
-
-    // --- Tipo de cambio ---------------------------------------------------
-
-    const RATE_KEY = (currency) => `tcg_market_rate_${currency}`;
-
-    function defaultRate(currency) {
-        if (currency === 'USD') return 18.5;
-        if (currency === 'EUR') return 20.5;
-        return 1;
-    }
-
-    function getRate(currency) {
-        const value = num(localStorage.getItem(RATE_KEY(currency)));
-        return value && value > 0 ? value : defaultRate(currency);
-    }
-
-    function setRate(currency, value) {
-        const n = num(value);
-        if (n && n > 0) localStorage.setItem(RATE_KEY(currency), String(n));
-    }
-
-    function toMxn(price, currency) {
-        const n = num(price);
-        if (n === null) return null;
-        return Math.round(n * getRate(currency) * 100) / 100;
-    }
-
-    async function askMxnPrice(choice) {
-        if (!choice || num(choice.price) === null) return null;
-        const currency = choice.currency || 'USD';
-        const price = num(choice.price);
-        if (currency === 'MXN') return price;
-
-        const rate = getRate(currency);
-        const converted = Math.round(price * rate * 100) / 100;
-        const { value, isConfirmed } = await Swal.fire({
-            title: 'PRECIO DE MERCADO',
-            width: 460,
-            html: `
-                <div style="text-align:left; font-size:0.9rem; color:#333;">
-                    <div style="margin-bottom:10px;"><b>${esc(choice.name)}</b><br>
-                        <span style="color:#666; font-size:0.8rem;">${esc(choice.setName || '')}${choice.setNumber ? ' · ' + esc(choice.setNumber) : ''} · ${esc(choice.variantLabel || '')}</span></div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:#f5f6fa; border-radius:6px; margin-bottom:12px;">
-                        <span style="font-weight:800; font-size:0.72rem; letter-spacing:0.06em; color:#666;">PRECIO DE MERCADO</span>
-                        <b style="font-size:1.05rem;">${money(price, currency)}</b>
-                    </div>
-                    <label style="font-size:0.72rem; font-weight:800; text-transform:uppercase; letter-spacing:0.06em; color:#666;">Tipo de cambio (1 ${currency} = ? MXN)</label>
-                    <input id="mp-rate-input" type="number" step="0.01" min="0.01" value="${rate}" style="width:100%; padding:10px; margin-top:6px; border:1px solid #ddd; border-radius:6px; font-size:1rem;">
-                    <div style="margin-top:12px; display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-weight:800; font-size:0.72rem; letter-spacing:0.06em; color:#666;">QUEDA EN</span>
-                        <b id="mp-rate-result" style="font-size:1.15rem; color:#00875a;">$${converted.toFixed(2)}</b>
-                    </div>
-                </div>`,
-            showCancelButton: true,
-            confirmButtonText: 'USAR PRECIO',
-            cancelButtonText: 'CANCELAR',
-            customClass: { popup: 'inv-swal-popup' },
-            didOpen: () => {
-                const input = document.getElementById('mp-rate-input');
-                const out = document.getElementById('mp-rate-result');
-                if (input) {
-                    input.addEventListener('input', () => {
-                        const r = num(input.value) || 0;
-                        out.textContent = `$${(price * r).toFixed(2)}`;
-                    });
-                }
-            },
-            preConfirm: () => {
-                const input = document.getElementById('mp-rate-input');
-                const r = num(input && input.value);
-                if (!r || r <= 0) {
-                    Swal.showValidationMessage('Escribe un tipo de cambio válido');
-                    return false;
-                }
-                return r;
-            }
-        });
-
-        if (!isConfirmed) return null;
-        setRate(currency, value);
-        return Math.round(price * value * 100) / 100;
-    }
-
-    // --- Selector de impresión (UI) ---------------------------------------
-
-    function openPicker({ name = '', game = '', code = '', title = 'BUSCAR PRECIO DE MERCADO' } = {}) {
-        return new Promise((resolve) => {
-            let allRows = [];
-            let results = [];
-            let picked = null;
-
-            const split = splitNameCode(name);
-            const initialName = split.name;
-            const initialCode = String(code || split.code || '').toUpperCase();
-
-            const gamesOptions = [
-                ['', 'Automático'],
-                ['yugioh', 'Yu-Gi-Oh!'],
-                ['pokemon', 'Pokémon'],
-                ['magic', 'Magic'],
-                ['lorcana', 'Lorcana'],
-                ['onepiece', 'One Piece']
-            ].map(([value, label]) => `<option value="${value}"${value === game ? ' selected' : ''}>${label}</option>`).join('');
-
-            Swal.fire({
-                title,
-                width: 'min(880px, 94vw)',
-                html: `
-                    <div id="mp-picker" style="text-align:left;">
-                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                            <input id="mp-query" class="swal2-input" style="flex:1 1 260px; margin:0; height:42px;" placeholder="Nombre de la carta" value="${esc(initialName)}">
-                            <select id="mp-game" class="swal2-select" style="margin:0; height:42px; min-width:130px;">${gamesOptions}</select>
-                            <button id="mp-search" type="button" class="swal2-confirm swal2-styled" style="margin:0; height:42px;">BUSCAR</button>
-                        </div>
-                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:8px;">
-                            <input id="mp-code" class="swal2-input" style="flex:0 1 240px; margin:0; height:38px;" placeholder="Código de la impresión (ej. CT2-EN004)" value="${esc(initialCode)}">
-                            <span id="mp-count" style="font-size:0.72rem; color:#777;"></span>
-                        </div>
-                        <div style="font-size:0.72rem; color:#777; margin:8px 2px 0;">El código filtra las impresiones; si no lo tienes, compara la imagen, el set y el precio. Las que salen como «Sin precio» existen, pero la base no tiene precio para esa rareza.</div>
-                        <div id="mp-results" style="margin-top:12px; max-height:52vh; overflow-y:auto; border:1px solid #eee; border-radius:8px;">
-                            <div style="padding:26px; text-align:center; color:#888; font-size:0.85rem;">Escribe el nombre y pulsa BUSCAR.</div>
-                        </div>
-                    </div>`,
-                showConfirmButton: false,
-                showCloseButton: true,
-                customClass: { popup: 'inv-swal-popup' },
-                didOpen: () => {
-                    const root = document.getElementById('mp-picker');
-                    if (!root) return;
-                    const input = root.querySelector('#mp-query');
-                    const gameSel = root.querySelector('#mp-game');
-                    const codeInput = root.querySelector('#mp-code');
-                    const count = root.querySelector('#mp-count');
-                    const out = root.querySelector('#mp-results');
-                    const btn = root.querySelector('#mp-search');
-
-                    const render = () => {
-                        const activeCode = codeInput.value.trim();
-                        results = activeCode ? allRows.filter((row) => matchesCode(row, activeCode)) : allRows;
-                        count.textContent = allRows.length ? `${results.length} de ${allRows.length} impresiones` : '';
-
-                        if (!results.length) {
-                            const msg = allRows.length
-                                ? `Ninguna impresión coincide con «${esc(activeCode)}». Bórralo para ver las ${allRows.length}.`
-                                : 'Sin resultados con precio disponible.';
-                            out.innerHTML = `<div style="padding:26px; text-align:center; color:#888; font-size:0.85rem;">${msg}</div>`;
-                            return;
-                        }
-                        out.innerHTML = results.map((row, i) => {
-                            const noPrice = row.price == null;
-                            const mxn = noPrice ? null : toMxn(row.price, row.currency);
-                            const priceHtml = noPrice
-                                ? '<span style="display:block; font-weight:800; font-size:0.68rem; color:#b03a2e;">Sin precio</span>'
-                                : `<span style="display:block; font-weight:900; font-size:0.92rem; color:#00875a;">${money(row.price, row.currency)}</span>${mxn != null ? `<span style="display:block; font-size:0.58rem; color:#999;">≈ ${money(mxn, 'MXN')}</span>` : ''}`;
-                            return `
-                            <button type="button" class="mp-row" data-idx="${i}"${noPrice ? ' title="La base no tiene precio para esta impresión"' : ''} style="display:flex; gap:10px; align-items:center; width:100%; text-align:left; background:#fff; border:0; border-bottom:1px solid #f1f2f6; padding:8px 10px; cursor:pointer;${noPrice ? ' opacity:.7;' : ''}">
-                                <img src="${esc(row.image)}" alt="" style="width:38px; height:52px; object-fit:contain; flex:0 0 auto;" onerror="this.style.visibility='hidden'">
-                                <span style="flex:1; min-width:0;">
-                                    <span style="display:block; font-weight:800; font-size:0.82rem; color:#111; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(row.name)}</span>
-                                    <span style="display:block; font-size:0.7rem; color:#666;">${esc(GAME_LABELS[row.game] || row.game)} · ${esc(row.setName || 'Sin set')}${row.setNumber ? ' · ' + esc(row.setNumber) : ''}${row.rarity ? ' · ' + esc(row.rarity) : ''}</span>
-                                    <span style="display:block; font-size:0.66rem; color:#999;">${esc(row.variantLabel || '')} · ${esc(row.source || '')}</span>
-                                </span>
-                                <span style="flex:0 0 auto; text-align:right;">${priceHtml}</span>
-                            </button>`;
-                        }).join('');
-                    };
-
-                    const run = async () => {
-                        const query = input.value.trim();
-                        if (!query) return;
-                        const parsed = splitNameCode(query);
-                        if (parsed.code && !codeInput.value.trim()) codeInput.value = parsed.code;
-                        btn.disabled = true;
-                        out.innerHTML = '<div style="padding:26px; text-align:center; color:#888; font-size:0.85rem;">Buscando precios…</div>';
-                        try {
-                            allRows = await searchCards({ name: parsed.name, game: gameSel.value });
-                        } catch (e) {
-                            allRows = [];
-                        }
-                        btn.disabled = false;
-                        render();
-                    };
-
-                    btn.addEventListener('click', run);
-                    codeInput.addEventListener('input', render);
-                    input.addEventListener('keydown', (e) => {
-                        if (e.key === 'Enter') { e.preventDefault(); run(); }
-                    });
-                    out.addEventListener('click', (e) => {
-                        const rowBtn = e.target.closest('.mp-row');
-                        if (!rowBtn) return;
-                        picked = results[parseInt(rowBtn.dataset.idx, 10)] || null;
-                        Swal.close();
-                    });
-                    if (input.value.trim()) run();
-                },
-                willClose: () => resolve(picked)
             });
         });
+        if (!best) return null;
+
+        const set = detail.set || {};
+        return {
+            name: detail.name || '',
+            setName: set.name || '',
+            setNumber: `${set.id || ''}-${detail.localId || ''}`.replace(/^-|-$/g, ''),
+            rarity: detail.rarity || '',
+            variantLabel: best.finish || '',
+            price: best.price,
+            currency: 'USD',
+            source: 'TCGplayer',
+            updatedAt: null
+        };
     }
 
     // --- API pública ------------------------------------------------------
 
+    async function lookupCode(code, { game = '' } = {}) {
+        const clean = String(code == null ? '' : code).trim().toUpperCase();
+        if (!CODE_RE.test(clean)) return null;
+
+        const fromServer = await serverLookup(clean).catch(() => null);
+        if (fromServer) return fromServer;
+
+        if (!game || game === 'yugioh') {
+            const fromYgo = await ygoLookup(clean).catch(() => null);
+            if (fromYgo) return fromYgo;
+        }
+        if (!game || game === 'pokemon') {
+            const fromTcgdex = await tcgdexLookup(clean).catch(() => null);
+            if (fromTcgdex) return fromTcgdex;
+        }
+        return null;
+    }
+
     window.MarketPrices = {
-        games: GAME_LABELS,
-        searchCards,
-        openPicker,
-        priceForLinked: linkedRow,
-        refreshLinked,
-        askMxnPrice,
-        getRate,
-        setRate,
-        toMxn,
+        lookupCode,
+        isCode,
         money,
-        ageLabel,
-        variantLabel,
         clearCache: () => localStorage.removeItem(CACHE_KEY)
     };
 })();
