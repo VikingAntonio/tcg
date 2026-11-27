@@ -1105,10 +1105,7 @@ window.searchExternalCard = async function(inputSelector, resultsSelector, onSel
                                     name: c.name,
                                     image: `${c.image}/low.webp`,
                                     high_res: `${c.image}/high.webp`,
-                                    game: 'pokemon',
-                                    tcg: 'pokemon',
-                                    external_id: c.id,
-                                    number: c.localId || ''
+                                    game: 'pokemon'
                                 });
                             }
                         });
@@ -1164,7 +1161,7 @@ window.searchExternalCard = async function(inputSelector, resultsSelector, onSel
             (query.length >= 1 && !filters.format) ? searchPokemonAPI(query, signal) : Promise.resolve([]),
 
             // Lorcana Search (with 3500ms timeout)
-            (query.length >= 1 && !filters.format) ? fetchWithTimeout(`https://api.lorcana-api.com/cards/fetch?search=name~${encodeURIComponent(query)}&displayonly=name;image;cost;set_num;set_name;card_num;rarity`, { signal }, 3500).then(r => (r && r.ok) ? r.json() : []).catch(() => []) : Promise.resolve([]),
+            (query.length >= 1 && !filters.format) ? fetchWithTimeout(`https://api.lorcana-api.com/cards/fetch?search=name~${encodeURIComponent(query)}&displayonly=name;image;cost;set_num`, { signal }, 3500).then(r => (r && r.ok) ? r.json() : []).catch(() => []) : Promise.resolve([]),
 
             // Viking Search
             (query.length >= 1 && !filters.format) ? (typeof VikingData !== 'undefined' ? VikingData.search(query) : Promise.resolve([])) : Promise.resolve([]),
@@ -1210,12 +1207,7 @@ window.searchExternalCard = async function(inputSelector, resultsSelector, onSel
                 combinedResults.push({
                     name: c.Name,
                     image: c.Image,
-                    high_res: c.Image,
-                    game: 'lorcana',
-                    tcg: 'lorcana',
-                    set: c.Set_Name || '',
-                    number: c.Card_Num != null ? String(c.Card_Num) : '',
-                    rarity: c.Rarity || ''
+                    high_res: c.Image
                 });
             }
         });
@@ -1224,19 +1216,12 @@ window.searchExternalCard = async function(inputSelector, resultsSelector, onSel
         const ygoResults = [...(ygName.data || []), ...(ygCode.data || []), ...ygSpecial];
         ygoResults.forEach(c => {
             if (c.card_images && c.card_images.length > 0) {
-                const printing = (c.card_sets && c.card_sets[0]) || {};
                 c.card_images.forEach(img => {
                     combinedResults.push({
                         name: c.name,
                         image: img.image_url_small,
                         high_res: img.image_url,
-                        desc: c.desc || '',
-                        game: 'yugioh',
-                        tcg: 'yugioh',
-                        external_id: String(c.id),
-                        set: printing.set_name || '',
-                        number: printing.set_code || '',
-                        rarity: printing.set_rarity || ''
+                        desc: c.desc || ''
                     });
                 } );
             }
