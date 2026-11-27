@@ -1,0 +1,15 @@
+{
+  "name": "Vikingdev TCG — Sin conexión",
+  "short_name": "Vikingdev Offline",
+  "description": "Decks, binders e inversiones descargados para verlos sin internet.",
+  "start_url": "/offline/index.html",
+  "scope": "/offline/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#00d2ff",
+  "orientation": "any",
+  "icons": [
+    { "src": "/favi.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/favi.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

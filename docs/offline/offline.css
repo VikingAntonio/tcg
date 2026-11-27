@@ -1,0 +1,292 @@
+/* Modo sin conexión: ajustes de vista, panel de descarga y avisos. */
+
+/* ---------------------------------------------------------- sin tienda */
+.offline-app #cart-btn,
+.offline-app .search-integrated,
+.offline-app .user-menu-container,
+.offline-app .bottom-nav,
+.offline-app .btn-share-item,
+.offline-app .btn-share-floating,
+.offline-app .btn-share-top,
+.offline-app .btn-share-bottom,
+.offline-app .pub-binder-share,
+.offline-app .pub-inv-modal-buy,
+.offline-app #btn-owner-add-wishlist,
+.offline-app #wishlist-nav-btn,
+.offline-app #preorders-nav-btn,
+.offline-app .gltf-companion-wrapper,
+.offline-app #loading-3d-container {
+    display: none !important;
+}
+
+/* El botón "Probar Deck" flotante se sube para no chocar con el botón de copia. */
+.offline-app #btn-try-deck {
+    bottom: 84px;
+}
+
+/* -------------------------------------------------------- barra estado */
+#offline-connection-badge {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100000;
+    background: rgba(245, 158, 11, 0.95);
+    color: #111;
+    font: 800 12px/1 Montserrat, Arial, sans-serif;
+    letter-spacing: .4px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .35);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: opacity .6s ease;
+}
+
+/* No tapa la cabecera de forma permanente: se desvanece a los 6 s. */
+#offline-connection-badge.is-hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+@media (max-width: 768px) {
+    /* Debajo de la cabecera de la tienda, que en móvil ocupa la franja superior. */
+    #offline-connection-badge {
+        top: 70px;
+    }
+}
+
+/* ------------------------------------------------------------ botón FAB */
+#offline-fab {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 99999;
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, .25);
+    background: linear-gradient(135deg, #00d2ff, #3a7bd5);
+    color: #04121f;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, .4);
+}
+
+#offline-fab:hover { filter: brightness(1.08); }
+
+#offline-fab-dot {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid #04121f;
+}
+
+#offline-fab-dot.ok { background: #22c55e; }
+#offline-fab-dot.empty { background: #ef4444; }
+
+/* --------------------------------------------------------- panel modal */
+.offline-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .72);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    z-index: 100001;
+}
+
+.offline-overlay.active { display: flex; }
+
+.offline-card {
+    position: relative;
+    width: min(520px, 100%);
+    max-height: 92vh;
+    overflow-y: auto;
+    background: #0f172a;
+    color: #e5e7eb;
+    border: 1px solid rgba(255, 255, 255, .14);
+    border-radius: 18px;
+    padding: 22px;
+    font-family: Montserrat, Arial, sans-serif;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, .55);
+}
+
+.offline-card h2 {
+    margin: 0 0 6px;
+    font-size: 1.15rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #00d2ff;
+}
+
+.offline-close {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 26px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.offline-lead {
+    margin: 0 0 16px;
+    font-size: .85rem;
+    color: #94a3b8;
+    line-height: 1.45;
+}
+
+.offline-field {
+    display: block;
+    margin-bottom: 12px;
+}
+
+.offline-field span {
+    display: block;
+    font-size: .72rem;
+    font-weight: 800;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+    color: #7dd3fc;
+    margin-bottom: 6px;
+}
+
+.offline-field input,
+.offline-field select {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 11px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, .18);
+    background: #020617;
+    color: #e5e7eb;
+    font: 600 .9rem Montserrat, Arial, sans-serif;
+}
+
+.offline-actions {
+    display: flex;
+    gap: 8px;
+    margin: 16px 0 6px;
+}
+
+.offline-btn {
+    border: 1px solid rgba(255, 255, 255, .2);
+    background: rgba(255, 255, 255, .06);
+    color: #e5e7eb;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font: 800 .82rem Montserrat, Arial, sans-serif;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.offline-btn.primary {
+    flex: 1;
+    background: linear-gradient(135deg, #00d2ff, #3a7bd5);
+    color: #04121f;
+    border: none;
+}
+
+.offline-btn[disabled] { opacity: .6; cursor: progress; }
+.offline-btn.loading i { animation: offline-spin 1s linear infinite; }
+
+@keyframes offline-spin { to { transform: rotate(360deg); } }
+
+.offline-progress { margin-top: 12px; }
+
+.offline-progress-track {
+    height: 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .1);
+    overflow: hidden;
+}
+
+.offline-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #00d2ff, #22c55e);
+    transition: width .25s ease;
+}
+
+.offline-progress-text {
+    margin-top: 6px;
+    font-size: .78rem;
+    color: #cbd5e1;
+}
+
+.offline-status {
+    margin-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, .1);
+    padding-top: 12px;
+    font-size: .82rem;
+}
+
+.offline-status-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 3px 0;
+    color: #94a3b8;
+}
+
+.offline-status-row strong { color: #e5e7eb; font-weight: 700; text-align: right; }
+
+.offline-status-note {
+    margin-top: 8px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: rgba(0, 210, 255, .1);
+    color: #bae6fd;
+    font-size: .78rem;
+}
+
+.offline-status-note.warn {
+    background: rgba(245, 158, 11, .14);
+    color: #fcd34d;
+}
+
+.offline-hint {
+    margin: 14px 0 0;
+    font-size: .74rem;
+    color: #64748b;
+}
+
+/* ------------------------------------------------------ duelos y magic */
+/* Sin modelos 3D: los espíritus no se pueden mostrar sin internet. */
+.offline-app .gltf-companion-wrapper { display: none !important; }
+
+/* El modo multijugador necesita servidor: se oculta la pestaña. */
+.offline-app .tab-btn[data-target="tab-host"],
+.offline-app .tab-btn[data-target="tab-guest"],
+.offline-app #tab-host,
+.offline-app #tab-guest,
+.offline-app .multiplayer-section,
+.offline-app #login-modal,
+.offline-app #btn-open-login {
+    display: none !important;
+}
+
+/* En configDuel el bloque de multijugador queda vacío al ocultar las salas. */
+.offline-app .tabs-container:empty { display: none !important; }
+
+/* ------------------------------------------------------------- móvil */
+@media (max-width: 768px) {
+    #offline-fab { width: 48px; height: 48px; font-size: 18px; right: 12px; bottom: 12px; }
+    .offline-card { padding: 18px; border-radius: 14px; }
+}
