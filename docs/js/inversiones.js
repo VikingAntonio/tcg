@@ -1736,9 +1736,13 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
         $('#inv-card-sale-price').val('');
         $('#inv-card-quantity').val(1);
         $('#inv-card-rarity-input').val('');
+        $('#inv-card-set-code').val('');
+        invResetRarityOptions();
         $('#inv-card-notes').val('');
         $('#inv-card-external-id, #inv-card-image-url, #inv-card-set-name, #inv-card-set-number, #inv-card-rarity').val('');
         $('#inv-card-game').val('pokemon');
+        $('#inv-card-market-price-toggle').prop('checked', false);
+        $('#inv-card-market-price-status').text('VENTA').css('color', '#333');
 
         $('#inv-card-public-toggle').prop('checked', true);
         $('#inv-card-public-status').text('PÚBLICO').css('color', '#333');
@@ -1774,8 +1778,15 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
         $('#inv-card-image-url').val(card.image_url || '');
         $('#inv-card-set-name').val(card.set_name || '');
         $('#inv-card-set-number').val(card.set_number || '');
+        $('#inv-card-set-code').val(card.set_number || '');
         $('#inv-card-rarity').val(card.rarity || '');
         $('#inv-card-game').val(card.tcg_game || 'pokemon');
+        invResetRarityOptions();
+        if (window.MarketPrices && window.MarketPrices.parse(card.set_number || '')) invLoadRarityOptions();
+
+        const showMarket = card.show_market_price === true;
+        $('#inv-card-market-price-toggle').prop('checked', showMarket);
+        $('#inv-card-market-price-status').text(showMarket ? 'MERCADO' : 'VENTA').css('color', showMarket ? '#2f80ed' : '#333');
 
         const isPublic = card.is_public !== false;
         const isAvailable = card.is_available !== false;
@@ -1816,6 +1827,7 @@ $('#btn-inv-card-search').click(async function() {
         $('#inv-card-image-url').val(finalUrl);
 
         $('#inv-card-set-name').val(card.set || card.set_name || '');
+        $('#inv-card-set-code').val(card.number || card.set_number || '');
         $('#inv-card-set-number').val(card.number || '');
         $('#inv-card-rarity').val(card.rarity || '');
         $('#inv-card-rarity-input').val(card.rarity || '');
@@ -1854,7 +1866,7 @@ $('#btn-save-investment-card').click(async function() {
         image_url: $('#inv-card-image-url').val(),
         rarity: $('#inv-card-rarity-input').val(),
         set_name: $('#inv-card-set-name').val(),
-        set_number: $('#inv-card-set-number').val(),
+        set_number: $('#inv-card-set-code').val(),
         purchase_price: purchasePrice,
         current_price: newPrice,
         sale_price: salePrice,
@@ -1864,6 +1876,7 @@ $('#btn-save-investment-card').click(async function() {
         extra_images: currentInvExtraImages,
         is_public: $('#inv-card-public-toggle').is(':checked'),
         is_available: $('#inv-card-available-toggle').is(':checked'),
+        show_market_price: $('#inv-card-market-price-toggle').is(':checked'),
         holo_effect: null,
         custom_mask_url: null
     };
@@ -1900,10 +1913,17 @@ $('#btn-save-investment-card').click(async function() {
                 }]);
             }
 
-            const { error: err } = await _supabase
+            let { error: err } = await _supabase
                 .from('investment_cards')
                 .update(cardData)
                 .eq('id', currentEditingInvCardId);
+            if (err && /show_market_price/i.test(err.message || '')) {
+                delete cardData.show_market_price;
+                ({ error: err } = await _supabase
+                    .from('investment_cards')
+                    .update(cardData)
+                    .eq('id', currentEditingInvCardId));
+            }
             error = err;
             if (!error) {
                 logInvestmentTransaction({
@@ -1924,10 +1944,18 @@ $('#btn-save-investment-card').click(async function() {
                 ? pendingSlotIndex
                 : localInvestmentCards.length;
             cardData.position = insertAt;
-            const { data: newCards, error: err } = await _supabase
+            let ins = await _supabase
                 .from('investment_cards')
                 .insert([cardData])
                 .select();
+            if (ins.error && /show_market_price/i.test(ins.error.message || '')) {
+                delete cardData.show_market_price;
+                ins = await _supabase
+                    .from('investment_cards')
+                    .insert([cardData])
+                    .select();
+            }
+            const { data: newCards, error: err } = ins;
             error = err;
             if (!error && newCards.length > 0) {
                 finalCardId = newCards[0].id;
@@ -2487,10 +2515,7 @@ async function invFillMarketPriceFromCode() {
     const text = ($('#inv-card-rarity-input').val() || '').trim();
     const $price = $('#inv-card-current-price');
     const parsed = window.MarketPrices ? window.MarketPrices.parse(text) : null;
-    if (!parsed) {
-        invSetPriceCurrencyTag(false);
-        return;
-    }
+    if (!parsed) return;
     const code = parsed.code;
 
     const token = ++invCodeLookupToken;
@@ -2535,4 +2560,119 @@ $('#inv-card-rarity-input').on('blur', function () {
 
 $('#inv-card-current-price').on('input', function () {
     invSetPriceCurrencyTag(false);
+});
+
+// --- EXPANSIÓN -> RAREZAS ---
+// Se escribe el código (RA03-EN123) en Expansión y se listan sus rarezas/artes
+// con su precio; al elegir una se rellenan Rareza y Precio mercado.
+
+let invRarityOptions = [];
+let invSetCodeTimer = null;
+let invSetCodeToken = 0;
+let invLoadedSetCode = '';
+
+function invResetRarityOptions() {
+    invRarityOptions = [];
+    invSetCodeToken++;
+    invLoadedSetCode = '';
+    $('#inv-card-rarity-options').empty();
+    $('#inv-card-rarity-options-row').hide();
+}
+
+// Deja el desplegable en la rareza que ya tiene la carta (al abrir o reeditar).
+function invSyncRaritySelection() {
+    const rarity = ($('#inv-card-rarity-input').val() || '').trim().toUpperCase();
+    if (!rarity || !invRarityOptions.length) return;
+    const price = parseFloat($('#inv-card-current-price').val());
+    const sameRarity = (o) => String(o.rarity || '').toUpperCase() === rarity;
+    let index = invRarityOptions.findIndex((o) => sameRarity(o) && Number(o.price) === price);
+    if (index < 0) index = invRarityOptions.findIndex(sameRarity);
+    if (index < 0) return;
+
+    $('#inv-card-rarity-options').val(String(index));
+    const row = invRarityOptions[index];
+    if (Number(row.price) === price) {
+        const bits = [row.source || 'TCGplayer', row.setName, row.rarity, row.art ? `Arte ${row.art}` : ''].filter(Boolean);
+        invSetPriceCurrencyTag(true, bits.join(' · '));
+    }
+}
+
+function invApplyRarityOption(index) {
+    const row = invRarityOptions[index];
+    if (!row) return;
+    if (row.rarity) $('#inv-card-rarity-input').val(row.rarity);
+    if (row.price != null) $('#inv-card-current-price').val(row.price);
+    if (row.setName && !$('#inv-card-set-name').val()) $('#inv-card-set-name').val(row.setName);
+    const bits = [row.source || 'TCGplayer', row.setName, row.rarity, row.art ? `Arte ${row.art}` : ''].filter(Boolean);
+    invSetPriceCurrencyTag(true, bits.join(' · '));
+}
+
+async function invLoadRarityOptions(force) {
+    const text = ($('#inv-card-set-code').val() || '').trim();
+    const parsed = window.MarketPrices ? window.MarketPrices.parse(text) : null;
+    if (!parsed) {
+        invResetRarityOptions();
+        return;
+    }
+    if (!force && parsed.code === invLoadedSetCode && invRarityOptions.length) {
+        invSyncRaritySelection();
+        return;
+    }
+
+    const token = ++invSetCodeToken;
+    let rows = [];
+    try {
+        rows = await window.MarketPrices.options(text);
+    } catch (e) {
+        rows = [];
+    }
+    if (token !== invSetCodeToken) return;
+
+    invRarityOptions = rows || [];
+    invLoadedSetCode = parsed.code;
+    const $select = $('#inv-card-rarity-options');
+    $select.empty();
+    if (!invRarityOptions.length) {
+        $('#inv-card-rarity-options-row').hide();
+        return;
+    }
+
+    $select.append($('<option>').attr('value', '').text('Elige la rareza…'));
+    invRarityOptions.forEach((row, i) => {
+        const label = [row.rarity || 'Sin rareza', row.art ? `Arte ${row.art}` : '', `US$${Number(row.price).toFixed(2)}`]
+            .filter(Boolean)
+            .join(' · ');
+        $select.append($('<option>').attr('value', String(i)).text(label));
+    });
+    $('#inv-card-rarity-options-row').show();
+
+    invSyncRaritySelection();
+
+    // Con una sola opción no hay nada que elegir (solo si la carta está vacía).
+    if (invRarityOptions.length === 1 && !$('#inv-card-rarity-input').val()) {
+        $select.val('0');
+        invApplyRarityOption(0);
+    }
+}
+
+$('#inv-card-set-code').on('input', function () {
+    clearTimeout(invSetCodeTimer);
+    invResetRarityOptions();
+    invSetCodeTimer = setTimeout(invLoadRarityOptions, 600);
+});
+
+$('#inv-card-set-code').on('blur', function () {
+    clearTimeout(invSetCodeTimer);
+    invLoadRarityOptions();
+});
+
+$('#inv-card-rarity-options').on('change', function () {
+    const value = $(this).val();
+    if (value === '' || value === null) return;
+    invApplyRarityOption(parseInt(value, 10));
+});
+
+$('#inv-card-market-price-toggle').on('change', function () {
+    const on = $(this).is(':checked');
+    $('#inv-card-market-price-status').text(on ? 'MERCADO' : 'VENTA').css('color', on ? '#2f80ed' : '#333');
 });
