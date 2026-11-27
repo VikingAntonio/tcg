@@ -1,0 +1,1502 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<script>
+(function(){try{var p=new URLSearchParams(location.search);if(!p.get('store')&&!p.get('id')&&!p.get('user')){var s=localStorage.getItem('tcg_offline_store');if(s){p.set('store',s);history.replaceState(null,'',location.pathname+'?'+p.toString()+(location.hash||''));}}}catch(e){}})();
+</script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="/favi.png">
+    <title>Configurador de Duelos - Vikingdev TCG</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="vendor/fa/all.min.css">
+    <link rel="stylesheet" href="vendor/fonts.css">
+    <style>
+        :root {
+            --bg-color: #0c0f12;
+            --text-color: #f1f2f6;
+            --primary-color: #00d2ff;
+            --primary-glow: rgba(0, 210, 255, 0.4);
+            --secondary-color: #ff1b6b;
+            --secondary-glow: rgba(255, 27, 107, 0.4);
+            --panel-bg: rgba(18, 24, 30, 0.85);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at center, #111a2e 0%, #06090e 100%);
+            color: var(--text-color);
+            font-family: 'Montserrat', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Cosmic Background Blobs */
+        .bg-blobs {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            overflow: hidden;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.15;
+        }
+
+        .blob-1 {
+            width: 500px;
+            height: 500px;
+            background-color: var(--primary-color);
+            top: -100px;
+            left: -100px;
+        }
+
+        .blob-2 {
+            width: 600px;
+            height: 600px;
+            background-color: var(--secondary-color);
+            bottom: -150px;
+            right: -100px;
+        }
+
+        /* Header Navigation */
+        .config-header {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 1.5rem;
+            text-decoration: none;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+
+        .logo span {
+            color: var(--primary-color);
+        }
+
+        .nav-btn {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: #fff;
+            padding: 10px 18px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+        }
+
+        /* Container Main */
+        .config-container {
+            flex: 1;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            z-index: 5;
+        }
+
+        .title-section {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .title-section h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-shadow: 0 0 15px rgba(0, 210, 255, 0.5);
+            margin-bottom: 8px;
+        }
+
+        .title-section p {
+            color: #aaa;
+            font-size: 0.95rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Columns Grid */
+        .mode-grid {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        @media (max-width: 850px) {
+            .mode-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Panel Glassmorphism */
+        .mode-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mode-card.practice {
+            border-color: rgba(0, 210, 255, 0.2);
+        }
+        .mode-card.practice:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 210, 255, 0.15), 0 0 30px rgba(0, 210, 255, 0.05);
+            border-color: var(--primary-color);
+        }
+
+        .mode-card.multiplayer {
+            border-color: rgba(255, 27, 107, 0.2);
+        }
+        .mode-card.multiplayer:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(255, 27, 107, 0.15), 0 0 30px rgba(255, 27, 107, 0.05);
+            border-color: var(--secondary-color);
+        }
+
+        .card-header-icon {
+            font-size: 2.5rem;
+            margin-bottom: 5px;
+        }
+
+        .practice .card-header-icon {
+            color: var(--primary-color);
+            text-shadow: 0 0 15px rgba(0, 210, 255, 0.4);
+        }
+
+        .multiplayer .card-header-icon {
+            color: var(--secondary-color);
+            text-shadow: 0 0 15px rgba(255, 27, 107, 0.4);
+        }
+
+        .mode-card h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 900;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .mode-card .card-desc {
+            color: #ccc;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            min-height: 45px;
+        }
+
+        /* Form Controls */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #888;
+        }
+
+        .form-group label span {
+            color: var(--primary-color);
+        }
+
+        .multiplayer .form-group label span {
+            color: var(--secondary-color);
+        }
+
+        .select-input, .text-input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1.5px solid var(--glass-border);
+            border-radius: 10px;
+            color: white;
+            padding: 12px 16px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .practice .select-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 8px rgba(0, 210, 255, 0.2);
+        }
+
+        .multiplayer .select-input:focus, .multiplayer .text-input:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 8px rgba(255, 27, 107, 0.2);
+        }
+
+        /* Play Button Styles */
+        .btn-play {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: none;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 1rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.25s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-play-practice {
+            background: linear-gradient(135deg, var(--primary-color), #008cb0);
+            color: #000;
+            box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3);
+        }
+
+        .btn-play-practice:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 210, 255, 0.5);
+            filter: brightness(1.1);
+        }
+
+        .btn-play-multiplayer {
+            background: linear-gradient(135deg, var(--secondary-color), #b3003b);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(255, 27, 107, 0.3);
+        }
+
+        .btn-play-multiplayer:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 27, 107, 0.5);
+            filter: brightness(1.15);
+        }
+
+        /* Auth Locked UI */
+        .auth-locked-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background: rgba(0,0,0,0.5);
+            border: 1px dashed rgba(255, 27, 107, 0.3);
+            border-radius: 12px;
+            padding: 30px 20px;
+            gap: 15px;
+            height: 100%;
+        }
+
+        .auth-locked-container i {
+            font-size: 2rem;
+            color: var(--secondary-color);
+        }
+
+        .auth-locked-container p {
+            font-size: 0.85rem;
+            color: #aaa;
+            line-height: 1.5;
+        }
+
+        /* Sub-navigation inside multiplayer card */
+        .multi-tabs {
+            display: flex;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+            padding: 4px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            color: #888;
+            padding: 10px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        .tab-btn.active {
+            background: rgba(255, 27, 107, 0.15);
+            color: var(--secondary-color);
+            border: 1px solid rgba(255, 27, 107, 0.3);
+        }
+
+        /* Sleek User Profile Badge */
+        .user-badge {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            padding: 12px 18px;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.85rem;
+        }
+
+        .user-badge i {
+            color: var(--primary-color);
+        }
+
+        /* Custom Deck Picker Button & Trigger */
+        .deck-picker-trigger {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1.5px solid var(--glass-border);
+            border-radius: 10px;
+            color: white;
+            padding: 12px 16px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .deck-picker-trigger:hover {
+            border-color: var(--primary-color);
+            background: rgba(0, 210, 255, 0.05);
+        }
+
+        .deck-picker-trigger span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Deck Picker Modal */
+        .picker-modal-content {
+            max-width: 520px;
+            width: 92%;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            gap: 16px;
+            background: rgba(12, 16, 22, 0.95);
+            border: 1px solid rgba(0, 210, 255, 0.25);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 210, 255, 0.12);
+            backdrop-filter: blur(16px);
+            border-radius: 20px;
+        }
+
+        .picker-search-bar {
+            display: flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1.5px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 10px 16px;
+            gap: 12px;
+            transition: all 0.25s ease;
+        }
+
+        .picker-search-bar:focus-within {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 12px rgba(0, 210, 255, 0.25);
+        }
+
+        .picker-search-bar i {
+            color: var(--primary-color);
+            font-size: 0.95rem;
+        }
+
+        .picker-search-bar input {
+            background: transparent;
+            border: none;
+            color: #fff;
+            width: 100%;
+            outline: none;
+            font-size: 0.9rem;
+            font-family: inherit;
+        }
+
+        .picker-tags-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            position: relative;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .picker-tags-wrapper::-webkit-scrollbar {
+            display: none;
+            width: 0;
+            height: 0;
+        }
+
+        .picker-tag-pill {
+            flex: 1;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: #aaa;
+            padding: 8px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .picker-tag-pill:hover {
+            background: rgba(0, 210, 255, 0.15);
+            color: #fff;
+            border-color: rgba(0, 210, 255, 0.4);
+        }
+
+        .picker-tag-pill.active {
+            background: var(--primary-color);
+            color: #06090e;
+            border-color: var(--primary-color);
+            font-weight: 800;
+            box-shadow: 0 0 14px rgba(0, 210, 255, 0.4);
+        }
+
+        .picker-more-wrapper {
+            position: relative;
+            flex: 1;
+        }
+
+        .picker-more-wrapper .picker-tag-pill {
+            width: 100%;
+        }
+
+        .picker-more-dropdown {
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            min-width: 160px;
+            max-height: 220px;
+            overflow-y: auto;
+            background: rgba(14, 20, 28, 0.98);
+            border: 1px solid rgba(0, 210, 255, 0.3);
+            border-radius: 14px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 210, 255, 0.15);
+            backdrop-filter: blur(12px);
+            z-index: 100;
+            padding: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .picker-more-dropdown::-webkit-scrollbar {
+            display: none;
+            width: 0;
+            height: 0;
+        }
+
+        .picker-dropdown-item {
+            padding: 8px 12px;
+            border-radius: 8px;
+            color: #ccc;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+        }
+
+        .picker-dropdown-item:hover {
+            background: rgba(0, 210, 255, 0.18);
+            color: var(--primary-color);
+        }
+
+        .picker-dropdown-item.active {
+            background: var(--primary-color);
+            color: #06090e;
+        }
+
+        .picker-dropdown-empty {
+            padding: 10px;
+            text-align: center;
+            color: #888;
+            font-size: 0.78rem;
+        }
+
+        .picker-deck-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+            max-height: 50vh;
+            padding-right: 2px;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .picker-deck-list::-webkit-scrollbar {
+            display: none;
+            width: 0;
+            height: 0;
+        }
+
+        .picker-deck-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .picker-deck-item:hover {
+            background: rgba(0, 210, 255, 0.12);
+            border-color: rgba(0, 210, 255, 0.5);
+            transform: translateX(4px);
+            box-shadow: 0 4px 15px rgba(0, 210, 255, 0.15);
+        }
+
+        .picker-deck-item .deck-title-text {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #fff;
+        }
+
+        .picker-deck-item .deck-tag-badge {
+            font-size: 0.7rem;
+            background: rgba(0, 210, 255, 0.15);
+            color: var(--primary-color);
+            border: 1px solid rgba(0, 210, 255, 0.3);
+            padding: 3px 9px;
+            border-radius: 8px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Modal Simple Login Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: var(--panel-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 30px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #aaa;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .modal-close:hover {
+            color: #fff;
+        }
+
+        .modal-content h3 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.3rem;
+            text-align: center;
+            color: var(--primary-color);
+        }
+
+        /* Mobile responsive override */
+        @media (max-width: 1024px) {
+            body {
+                overflow-y: auto !important;
+                height: auto !important;
+                min-height: 100vh !important;
+            }
+            .config-header {
+                padding: 10px 20px;
+            }
+            .logo {
+                font-size: 1.2rem;
+            }
+            .config-container {
+                padding: 10px;
+                gap: 15px;
+            }
+            .title-section h1 {
+                font-size: 1.5rem;
+            }
+            .title-section p {
+                font-size: 0.8rem;
+            }
+            .mode-grid {
+                grid-template-columns: 1fr !important;
+                gap: 20px !important;
+                margin-bottom: 20px;
+            }
+            .mode-card {
+                padding: 20px !important;
+                gap: 12px !important;
+            }
+            .card-header-icon {
+                font-size: 1.8rem !important;
+            }
+            .mode-card h2 {
+                font-size: 1.2rem !important;
+            }
+            .mode-card .card-desc {
+                min-height: auto !important;
+                font-size: 0.8rem !important;
+            }
+            .form-group {
+                gap: 4px !important;
+            }
+            .select-input, .text-input {
+                padding: 8px 12px !important;
+                font-size: 0.8rem !important;
+            }
+            .btn-play {
+                padding: 10px !important;
+                font-size: 0.85rem !important;
+            }
+        }
+    </style>
+    <script src="vendor/jquery.min.js"></script>
+    <script src="vendor/sweetalert2.all.min.js"></script>
+        <link rel="stylesheet" href="offline.css">
+</head>
+<body>
+    <div class="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <!-- Floating User Panel (Píldora) -->
+    <div class="top-left-panel" id="top-panel">
+        <div class="pill-panel">
+            <div class="pill-group" id="header-theme-group">
+                <button class="pill-icon theme-btn-small" data-theme="theme-light" title="Modo Claro"><i class="fas fa-sun"></i></button>
+                <button class="pill-icon theme-btn-small" data-theme="theme-purple" title="Modo Morado"><i class="fas fa-magic"></i></button>
+                <button class="pill-icon theme-btn-small" data-theme="theme-dark" title="Modo Oscuro"><i class="fas fa-moon"></i></button>
+            </div>
+
+            <a href="carrito.html" id="cart-btn" class="pill-icon" title="Carrito">
+                <i class="fas fa-shopping-cart"></i>
+                <span id="cart-count">0</span>
+            </a>
+
+            <div class="user-menu-container">
+                <button class="pill-icon" id="avatar-btn" title="Usuario">
+                    <i class="fas fa-user"></i>
+                </button>
+                <div class="user-dropdown-menu" id="user-dropdown">
+                    <div class="user-dropdown-info">
+                        <img id="dropdown-user-logo" src="" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; display: none;">
+                        <div class="user-dropdown-name" id="dropdown-user-name">Usuario</div>
+                        <div class="user-dropdown-role" id="dropdown-user-role" style="display: none;">Usuario</div>
+                    </div>
+                    <a href="admin.html" class="menu-item" id="menu-btn-home"><i class="fas fa-home"></i> Mi Panel</a>
+                    <a href="play.html" class="menu-item"><i class="fas fa-gamepad"></i> Play!</a>
+                    <a href="mis-compras.html" class="menu-item"><i class="fas fa-receipt"></i> Mis compras</a>
+                    <a href="#" class="menu-item logout" id="btn-logout"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+                    <div class="theme-menu-container">
+                        <span class="theme-menu-label">Tema</span>
+                        <div class="theme-switcher-inline">
+                            <button class="pill-icon theme-btn-small" data-theme="theme-light" title="Modo Claro"><i class="fas fa-sun"></i></button>
+                            <button class="pill-icon theme-btn-small" data-theme="theme-purple" title="Modo Morado"><i class="fas fa-magic"></i></button>
+                            <button class="pill-icon theme-btn-small" data-theme="theme-dark" title="Modo Oscuro"><i class="fas fa-moon"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <main class="config-container" style="padding-top: 80px;">
+
+        <section class="mode-grid">
+            <!-- Practice Mode Column -->
+            <div class="mode-card practice">
+                <div style="text-align: center;">
+                    <h2>1 Jugador</h2>
+                </div>
+
+                <div class="form-group">
+                    <label>Tipo de Tablero <span>*</span></label>
+                    <select id="practice-layout" class="select-input">
+                        <option value="yugioh">Yu-Gi-Oh! Time Wizard</option>
+                        <option value="yugioh_advanced">Yu-Gi-Oh! Avanzado</option>
+                        <option value="pokemon">Pokémon Arena</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Tu Deck (P1) <span>*</span></label>
+                    <div id="btn-select-practice-deck1" class="deck-picker-trigger" data-target="#practice-deck1">
+                        <span id="label-practice-deck1">Cargando decks...</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <select id="practice-deck1" class="select-input" style="display: none;">
+                        <option value="mock">Cargando decks...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Deck Contrincante (P2) <span>*</span></label>
+                    <div id="btn-select-practice-deck2" class="deck-picker-trigger" data-target="#practice-deck2">
+                        <span id="label-practice-deck2">Preestablecido (Mock Deck)</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <select id="practice-deck2" class="select-input" style="display: none;">
+                        <option value="mock">Preestablecido (Mock Deck)</option>
+                    </select>
+                </div>
+
+                <button id="btn-start-practice" class="btn-play btn-play-practice">
+                    <i class="fas fa-play"></i> INICIAR PRÁCTICA
+                </button>
+            </div>
+
+            <!-- Two Players Mode Column -->
+            <div class="mode-card multiplayer">
+                <div style="text-align: center;">
+                    <h2>2 Jugadores</h2>
+                </div>
+
+                <!-- Unauthenticated view -->
+                <div id="auth-locked-view" class="auth-locked-container">
+                    <i class="fas fa-lock"></i>
+                    <p>Requiere tener una cuenta en el proyecto con al menos un deck configurado para poder jugar en el modo dos jugadores.</p>
+                    <button id="btn-open-login" class="nav-btn" style="background: rgba(255, 27, 107, 0.15); border-color: var(--secondary-color); color: var(--secondary-color); padding: 12px 24px; border-radius: 10px;">
+                        <i class="fas fa-sign-in-alt"></i> Iniciar Sesión / Registrarse
+                    </button>
+                </div>
+
+                <!-- Authenticated view -->
+                <div id="auth-unlocked-view" style="display: none; flex-direction: column; gap: 20px;">
+                    <div class="multi-tabs">
+                        <button class="tab-btn active" data-target="tab-host">Crear Sala (Anfitrión)</button>
+                        <button class="tab-btn" data-target="tab-guest">Unirse a Sala (Invitado)</button>
+                    </div>
+
+                    <!-- Host tab content -->
+                    <div id="tab-host" class="tab-content" style="display: flex; flex-direction: column; gap: 20px;">
+                        <div class="form-group">
+                            <label>Tipo de Tablero <span>*</span></label>
+                            <select id="host-layout" class="select-input">
+                                <option value="yugioh">Yu-Gi-Oh! Time Wizard</option>
+                                <option value="yugioh_advanced">Yu-Gi-Oh! Avanzado</option>
+                                <option value="pokemon">Pokémon Arena</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Tu Deck <span>*</span></label>
+                            <div id="btn-select-host-deck" class="deck-picker-trigger" data-target="#host-deck">
+                                <span id="label-host-deck">Cargando tus decks...</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                            <select id="host-deck" class="select-input" style="display: none;">
+                                <option value="">Cargando tus decks...</option>
+                            </select>
+                        </div>
+
+                        <button id="btn-create-room" class="btn-play btn-play-multiplayer">
+                            <i class="fas fa-plus-circle"></i> Crear Sala
+                        </button>
+                    </div>
+
+                    <!-- Guest tab content -->
+                    <div id="tab-guest" class="tab-content" style="display: none; flex-direction: column; gap: 20px;">
+                        <div class="form-group">
+                            <label>ID de la Sala <span>*</span></label>
+                            <input type="text" id="guest-room-id" class="text-input" placeholder="Ej: R12345" style="text-transform: uppercase;">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Tu Deck <span>*</span></label>
+                            <div id="btn-select-guest-deck" class="deck-picker-trigger" data-target="#guest-deck">
+                                <span id="label-guest-deck">Cargando tus decks...</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                            <select id="guest-deck" class="select-input" style="display: none;">
+                                <option value="">Cargando tus decks...</option>
+                            </select>
+                        </div>
+
+                        <button id="btn-join-room" class="btn-play btn-play-multiplayer">
+                            <i class="fas fa-sign-in-alt"></i> Unirse a sala
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Deck Picker Modal -->
+    <div id="deck-picker-modal" class="modal-overlay">
+        <div class="modal-content picker-modal-content">
+            <button class="modal-close" id="btn-close-deck-picker">&times;</button>
+            <h3 id="deck-picker-title">Selecciona un Deck</h3>
+
+            <div class="picker-search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" id="picker-search-input" placeholder="Buscar por nombre o clave...">
+            </div>
+
+            <div class="picker-tags-wrapper" id="picker-tags-container">
+                <button class="picker-tag-pill active" data-tag="">Todos</button>
+                <button class="picker-tag-pill" data-tag="EDISON">Edison</button>
+                <button class="picker-tag-pill" data-tag="AVANZADO">Avanzado</button>
+                <div class="picker-more-wrapper">
+                    <button class="picker-tag-pill pill-more" id="btn-picker-more">
+                        <span id="more-tag-text">Más</span> <i class="fas fa-chevron-down" style="font-size: 0.65rem;"></i>
+                    </button>
+                    <div class="picker-more-dropdown" id="picker-more-dropdown" style="display: none;">
+                        <!-- Dynamically populated options -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="picker-deck-list" id="picker-deck-list">
+                <!-- Dynamically rendered items -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Simple Login Modal -->
+    <div id="login-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close" id="btn-close-modal">&times;</button>
+            <h3>Iniciar Sesión</h3>
+            <p style="font-size: 0.8rem; color: #888; text-align: center; margin-top: -10px;">Inicia sesión con tu cuenta para cargar tus decks.</p>
+
+            <div class="form-group" style="margin-top: 10px;">
+                <label>Nombre de Usuario / Correo</label>
+                <input type="text" id="login-username" class="text-input" placeholder="usuario o correo" style="background: rgba(0,0,0,0.6);">
+            </div>
+
+            <div class="form-group">
+                <label>Contraseña</label>
+                <input type="password" id="login-password" class="text-input" placeholder="********" style="background: rgba(0,0,0,0.6);">
+            </div>
+
+            <button id="btn-submit-login" class="btn-play btn-play-practice" style="margin-top: 10px;">
+                INGRESAR
+            </button>
+
+            <p style="font-size: 0.8rem; text-align: center; color: #aaa; margin-top: 10px;">
+                ¿No tienes cuenta? <a href="index.html#join-section" style="color: var(--primary-color); font-weight: bold; text-decoration: none;">Regístrate en el Inicio</a>
+            </p>
+        </div>
+    </div>
+
+    <script src="js/offline-version.js"></script>
+    <script src="js/offline-db.js"></script>
+    <script src="js/offline-supabase.js"></script>
+    <script src="js/offline-sync.js"></script>
+    <script src="/js/cart.js"></script>
+    <script src="/js/utils.js"></script>
+    <script>
+        $(document).ready(async function() {
+            // Maintenance & Beta/Test Mode Check
+            if (typeof window.checkVikingMaintenance === 'function') {
+                window.checkVikingMaintenance('duel_all');
+            }
+            let sessionUser = null;
+            let userDecks = [];
+            let preselectedDeck = null;
+            let publicAccountDecks = [];
+
+            // Check if there is a preselected deck via query string
+            const urlParams = new URLSearchParams(window.location.search);
+            const preselectedDeckId = urlParams.get('deck1') || urlParams.get('deckId');
+
+            if (preselectedDeckId) {
+                try {
+                    const { data, error } = await _supabase
+                        .from('decks')
+                        .select('id, name, format_tag, user_id')
+                        .eq('id', preselectedDeckId)
+                        .maybeSingle();
+                    if (!error && data) {
+                        preselectedDeck = data;
+
+                        // Fetch all decks belonging to the owner of this public deck
+                        const { data: oDecks, error: oError } = await _supabase
+                            .from('decks')
+                            .select('id, name, format_tag')
+                            .eq('user_id', preselectedDeck.user_id);
+                        if (!oError && oDecks) {
+                            publicAccountDecks = oDecks;
+                        }
+                    }
+                } catch(e) {
+                    console.error("Error fetching preselected deck:", e);
+                }
+            }
+
+            // 1. Check user session
+            await checkSession();
+
+            // 2. Tab switcher for Multiplayer options
+            $(".tab-btn").click(function() {
+                $(".tab-btn").removeClass("active");
+                $(this).addClass("active");
+                const target = $(this).data("target");
+                $(".tab-content").hide();
+                $(`#${target}`).css("display", "flex");
+            });
+
+            // 3. Simple inline login modal triggers
+            $("#btn-open-login").click(function() {
+                $("#login-modal").css("display", "flex");
+            });
+
+            $("#btn-close-modal, #login-modal").click(function(e) {
+                if (e.target === this || e.target.id === "btn-close-modal") {
+                    $("#login-modal").hide();
+                }
+            });
+
+            $("#btn-submit-login").click(async function() {
+                const usernameOrEmail = $("#login-username").val().trim();
+                const password = $("#login-password").val();
+
+                if (!usernameOrEmail || !password) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Campos incompletos',
+                        text: 'Por favor, introduce tu usuario/correo y contraseña.'
+                    });
+                    return;
+                }
+
+                Swal.fire({
+                    title: 'Iniciando sesión...',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+
+                try {
+                    // Try to log in as email or look up email by username
+                    let email = usernameOrEmail;
+                    if (!usernameOrEmail.includes('@')) {
+                        // Look up email by username in usuarios table
+                        const { data: resolvedEmail } = await _supabase
+                            .rpc('get_login_email', { p_identifier: usernameOrEmail });
+
+                        if (resolvedEmail) {
+                            email = resolvedEmail;
+                        } else {
+                            throw new Error("Usuario no encontrado.");
+                        }
+                    }
+
+                    const { data: authData, error: authError } = await _supabase.auth.signInWithPassword({
+                        email: email,
+                        password: password
+                    });
+
+                    if (authError) throw authError;
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Bienvenido!',
+                        text: 'Sesión iniciada correctamente.',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+
+                    $("#login-modal").hide();
+                    await checkSession();
+
+                } catch (err) {
+                    console.error(err);
+                    Swal.fire('Error', 'No se pudo iniciar sesión: ' + (err.message || ''), 'error');
+                }
+            });
+
+            // Check session and load decks
+            async function checkSession() {
+                try {
+                    const { data: { session } } = await _supabase.auth.getSession();
+                    if (session && session.user) {
+                        sessionUser = session.user;
+
+                        // Fetch username
+                        const { data: userData, error: userError } = await _supabase
+                            .from('usuarios')
+                            .select('username')
+                            .eq('id', sessionUser.id)
+                            .maybeSingle();
+
+                        const username = (userData && userData.username) ? userData.username : sessionUser.email.split('@')[0];
+
+                        $("#username-display").text(username);
+                        $("#dropdown-user-name").text(username);
+                        if (userData && userData.store_logo) {
+                            $("#dropdown-user-logo").attr("src", userData.store_logo).show();
+                        }
+                        if (userData && userData.role) {
+                            $("#dropdown-user-role").text(userData.role).show();
+                        }
+                        $("#logged-user-badge").show();
+
+                        // Unhide multiplayer config
+                        $("#auth-locked-view").hide();
+                        $("#auth-unlocked-view").css("display", "flex");
+
+                        // Fetch user decks
+                        await loadDecks(sessionUser.id);
+                    } else {
+                        sessionUser = null;
+                        userDecks = [];
+                        $("#logged-user-badge").hide();
+                        $("#auth-locked-view").show();
+                        $("#auth-unlocked-view").hide();
+
+                        // Load pre-established decks list for practice mode
+                        populatePracticeDecks([]);
+                    }
+                } catch (e) {
+                    console.error("Error loading session:", e);
+                }
+            }
+
+            async function loadDecks(userId) {
+                try {
+                    const { data: decks, error } = await _supabase
+                        .from('decks')
+                        .select('id, name, format_tag')
+                        .eq('user_id', userId);
+
+                    if (error) throw error;
+
+                    userDecks = decks || [];
+                    populatePracticeDecks(userDecks);
+                    populateMultiplayerDecks(userDecks);
+                } catch (err) {
+                    console.error("Error fetching decks:", err);
+                }
+            }
+
+            let currentPickerTarget = null;
+            let currentPickerTag = '';
+
+            function openDeckPicker(targetSelectId, titleText) {
+                currentPickerTarget = targetSelectId;
+                $('#deck-picker-title').text(titleText || 'Selecciona un Deck');
+                $('#picker-search-input').val('');
+                currentPickerTag = '';
+
+                // Reset pill buttons active states
+                $('.picker-tag-pill').removeClass('active');
+                $('.picker-tag-pill[data-tag=""]').addClass('active');
+                $('#more-tag-text').text('Más');
+                $('#picker-more-dropdown').hide();
+
+                // Populate 'Más' dropdown strictly with tags created on user's decks
+                const allTagsSet = new Set();
+
+                userDecks.concat(publicAccountDecks || []).forEach(d => {
+                    if (d.format_tag && d.format_tag.trim()) {
+                        allTagsSet.add(d.format_tag.trim().toUpperCase());
+                    }
+                });
+
+                const otherTags = Array.from(allTagsSet).filter(t => {
+                    const low = t.toLowerCase();
+                    return low !== 'edison' && low !== 'avanzado';
+                });
+
+                let dropdownHtml = '';
+                if (otherTags.length === 0) {
+                    dropdownHtml = '<div class="picker-dropdown-empty">Sin otros tags</div>';
+                } else {
+                    otherTags.forEach(t => {
+                        dropdownHtml += `<div class="picker-dropdown-item" data-tag="${t}">${t}</div>`;
+                    });
+                }
+                $('#picker-more-dropdown').html(dropdownHtml);
+
+                renderPickerDeckList();
+                $('#deck-picker-modal').css('display', 'flex');
+            }
+
+            function renderPickerDeckList() {
+                const searchQuery = $('#picker-search-input').val().toLowerCase().trim();
+                const $list = $('#picker-deck-list');
+                $list.empty();
+
+                let availableDecks = currentPickerTarget === '#practice-deck2' && publicAccountDecks.length > 0 ? [...publicAccountDecks] : [...userDecks];
+
+                const isPractice = currentPickerTarget === '#practice-deck1' || currentPickerTarget === '#practice-deck2';
+
+                if (preselectedDeck && !availableDecks.some(d => d.id == preselectedDeck.id)) {
+                    availableDecks.unshift(preselectedDeck);
+                }
+
+                let filtered = availableDecks.filter(d => {
+                    const name = (d.name || '').toLowerCase();
+                    const tag = (d.format_tag || '').toLowerCase().trim();
+
+                    let tagMatch = false;
+                    if (!currentPickerTag) {
+                        tagMatch = true;
+                    } else {
+                        const targetTag = currentPickerTag.toLowerCase().trim();
+                        tagMatch = tag === targetTag || tag.includes(targetTag);
+                    }
+
+                    const searchMatch = !searchQuery || name.includes(searchQuery) || tag.includes(searchQuery);
+                    return tagMatch && searchMatch;
+                });
+
+                if (isPractice) {
+                    // Option for Mock Deck
+                    if (!searchQuery && !currentPickerTag) {
+                        const $mock = $(`
+                            <div class="picker-deck-item" data-id="mock" data-name="Preestablecido (Mock Deck)">
+                                <span class="deck-title-text"><i class="fas fa-robot"></i> Preestablecido (Mock Deck)</span>
+                                <span class="deck-tag-badge" style="background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.2);">Default</span>
+                            </div>
+                        `);
+                        $mock.click(function() {
+                            selectDeckForTarget('mock', 'Preestablecido (Mock Deck)');
+                        });
+                        $list.append($mock);
+                    }
+                }
+
+                if (filtered.length === 0 && availableDecks.length > 0) {
+                    $list.append('<div style="text-align: center; color: #888; padding: 20px;">Sin decks que coincidan con la búsqueda.</div>');
+                    return;
+                }
+
+                filtered.forEach(d => {
+                    const tagBadge = (d.format_tag && d.format_tag.trim()) ? `<span class="deck-tag-badge">${d.format_tag.trim()}</span>` : '';
+                    const $item = $(`
+                        <div class="picker-deck-item" data-id="${d.id}" data-name="${d.name}">
+                            <span class="deck-title-text">${d.name}</span>
+                            ${tagBadge}
+                        </div>
+                    `);
+
+                    $item.click(function() {
+                        selectDeckForTarget(d.id, d.name);
+                    });
+
+                    $list.append($item);
+                });
+            }
+
+            function selectDeckForTarget(id, name) {
+                if (!currentPickerTarget) return;
+                const $select = $(currentPickerTarget);
+
+                if (!$select.find(`option[value="${id}"]`).length) {
+                    $select.append(`<option value="${id}">${name}</option>`);
+                }
+
+                $select.val(id);
+                const labelId = '#label-' + currentPickerTarget.replace('#', '');
+                $(labelId).text(name);
+
+                $('#deck-picker-modal').hide();
+            }
+
+            // Bind triggers for custom deck picker
+            $('.deck-picker-trigger').click(function() {
+                const target = $(this).data('target');
+                const label = $(this).prev('label').text().replace('*', '').trim();
+                openDeckPicker(target, label);
+            });
+
+            $('#btn-close-deck-picker, #deck-picker-modal').click(function(e) {
+                if (e.target === this || e.target.id === 'btn-close-deck-picker') {
+                    $('#deck-picker-modal').hide();
+                }
+            });
+
+            // Tag pills handler (Todos, Edison, Avanzado)
+            $(document).on('click', '.picker-tag-pill:not(.pill-more)', function() {
+                $('.picker-tag-pill').removeClass('active');
+                $('.picker-dropdown-item').removeClass('active');
+                $(this).addClass('active');
+                $('#picker-more-dropdown').hide();
+                $('#more-tag-text').text('Más');
+                currentPickerTag = $(this).data('tag') || '';
+                renderPickerDeckList();
+            });
+
+            // Toggle 'Más' dropdown menu
+            $(document).on('click', '#btn-picker-more', function(e) {
+                e.stopPropagation();
+                $('#picker-more-dropdown').toggle();
+            });
+
+            // Close 'Más' dropdown on outside click
+            $(document).on('click', function(e) {
+                if (!$(e.target).closest('.picker-more-wrapper').length) {
+                    $('#picker-more-dropdown').hide();
+                }
+            });
+
+            // Select tag inside 'Más' dropdown
+            $(document).on('click', '.picker-dropdown-item', function(e) {
+                e.stopPropagation();
+                const selectedTag = $(this).data('tag');
+                $('.picker-tag-pill').removeClass('active');
+                $('.picker-dropdown-item').removeClass('active');
+                $(this).addClass('active');
+                $('#btn-picker-more').addClass('active');
+                $('#more-tag-text').text(selectedTag);
+                $('#picker-more-dropdown').hide();
+                currentPickerTag = selectedTag;
+                renderPickerDeckList();
+            });
+
+            $('#picker-search-input').on('input', function() {
+                renderPickerDeckList();
+            });
+
+            function populatePracticeDecks(decks) {
+                const $deck1 = $("#practice-deck1");
+                const $deck2 = $("#practice-deck2");
+                $deck1.empty();
+                $deck2.empty();
+
+                $deck1.append('<option value="" selected>Selecciona un deck...</option>');
+                $deck2.append('<option value="" selected>Selecciona un deck...</option>');
+
+                if (preselectedDeck) {
+                    $deck1.append(`<option value="${preselectedDeck.id}">${preselectedDeck.name}</option>`);
+                    $deck2.append(`<option value="${preselectedDeck.id}">${preselectedDeck.name}</option>`);
+                }
+                decks.forEach(d => {
+                    if (!preselectedDeck || d.id != preselectedDeck.id) {
+                        $deck1.append(`<option value="${d.id}">${d.name}</option>`);
+                        $deck2.append(`<option value="${d.id}">${d.name}</option>`);
+                    }
+                });
+                $deck1.append('<option value="mock">Preestablecido (Mock Deck)</option>');
+                $deck2.append('<option value="mock">Preestablecido (Mock Deck)</option>');
+
+                $('#label-practice-deck1').text('Selecciona un deck...');
+                $('#label-practice-deck2').text('Selecciona un deck...');
+            }
+
+            function populateMultiplayerDecks(decks) {
+                const $hostDeck = $("#host-deck");
+                const $guestDeck = $("#guest-deck");
+                $hostDeck.empty();
+                $guestDeck.empty();
+
+                if (decks.length === 0) {
+                    $hostDeck.append('<option value="">No tienes ningún deck configurado</option>');
+                    $guestDeck.append('<option value="">No tienes ningún deck configurado</option>');
+                    $('#label-host-deck').text('No tienes ningún deck configurado');
+                    $('#label-guest-deck').text('No tienes ningún deck configurado');
+                    return;
+                }
+
+                $hostDeck.append('<option value="" selected>Selecciona un deck...</option>');
+                $guestDeck.append('<option value="" selected>Selecciona un deck...</option>');
+
+                if (preselectedDeck) {
+                    $hostDeck.append(`<option value="${preselectedDeck.id}">${preselectedDeck.name}</option>`);
+                    $guestDeck.append(`<option value="${preselectedDeck.id}">${preselectedDeck.name}</option>`);
+                }
+
+                decks.forEach(d => {
+                    if (!preselectedDeck || d.id != preselectedDeck.id) {
+                        $hostDeck.append(`<option value="${d.id}">${d.name}</option>`);
+                        $guestDeck.append(`<option value="${d.id}">${d.name}</option>`);
+                    }
+                });
+
+                $('#label-host-deck').text('Selecciona un deck...');
+                $('#label-guest-deck').text('Selecciona un deck...');
+            }
+
+            // 4. Action Handlers for redirection
+            // Practice Mode Start
+            $("#btn-start-practice").click(function() {
+                const layout = $("#practice-layout").val();
+                const deck1 = $("#practice-deck1").val();
+                const deck2 = $("#practice-deck2").val();
+
+                if (!deck1) {
+                    Swal.fire('Atención', 'Debes seleccionar Tu Deck (P1) para iniciar la práctica.', 'warning');
+                    return;
+                }
+                if (!deck2) {
+                    Swal.fire('Atención', 'Debes seleccionar el Deck Contrincante (P2) para iniciar la práctica.', 'warning');
+                    return;
+                }
+
+                window.location.href = `duel.html?mode=practice&layout=${layout}&deck1=${deck1}&deck2=${deck2}`;
+            });
+
+            // Multiplayer Host Start
+            $("#btn-create-room").click(function() {
+                const layout = $("#host-layout").val();
+                const deck1 = $("#host-deck").val();
+
+                if (!deck1) {
+                    Swal.fire('Atención', 'Debes tener al menos un deck seleccionado para iniciar.', 'warning');
+                    return;
+                }
+
+                // Generate random room id
+                const roomId = 'R' + Math.floor(10000 + Math.random() * 90000);
+                window.location.href = `duel.html?mode=multiplayer&role=player1&layout=${layout}&deck1=${deck1}&room=${roomId}`;
+            });
+
+            // Multiplayer Guest Start
+            $("#btn-join-room").click(function() {
+                const roomId = $("#guest-room-id").val().trim().toUpperCase();
+                const deck2 = $("#guest-deck").val();
+
+                if (!roomId) {
+                    Swal.fire('Atención', 'Por favor, introduce el ID de la sala a la que deseas conectarte.', 'warning');
+                    return;
+                }
+
+                if (!deck2) {
+                    Swal.fire('Atención', 'Debes tener al menos un deck seleccionado para unirte.', 'warning');
+                    return;
+                }
+
+                window.location.href = `duel.html?mode=multiplayer&role=player2&deck2=${deck2}&room=${roomId}`;
+            });
+
+            // Theme and Top-Panel User Dropdown Listeners
+            initTheme();
+
+            $(document).on('click', '.theme-btn-small', function() {
+                applyTheme($(this).data('theme'));
+            });
+
+            $(document).on('click', '#avatar-btn', function(e) {
+                e.stopPropagation();
+                $('#user-dropdown').toggleClass('active');
+            });
+
+            $(document).on('click', function(e) {
+                if (!$(e.target).closest('.user-menu-container').length) {
+                    $('#user-dropdown').removeClass('active');
+                }
+            });
+
+            $('#btn-logout').click(async function(e) {
+                e.preventDefault();
+                await _supabase.auth.signOut();
+                localStorage.removeItem('tcg_session');
+                window.location.reload();
+            });
+
+            function initTheme() {
+                const savedTheme = localStorage.getItem('tcg_theme') || 'theme-dark';
+                applyTheme(savedTheme);
+            }
+
+            function applyTheme(theme) {
+                $('body').removeClass('theme-light theme-medium theme-dark theme-purple').addClass(theme);
+                localStorage.setItem('tcg_theme', theme);
+                $('.theme-btn-small').removeClass('active');
+                $(`.theme-btn-small[data-theme="${theme}"]`).addClass('active');
+            }
+
+        });
+    </script>
+    <script src="js/offline-ui.js"></script>
+</body>
+</html>
