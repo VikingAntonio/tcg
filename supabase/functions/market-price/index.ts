@@ -66,10 +66,12 @@ serve(async (req) => {
   try {
     const url = new URL(req.url);
     let code = url.searchParams.get("code") || "";
+    let rarityHint = url.searchParams.get("rarity") || "";
 
     if (req.method === "POST") {
       const body = await req.json().catch(() => ({}));
       code = code || body.code || "";
+      rarityHint = rarityHint || body.rarity || "";
     }
 
     const clean = String(code).trim().toUpperCase();
@@ -111,15 +113,30 @@ serve(async (req) => {
         };
       })
       .filter((o: any) => o.marketPrice !== null)
-      .sort((a: any, b: any) => b.marketPrice - a.marketPrice);
+      .sort((a: any, b: any) => a.marketPrice - b.marketPrice);
 
     if (!options.length) {
       return json({ found: false, code: clean, setName: group.name, error: "Sin precio en TCGplayer" });
     }
 
-    // Varias artes/rarezas comparten código: se devuelve la de mayor valor y
-    // la lista completa por si conviene usar otra.
-    const best = options[0];
+    // Varias artes/rarezas comparten código. Se usa la rareza que escriba el
+    // dueño junto al código ("RA03-EN123 PLATINUM"); si no la escribe, la más
+    // barata, que es la versión base de esa impresión.
+    const words = String(rarityHint).toUpperCase().split(/[^A-Z0-9]+/).filter((w) => w.length > 1);
+    let pool = options;
+    let pickedBy = "cheapest";
+    if (words.length) {
+      const filtered = options.filter((o: any) => {
+        const rarity = String(o.rarity || "").toUpperCase();
+        return words.every((w) => rarity.includes(w));
+      });
+      if (filtered.length) {
+        pool = filtered;
+        pickedBy = "rarity";
+      }
+    }
+
+    const best = pool[0];
     return json({
       found: true,
       code: clean,
@@ -131,6 +148,7 @@ serve(async (req) => {
       price: best.marketPrice,
       currency: "USD",
       source: "TCGplayer",
+      pickedBy,
       updatedAt: new Date().toISOString(),
       options: options.slice(0, 12),
     });
