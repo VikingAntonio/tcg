@@ -50,7 +50,7 @@
         fab.id = 'offline-fab';
         fab.type = 'button';
         fab.title = 'Copia sin conexión';
-        fab.innerHTML = '<i class="fas fa-download"></i><span id="offline-fab-dot"></span>';
+        fab.innerHTML = '<i class="fas fa-download"></i><span id="offline-fab-label">Descargar</span><span id="offline-fab-dot"></span>';
         document.body.appendChild(fab);
 
         const overlay = document.createElement('div');
@@ -156,8 +156,10 @@
     function updateFab(meta) {
         const dot = qs('#offline-fab-dot');
         if (!dot) return;
-        dot.className = meta ? 'ok' : 'empty';
+        dot.className = meta ? 'is-ok' : 'is-empty';
         dot.title = meta ? `Copia del ${formatDate(meta.syncedAt)}` : 'Sin copia';
+        const label = qs('#offline-fab-label');
+        if (label) label.textContent = meta ? 'Actualizar' : 'Descargar';
     }
 
     function escapeHtml(value) {
@@ -349,6 +351,9 @@
         // sola vez para tomar los archivos nuevos.
         navigator.serviceWorker.addEventListener('controllerchange', () => {
             if (!hadController) return;
+            // No cortar una sincronización a medias: el caparazón se
+            // refresca solo en la próxima carga.
+            if (state.repairingShell || state.syncing) return;
             if (sessionStorage.getItem('offline_sw_reloaded')) return;
             sessionStorage.setItem('offline_sw_reloaded', '1');
             location.reload();
@@ -396,16 +401,31 @@
         });
     }
 
+    // El propio Service Worker puede contestar con archivos viejos si aún
+    // corre una versión anterior; en ese caso hay que vaciar la caché.
+    async function shellServingStaleFiles() {
+        try {
+            const res = await fetch('/offline/js/offline-version.js', { cache: 'reload' });
+            const text = await res.text();
+            const match = text.match(/OFFLINE_SHELL_VERSION\s*=\s*['"]([^'"]+)/);
+            return !!match && match[1] !== self.OFFLINE_SHELL_VERSION;
+        } catch (e) {
+            return false;
+        }
+    }
+
     async function ensureShell() {
         if (!navigator.onLine || state.repairingShell) return;
         try {
             const status = await OfflineSync.getStatus();
             if (status.shell && status.shell.version === status.shellVersion) return;
             state.repairingShell = true;
-            if (status.shell) await purgeShellCache();
+            // Sin purga: precacheShell sobrescribe cada archivo, así que una
+            // sincronización interrumpida deja la copia anterior intacta.
+            if (await shellServingStaleFiles()) await purgeShellCache();
             await OfflineSync.run({ store: getStoreIdentifier(), skipImages: true, onProgress: () => {} });
         } catch (e) {
-            /* se reintenta en la próxima carga */
+            console.warn('No se pudo refrescar el caparazón:', e && e.message);
         } finally {
             state.repairingShell = false;
         }
@@ -427,8 +447,13 @@
         });
     }
 
+    // En los tableros de juego el botón estorba: se oculta y se actualiza
+    // desde el menú.
+    const GAME_BOARD = /(duel|duelmobile|magic|magicMobile)\.html$/.test(location.pathname);
+
     function init() {
         document.body.classList.add('offline-app');
+        if (GAME_BOARD) document.body.classList.add('offline-hide-fab');
         buildPanel();
         tweakHomeMenu();
         updateConnectionBadge();
@@ -441,15 +466,14 @@
         // Sin copia y sin tienda configurada: abrir el panel para guiar.
         preselectDeckFromUrl();
 
+        // El caparazón se refresca siempre (haya o no datos); los datos se
+        // piden desde el panel cuando todavía no hay copia.
+        ensureShell();
+        setTimeout(ensureShell, 5000);
+
         OfflineSync.getStatus().then(status => {
             if (!status.meta) openPanel();
-            else {
-                ensureShell();
-                // El Service Worker puede borrar el caparazón un instante
-                // después de cargar la página; se revisa de nuevo.
-                setTimeout(ensureShell, 5000);
-                maybeAutoSync();
-            }
+            else maybeAutoSync();
         });
     }
 
