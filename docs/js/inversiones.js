@@ -2471,7 +2471,6 @@ async function openVaultLedger(cat) {
 // Al escribir el código de la impresión (RA03-EN123) en Rareza, se consulta el
 // precio de mercado y se rellena "Precio mercado". El valor llega en USD.
 
-const INV_CODE_RE = /^[A-Za-z0-9]{2,6}-[A-Za-z0-9]{0,4}\d{1,4}$/;
 let invCodeLookupTimer = null;
 let invCodeLookupToken = 0;
 
@@ -2485,12 +2484,14 @@ function invSetPriceCurrencyTag(show, title) {
 }
 
 async function invFillMarketPriceFromCode() {
-    const code = ($('#inv-card-rarity-input').val() || '').trim();
+    const text = ($('#inv-card-rarity-input').val() || '').trim();
     const $price = $('#inv-card-current-price');
-    if (!INV_CODE_RE.test(code) || !window.MarketPrices) {
+    const parsed = window.MarketPrices ? window.MarketPrices.parse(text) : null;
+    if (!parsed) {
         invSetPriceCurrencyTag(false);
         return;
     }
+    const code = parsed.code;
 
     const token = ++invCodeLookupToken;
     const before = $price.val();
@@ -2498,7 +2499,7 @@ async function invFillMarketPriceFromCode() {
 
     let row = null;
     try {
-        row = await window.MarketPrices.lookupCode(code);
+        row = await window.MarketPrices.lookupCode(text);
     } catch (e) {
         row = null;
     }
@@ -2518,7 +2519,7 @@ async function invFillMarketPriceFromCode() {
     if ($price.val() !== before) return;
 
     $price.val(row.price);
-    const bits = [row.source || 'TCGplayer', row.setName, row.setNumber, row.rarity].filter(Boolean);
+    const bits = [row.source || 'TCGplayer', row.setName, row.setNumber, row.rarity, row.art ? `Arte ${row.art}` : ''].filter(Boolean);
     invSetPriceCurrencyTag(true, bits.join(' · '));
 }
 

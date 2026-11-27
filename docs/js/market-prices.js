@@ -36,10 +36,15 @@
 
     const codeKey = (s) => String(s == null ? '' : s).toUpperCase().replace(/[^A-Z0-9]/g, '');
 
-    const CODE_RE = /^[A-Za-z0-9]{2,6}-[A-Za-z0-9]{0,4}\d{1,4}$/;
+    const CODE_IN_TEXT_RE = /([A-Za-z0-9]{2,6}-[A-Za-z0-9]{0,4}\d{1,4})/;
 
-    function isCode(text) {
-        return CODE_RE.test(String(text == null ? '' : text).trim());
+    // "RA03-EN123 PLATINUM" -> { code: 'RA03-EN123', rarity: 'PLATINUM' }
+    function parse(text) {
+        const raw = String(text == null ? '' : text).trim();
+        const match = raw.match(CODE_IN_TEXT_RE);
+        if (!match) return null;
+        const rarity = raw.replace(match[1], ' ').replace(/\s+/g, ' ').trim();
+        return { code: match[1].toUpperCase(), rarity };
     }
 
     function money(price, currency) {
@@ -100,19 +105,22 @@
         return '';
     }
 
-    async function serverLookup(code) {
+    async function serverLookup(code, rarity) {
         const base = supabaseBase();
         if (!base) return null;
-        const url = `${base}/functions/v1/market-price?code=${encodeURIComponent(code)}`;
-        const data = await cachedJson(`srv:${codeKey(code)}`, async () => {
+        const query = `code=${encodeURIComponent(code)}${rarity ? `&rarity=${encodeURIComponent(rarity)}` : ''}`;
+        const url = `${base}/functions/v1/market-price?${query}`;
+        const data = await cachedJson(`srv:${codeKey(code)}:${norm(rarity || '')}`, async () => {
             try { return await fetchJson(url); } catch (e) { return null; }
         }, CACHE_TTL);
         if (!data || !data.found || num(data.price) === null) return null;
+        const art = String(data.name || '').match(/\(([A-Z])\)\s*$/);
         return {
             name: data.name || '',
             setName: data.setName || '',
             setNumber: data.code || code,
             rarity: data.rarity || '',
+            art: art ? art[1] : '',
             variantLabel: data.variant || '',
             price: num(data.price),
             currency: data.currency || 'USD',
@@ -206,11 +214,12 @@
 
     // --- API pública ------------------------------------------------------
 
-    async function lookupCode(code, { game = '' } = {}) {
-        const clean = String(code == null ? '' : code).trim().toUpperCase();
-        if (!CODE_RE.test(clean)) return null;
+    async function lookupCode(text, { game = '' } = {}) {
+        const parsed = parse(text);
+        if (!parsed) return null;
+        const clean = parsed.code;
 
-        const fromServer = await serverLookup(clean).catch(() => null);
+        const fromServer = await serverLookup(clean, parsed.rarity).catch(() => null);
         if (fromServer) return fromServer;
 
         if (!game || game === 'yugioh') {
@@ -226,7 +235,7 @@
 
     window.MarketPrices = {
         lookupCode,
-        isCode,
+        parse,
         money,
         clearCache: () => localStorage.removeItem(CACHE_KEY)
     };
