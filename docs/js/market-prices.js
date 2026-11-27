@@ -134,17 +134,18 @@
     }
 
     function bestRow(rows, preferred) {
-        if (!rows || !rows.length) return null;
+        const priced = (rows || []).filter((r) => num(r.price) !== null && num(r.price) > 0);
+        if (!priced.length) return null;
         if (preferred) {
-            const exact = rows.find((r) => r.variant === preferred);
+            const exact = priced.find((r) => r.variant === preferred);
             if (exact) return exact;
         }
         const order = ['holofoil', 'usd', 'normal', 'reverse-holofoil', 'usd_foil', 'avg', 'default'];
         for (const key of order) {
-            const row = rows.find((r) => r.variant === key);
+            const row = priced.find((r) => r.variant === key);
             if (row) return row;
         }
-        return rows[0];
+        return priced[0];
     }
 
     // --- Proveedores ------------------------------------------------------
@@ -242,10 +243,13 @@
 
     const YGO_API = 'https://db.ygoprodeck.com/api/v7/cardinfo.php';
 
-    function ygoRows(card, maxPrints = 12) {
+    // Se listan TODAS las impresiones (hasta 80). Las que la base no tiene
+    // priceadas se muestran igual con price null, para no ocultar reimpresiones.
+    function ygoRows(card, maxPrints = 80) {
         const rows = [];
-        const sets = (card.card_sets || []).filter((s) => num(s.set_price) !== null && num(s.set_price) > 0);
+        const sets = (card.card_sets || []);
         sets.slice(0, maxPrints).forEach((s) => {
+            const price = num(s.set_price);
             rows.push({
                 provider: 'ygoprodeck',
                 game: 'yugioh',
@@ -256,7 +260,7 @@
                 rarity: s.set_rarity || '',
                 variant: s.set_code || 'default',
                 variantLabel: s.set_edition || '',
-                price: num(s.set_price),
+                price: price !== null && price > 0 ? price : null,
                 currency: 'USD',
                 source: 'TCGplayer',
                 updatedAt: null,
@@ -301,6 +305,53 @@
             .flatMap((c) => ygoRows(c));
     }
 
+    const YGO_SETS = 'https://db.ygoprodeck.com/api/v7/cardsets.php';
+
+    // Prefijo de set (RA03) -> nombre del set, en un mapa pequeño cacheado.
+    async function ygoSetNameByPrefix(prefix) {
+        const map = await cachedJson('ygo:setmap', async () => {
+            const sets = await fetchJson(YGO_SETS, {}, 15000);
+            const out = {};
+            (sets || []).forEach((s) => {
+                const code = String(s.set_code || '').toUpperCase();
+                if (code && !out[code]) out[code] = s.set_name;
+            });
+            return out;
+        }, 7 * 24 * 60 * 60 * 1000);
+        return (map || {})[String(prefix || '').toUpperCase()] || null;
+    }
+
+    // Búsqueda por código exacto (RA03-EN123): prefijo -> set -> cartas del set.
+    async function ygoSearchByCode(code) {
+        const upper = String(code || '').toUpperCase().trim();
+        const prefix = upper.split('-')[0];
+        if (!prefix) return [];
+        let setName = null;
+        try { setName = await ygoSetNameByPrefix(prefix); } catch (e) { setName = null; }
+        if (!setName) return [];
+
+        const data = await cachedJson(
+            `ygo:set:${norm(setName)}`,
+            () => fetchJson(`${YGO_API}?cardset=${encodeURIComponent(setName)}`, {}, 15000).catch(() => null),
+            CANDIDATE_TTL
+        );
+        const wanted = codeKey(upper);
+        return ((data && data.data) || [])
+            .filter((c) => (c.card_sets || []).some((s) => codeKey(s.set_code) === wanted))
+            .flatMap((c) => ygoRows(c).filter((r) => codeKey(r.setNumber) === wanted));
+    }
+
+    async function tcgdexByCode(code) {
+        const id = String(code || '').toLowerCase().trim();
+        if (!/^[a-z0-9]+-[a-z0-9]+$/.test(id)) return [];
+        try {
+            const detail = await tcgdexDetail(id);
+            return detail ? tcgdexRows(detail) : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
     const SCRYFALL = 'https://api.scryfall.com';
 
     function scryfallRows(card) {
@@ -341,7 +392,7 @@
             () => fetchJson(`${SCRYFALL}/cards/search?q=${q}&unique=prints&order=released`).catch(() => null),
             CANDIDATE_TTL
         );
-        return ((data && data.data) || []).slice(0, 25).flatMap(scryfallRows);
+        return ((data && data.data) || []).slice(0, 100).flatMap(scryfallRows);
     }
 
     const SEARCHERS = {
@@ -383,25 +434,10 @@
 
     // --- Búsqueda y precio ------------------------------------------------
 
-    async function searchCards({ game = '', name = '', code = '', limit = 60 } = {}) {
-        const split = splitNameCode(name);
-        const query = split.name;
-        const codeFilter = String(code || split.code || '').trim();
-        if (!query) return [];
-
-        const games = game ? [game] : Object.keys(SEARCHERS);
-        const lists = await Promise.all(games.map(async (g) => {
-            const searcher = SEARCHERS[g];
-            if (!searcher) return [];
-            try { return await searcher(query); } catch (e) { return []; }
-        }));
-
-        const wanted = norm(query);
-        let rows = lists.flat();
-        if (codeFilter) rows = rows.filter((row) => matchesCode(row, codeFilter));
+    function finalizeRows(rows, wanted, limit) {
         const seen = new Set();
         const unique = rows.filter((row) => {
-            const key = `${row.provider}|${row.externalId}|${row.variant}|${row.setNumber}`;
+            const key = `${row.provider}|${row.externalId}|${row.variant}|${row.setNumber}|${row.rarity}`;
             if (seen.has(key)) return false;
             seen.add(key);
             return true;
@@ -412,9 +448,42 @@
             const aExact = norm(a.name) === wanted ? 0 : 1;
             const bExact = norm(b.name) === wanted ? 0 : 1;
             if (aExact !== bExact) return aExact - bExact;
+            // Con precio primero; las que la base no pricea quedan al final.
+            const aPriced = a.price != null ? 0 : 1;
+            const bPriced = b.price != null ? 0 : 1;
+            if (aPriced !== bPriced) return aPriced - bPriced;
             return (gameOrder[a.game] ?? 9) - (gameOrder[b.game] ?? 9);
         });
         return unique.slice(0, limit);
+    }
+
+    async function searchCards({ game = '', name = '', code = '', limit = 200 } = {}) {
+        const raw = String(name || '').trim();
+        const split = splitNameCode(raw);
+        // "RA03-EN123" a secas: no hay nombre que buscar, se resuelve por código.
+        const onlyCode = /^[A-Za-z0-9]{2,6}-[A-Za-z0-9]{0,4}\d{1,4}$/.test(raw);
+        const query = onlyCode ? '' : split.name;
+        const codeFilter = String(code || split.code || '').trim();
+        if (!query && !codeFilter) return [];
+
+        if (onlyCode) {
+            const lists = await Promise.all([
+                (!game || game === 'yugioh') ? ygoSearchByCode(codeFilter).catch(() => []) : [],
+                (!game || game === 'pokemon') ? tcgdexByCode(codeFilter).catch(() => []) : []
+            ]);
+            return finalizeRows(lists.flat(), '', limit);
+        }
+
+        const games = game ? [game] : Object.keys(SEARCHERS);
+        const lists = await Promise.all(games.map(async (g) => {
+            const searcher = SEARCHERS[g];
+            if (!searcher) return [];
+            try { return await searcher(query); } catch (e) { return []; }
+        }));
+
+        let rows = lists.flat();
+        if (codeFilter) rows = rows.filter((row) => matchesCode(row, codeFilter));
+        return finalizeRows(rows, norm(query), limit);
     }
 
     async function linkedRow(card) {
@@ -441,12 +510,13 @@
             if (!ygoCard) throw new Error('Carta no encontrada');
             if (variant && variant !== 'default') {
                 const print = (ygoCard.card_sets || []).find((s) => s.set_code === variant);
-                const price = num(print && print.set_price);
-                if (print && price !== null && price > 0) {
-                    return {
-                        ...ygoRows(ygoCard).find((r) => r.setNumber === variant),
-                        price
-                    };
+                if (print) {
+                    const price = num(print.set_price);
+                    const row = ygoRows(ygoCard).find((r) => r.setNumber === variant);
+                    if (price === null || price <= 0) {
+                        throw new Error('La base no tiene precio para esa impresión');
+                    }
+                    if (row) return { ...row, price };
                 }
             }
             const fallback = bestRow(ygoRows(ygoCard));
@@ -606,7 +676,7 @@
                             <input id="mp-code" class="swal2-input" style="flex:0 1 240px; margin:0; height:38px;" placeholder="Código de la impresión (ej. CT2-EN004)" value="${esc(initialCode)}">
                             <span id="mp-count" style="font-size:0.72rem; color:#777;"></span>
                         </div>
-                        <div style="font-size:0.72rem; color:#777; margin:8px 2px 0;">El código filtra las impresiones; si no lo tienes, compara la imagen, el set y el precio.</div>
+                        <div style="font-size:0.72rem; color:#777; margin:8px 2px 0;">El código filtra las impresiones; si no lo tienes, compara la imagen, el set y el precio. Las que salen como «Sin precio» existen, pero la base no tiene precio para esa rareza.</div>
                         <div id="mp-results" style="margin-top:12px; max-height:52vh; overflow-y:auto; border:1px solid #eee; border-radius:8px;">
                             <div style="padding:26px; text-align:center; color:#888; font-size:0.85rem;">Escribe el nombre y pulsa BUSCAR.</div>
                         </div>
@@ -637,19 +707,20 @@
                             return;
                         }
                         out.innerHTML = results.map((row, i) => {
-                            const mxn = row.price != null ? toMxn(row.price, row.currency) : null;
+                            const noPrice = row.price == null;
+                            const mxn = noPrice ? null : toMxn(row.price, row.currency);
+                            const priceHtml = noPrice
+                                ? '<span style="display:block; font-weight:800; font-size:0.68rem; color:#b03a2e;">Sin precio</span>'
+                                : `<span style="display:block; font-weight:900; font-size:0.92rem; color:#00875a;">${money(row.price, row.currency)}</span>${mxn != null ? `<span style="display:block; font-size:0.58rem; color:#999;">≈ ${money(mxn, 'MXN')}</span>` : ''}`;
                             return `
-                            <button type="button" class="mp-row" data-idx="${i}" style="display:flex; gap:10px; align-items:center; width:100%; text-align:left; background:#fff; border:0; border-bottom:1px solid #f1f2f6; padding:8px 10px; cursor:pointer;">
+                            <button type="button" class="mp-row" data-idx="${i}"${noPrice ? ' title="La base no tiene precio para esta impresión"' : ''} style="display:flex; gap:10px; align-items:center; width:100%; text-align:left; background:#fff; border:0; border-bottom:1px solid #f1f2f6; padding:8px 10px; cursor:pointer;${noPrice ? ' opacity:.7;' : ''}">
                                 <img src="${esc(row.image)}" alt="" style="width:38px; height:52px; object-fit:contain; flex:0 0 auto;" onerror="this.style.visibility='hidden'">
                                 <span style="flex:1; min-width:0;">
                                     <span style="display:block; font-weight:800; font-size:0.82rem; color:#111; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(row.name)}</span>
                                     <span style="display:block; font-size:0.7rem; color:#666;">${esc(GAME_LABELS[row.game] || row.game)} · ${esc(row.setName || 'Sin set')}${row.setNumber ? ' · ' + esc(row.setNumber) : ''}${row.rarity ? ' · ' + esc(row.rarity) : ''}</span>
                                     <span style="display:block; font-size:0.66rem; color:#999;">${esc(row.variantLabel || '')} · ${esc(row.source || '')}</span>
                                 </span>
-                                <span style="flex:0 0 auto; text-align:right;">
-                                    <span style="display:block; font-weight:900; font-size:0.92rem; color:#00875a;">${money(row.price, row.currency)}</span>
-                                    ${mxn != null ? `<span style="display:block; font-size:0.58rem; color:#999;">≈ ${money(mxn, 'MXN')}</span>` : ''}
-                                </span>
+                                <span style="flex:0 0 auto; text-align:right;">${priceHtml}</span>
                             </button>`;
                         }).join('');
                     };

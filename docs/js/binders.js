@@ -622,6 +622,10 @@ $(document).ready(async function() {
         });
         // El código de impresión, si viene dentro del nombre, lo filtra el selector.
         if (!choice) return;
+        if (choice.price == null) {
+            Swal.fire('Sin precio', 'La base pública no tiene precio para esa impresión. Escríbelo a mano.', 'info');
+            return;
+        }
         const mxn = await window.MarketPrices.askMxnPrice(choice);
         if (mxn === null) return;
         $('#slot-price').val(mxn);

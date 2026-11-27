@@ -2628,6 +2628,15 @@ async function linkInvMarketCard() {
         });
         return;
     }
+    if (choice.price == null) {
+        Swal.fire({
+            title: 'IMPRESIÓN VINCULADA SIN PRECIO',
+            html: '<div style="text-align:left;font-size:0.9rem;">La base pública no tiene precio para esa rareza. La impresión quedó guardada; escribe el precio a mano si lo conoces.</div>',
+            icon: 'info',
+            customClass: { popup: 'inv-swal-popup' }
+        });
+        return;
+    }
     Swal.fire({ icon: 'success', title: 'CARTA VINCULADA', timer: 1300, showConfirmButton: false, customClass: { popup: 'inv-swal-popup' } });
 }
 
