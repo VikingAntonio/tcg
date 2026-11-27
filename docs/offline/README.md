@@ -12,9 +12,14 @@ aquí son copias propias que reutilizan los mismos `js/` y `css/` del proyecto.
 
 1. Con internet, abre `https://TU-DOMINIO/offline/index.html?store=toonShop`
    (cambia `toonShop` por el nombre o el id de tu tienda).
-2. Pulsa el botón azul de descarga (abajo a la derecha) y luego
-   **Descargar / actualizar**. Tarda entre 10 y 60 s según las imágenes.
+2. El botón es la **píldora azul de abajo a la derecha** con el texto
+   **DESCARGAR** (cuando ya hay copia dice **ACTUALIZAR**) y un punto verde/rojo
+   con el estado. Púlsala y luego **Descargar / actualizar**. Tarda entre 10 y
+   60 s según las imágenes.
+   - En la primera visita el panel se abre solo, así que no hay que buscarlo.
    - Si la URL no trae tienda, el panel la pide antes de descargar.
+   - En los tableros de juego (`duel`, `duelmobile`, `magic`) el botón se oculta
+     para no tapar la mano: se actualiza desde el menú principal.
 3. Cuando termine, ya puedes cortar el wifi: la vista funciona igual.
 4. En la tablet, usa el menú del navegador → **Añadir a pantalla de inicio**
    para abrirlo como una app (el `manifest.webmanifest` ya está listo).

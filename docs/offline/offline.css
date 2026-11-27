@@ -63,13 +63,18 @@
     right: 16px;
     bottom: 16px;
     z-index: 99999;
-    width: 54px;
+    min-width: 54px;
     height: 54px;
-    border-radius: 50%;
+    padding: 0 20px 0 16px;
+    gap: 9px;
+    border-radius: 999px;
     border: 1px solid rgba(255, 255, 255, .25);
     background: linear-gradient(135deg, #00d2ff, #3a7bd5);
     color: #04121f;
+    font: inherit;
     font-size: 20px;
+    font-weight: 800;
+    letter-spacing: .2px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -77,20 +82,27 @@
     box-shadow: 0 10px 24px rgba(0, 0, 0, .4);
 }
 
-#offline-fab:hover { filter: brightness(1.08); }
-
-#offline-fab-dot {
-    position: absolute;
-    top: 2px;
-    right: 2px;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    border: 2px solid #04121f;
+#offline-fab-label {
+    font-size: 15px;
+    line-height: 1;
+    text-transform: uppercase;
 }
 
-#offline-fab-dot.ok { background: #22c55e; }
-#offline-fab-dot.empty { background: #ef4444; }
+#offline-fab:hover { filter: brightness(1.08); }
+
+.offline-hide-fab #offline-fab { display: none; }
+
+#offline-fab-dot {
+    flex: 0 0 auto;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid #04121f;
+    box-sizing: content-box;
+}
+
+#offline-fab-dot.is-ok { background: #22c55e; }
+#offline-fab-dot.is-empty { background: #ef4444; }
 
 /* --------------------------------------------------------- panel modal */
 .offline-overlay {
@@ -287,6 +299,7 @@
 
 /* ------------------------------------------------------------- móvil */
 @media (max-width: 768px) {
-    #offline-fab { width: 48px; height: 48px; font-size: 18px; right: 12px; bottom: 12px; }
+    #offline-fab { height: 46px; font-size: 17px; right: 12px; bottom: 12px; padding: 0 16px 0 13px; gap: 7px; }
+    #offline-fab-label { font-size: 13px; }
     .offline-card { padding: 18px; border-radius: 14px; }
 }
