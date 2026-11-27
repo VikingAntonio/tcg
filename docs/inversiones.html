@@ -388,6 +388,20 @@
                                 </div>
                             </div>
 
+                            <!-- Row 1b: Expansión (código) + rarezas de esa impresión -->
+                            <div class="inv-form-row inv-form-row-full" style="margin-bottom: 12px;">
+                                <div class="inv-form-group">
+                                    <label>Expansión</label>
+                                    <input type="text" id="inv-card-set-code" placeholder="Ej: RA03-EN123" autocomplete="off">
+                                </div>
+                            </div>
+                            <div id="inv-card-rarity-options-row" class="inv-form-row inv-form-row-full" style="display: none; margin-bottom: 12px;">
+                                <div class="inv-form-group">
+                                    <label>Rarezas de la expansión</label>
+                                    <select id="inv-card-rarity-options"></select>
+                                </div>
+                            </div>
+
                             <!-- Row 2: Rareza & Cantidad -->
                             <div class="inv-form-row inv-form-row-inline" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
                                 <div class="inv-form-group">
@@ -423,7 +437,7 @@
                             </div>
 
                             <!-- Row 5: Link Público & Estado -->
-                            <div class="inv-form-row inv-form-row-switches" style="margin-bottom: 10px; background: #f9f9f9; padding: 10px 12px; border-radius: 6px; border: 1px solid #eee; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: center;">
+                            <div class="inv-form-row inv-form-row-switches" style="margin-bottom: 10px; background: #f9f9f9; padding: 10px 12px; border-radius: 6px; border: 1px solid #eee; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; align-items: start;">
                                 <div class="inv-form-group" style="display: flex; flex-direction: column; gap: 4px;">
                                     <label style="margin: 0; font-size: 0.65rem; font-weight: 800; color: #333;"><i class="fas fa-eye"></i> LINK PÚBLICO</label>
                                     <div style="display: flex; align-items: center; gap: 6px;">
@@ -444,6 +458,17 @@
                                         <span id="inv-card-available-status" style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: #2ed573;">DISPONIBLE</span>
                                     </div>
                                     <small style="font-size: 0.6rem; color: #999;">Apágalo para marcarla como VENDIDO: deja de contar en los cálculos generales.</small>
+                                </div>
+                                <div class="inv-form-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                    <label style="margin: 0; font-size: 0.65rem; font-weight: 800; color: #333;"><i class="fas fa-chart-line"></i> PRECIO EN EL LINK PÚBLICO</label>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <label class="switch" style="margin: 0;">
+                                            <input type="checkbox" id="inv-card-market-price-toggle">
+                                            <span class="slider"></span>
+                                        </label>
+                                        <span id="inv-card-market-price-status" style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase;">VENTA</span>
+                                    </div>
+                                    <small style="font-size: 0.6rem; color: #999;">Actívalo para mostrar el precio de mercado (USD) en vez del de venta.</small>
                                 </div>
                             </div>
                         </div>
@@ -593,7 +618,7 @@
     <script src="js/market-prices.js"></script>
 
     <script src="js/ztext.js"></script>
-    <script src="js/inversiones.js?v=235"></script>
+    <script src="js/inversiones.js?v=237"></script>
     <script type="text/javascript" src="js/turn.js"></script>
     <script>
         if ('serviceWorker' in navigator) {

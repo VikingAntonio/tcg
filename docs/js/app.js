@@ -5224,6 +5224,9 @@ async function showGeneralEventDetails(id) {
 // --- PUBLIC INVESTMENTS ---
 
 async function loadPublicInvestmentCategories() {
+    // Precarga el tipo de cambio para que el primer pintado ya salga en pesos.
+    refreshPublicInvWithRate();
+
     return new Promise(async (resolve) => {
         let userId = window.currentStoreId;
         const identifier = window.currentStoreIdentifier || new URLSearchParams(window.location.search).get('id') || new URLSearchParams(window.location.search).get('store') || new URLSearchParams(window.location.search).get('user');
@@ -5320,6 +5323,7 @@ async function openPublicInvestmentCategory(cat) {
     // Filter out private cards so public cards reflow gaplessly
     publicInvCards = (cards || []).filter(c => c.is_public !== false);
     renderPublicInvestmentCards();
+    refreshPublicInvWithRate();
 }
 
 $(document).on('click', '#public-investment-tabs .tab-pill', function() {
@@ -5352,15 +5356,39 @@ function renderPublicInvestmentCards() {
 // En el link público se muestra el precio de venta (lo que el dueño pide por
 // la carta), no el precio de mercado. Solo si no hay precio de venta fijado
 // se usa el de mercado como respaldo para no mostrar $0.00.
+// La carta puede mostrar su precio de mercado (USD) en vez del de venta.
+function publicInvUsesMarketPrice(card) {
+    const market = parseFloat(card && card.current_price);
+    return !!(card && card.show_market_price === true && Number.isFinite(market) && market > 0);
+}
+
+function publicInvMarketPriceMxn(card) {
+    const usd = parseFloat(card && card.current_price);
+    if (!Number.isFinite(usd) || usd <= 0) return 0;
+    if (window.MarketRate) return window.MarketRate.convert(usd);
+    return Math.round(usd * 20 * 100) / 100;
+}
+
 function publicInvSalePrice(card) {
+    const market = parseFloat(card && card.current_price);
+    if (publicInvUsesMarketPrice(card)) return publicInvMarketPriceMxn(card);
     const sale = parseFloat(card && card.sale_price);
     if (Number.isFinite(sale) && sale > 0) return sale;
-    const market = parseFloat(card && card.current_price);
     return Number.isFinite(market) && market > 0 ? market : 0;
 }
 
 function publicInvPriceLabel(card) {
     return `$${publicInvSalePrice(card).toFixed(2)}`;
+}
+
+// El tipo de cambio llega después del primer pintado: al tenerlo se repinta.
+function refreshPublicInvWithRate() {
+    if (!window.MarketRate) return;
+    window.MarketRate.get()
+        .then(() => {
+            if (currentPublicInvCategory && publicInvCards.length) renderPublicInvestmentCards();
+        })
+        .catch(() => {});
 }
 
 function publicInvIsAvailable(card) {

@@ -12,6 +12,35 @@ const DEFAULT_PREMIUM_PRICE_MXN = 300;
 // Stripe exige un mínimo de 10 MXN por cargo
 const MIN_CHARGE_MXN = 10;
 
+// Tipo de cambio USD -> MXN (mismas fuentes que js/market-rate.js). Si fallan,
+// 20 MXN por dólar. Así el cobro coincide con el precio que muestra el link.
+const FALLBACK_USD_MXN = 20;
+let usdMxnCache: { rate: number; at: number } | null = null;
+
+async function usdToMxnRate(): Promise<number> {
+  if (usdMxnCache && Date.now() - usdMxnCache.at < 24 * 60 * 60 * 1000) return usdMxnCache.rate;
+  const ok = (n: number) => Number.isFinite(n) && n > 5 && n < 100;
+  try {
+    const res = await fetch("https://open.er-api.com/v6/latest/USD");
+    const data = await res.json();
+    const rate = Number(data?.rates?.MXN);
+    if (ok(rate)) {
+      usdMxnCache = { rate, at: Date.now() };
+      return rate;
+    }
+  } catch (_) { /* siguiente fuente */ }
+  try {
+    const res = await fetch("https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json");
+    const data = await res.json();
+    const rate = Number(data?.usd?.mxn);
+    if (ok(rate)) {
+      usdMxnCache = { rate, at: Date.now() };
+      return rate;
+    }
+  } catch (_) { /* respaldo fijo */ }
+  return FALLBACK_USD_MXN;
+}
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -73,16 +102,21 @@ async function resolveCartItem(supabase: any, raw: any, fallbackSellerId: string
   const isInvestment = String(raw?.type || "").toLowerCase() === "investment";
 
   if (isInvestment) {
+    // select("*") para tolerar proyectos sin la columna show_market_price.
     const { data } = await supabase
       .from("investment_cards")
-      .select("id, card_name, image_url, current_price, sale_price, quantity, user_id")
+      .select("*")
       .eq("id", id)
       .maybeSingle();
     if (!data) return { error: `La carta "${raw?.name || id}" ya no está disponible.` };
-    // Se cobra el precio de venta público; el de mercado solo es respaldo
-    // cuando la carta no tiene precio de venta fijado.
+    // Se cobra lo mismo que muestra el link público: el precio de mercado si la
+    // carta lo tiene activado, si no el de venta (con el de mercado de respaldo).
     const salePrice = Number(data.sale_price) || 0;
-    const price = salePrice > 0 ? salePrice : (Number(data.current_price) || 0);
+    const marketPrice = Number(data.current_price) || 0;
+    const useMarket = data.show_market_price === true && marketPrice > 0;
+    const price = useMarket
+      ? Math.round(marketPrice * (await usdToMxnRate()) * 100) / 100
+      : (salePrice > 0 ? salePrice : marketPrice);
     if (price <= 0) return { error: `La carta "${data.card_name || raw?.name || id}" no tiene precio de venta configurado.` };
     const stock = parseInt(data.quantity);
     if (Number.isFinite(stock) && stock <= 0) {

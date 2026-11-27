@@ -233,8 +233,38 @@
         return null;
     }
 
+    // Lista de rarezas/artes de una impresión, para elegir en el formulario.
+    async function options(text) {
+        const parsed = parse(text);
+        if (!parsed) return [];
+        const base = supabaseBase();
+        if (!base) return [];
+        const url = `${base}/functions/v1/market-price?code=${encodeURIComponent(parsed.code)}`;
+        const data = await cachedJson(`opts:${codeKey(parsed.code)}`, async () => {
+            try { return await fetchJson(url); } catch (e) { return null; }
+        }, CACHE_TTL);
+        const list = (data && Array.isArray(data.options)) ? data.options : [];
+        return list
+            .filter((o) => o && num(o.marketPrice) !== null)
+            .map((o) => {
+                const art = String(o.name || '').match(/\(([A-Z])\)\s*$/);
+                return {
+                    productId: o.productId,
+                    name: o.name || '',
+                    rarity: o.rarity || '',
+                    variant: o.variant || '',
+                    art: art ? art[1] : '',
+                    price: num(o.marketPrice),
+                    setName: (data && data.setName) || '',
+                    currency: 'USD',
+                    source: 'TCGplayer'
+                };
+            });
+    }
+
     window.MarketPrices = {
         lookupCode,
+        options,
         parse,
         money,
         clearCache: () => localStorage.removeItem(CACHE_KEY)
