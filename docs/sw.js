@@ -1,4 +1,4 @@
-const STATIC_CACHE = 'viking-static-v274';
+const STATIC_CACHE = 'viking-static-v276';
 const IMAGE_CACHE = 'viking-images-v1';
 const DATA_CACHE = 'viking-data-v1';
 
@@ -130,6 +130,9 @@ self.addEventListener('activate', event => {
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cache => {
+          // La copia sin conexión (docs/offline) usa sus propias cachés: no se
+          // borran al actualizar este Service Worker.
+          if (cache.startsWith('viking-offline-')) return undefined;
           if (![STATIC_CACHE, IMAGE_CACHE, DATA_CACHE].includes(cache)) {
             console.log('[Service Worker] Deleting old cache:', cache);
             return caches.delete(cache);

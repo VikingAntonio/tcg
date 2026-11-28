@@ -139,6 +139,8 @@
                 <div class="offline-status-row"><span>Decks / cartas</span><strong>${c.decks || 0} / ${c.deckCards || 0}</strong></div>
                 <div class="offline-status-row"><span>Binders / cartas</span><strong>${c.binders || 0} / ${c.binderCards || 0}</strong></div>
                 <div class="offline-status-row"><span>Colecciones / cartas</span><strong>${c.investmentCategories || 0} / ${c.investmentCards || 0}</strong></div>
+                <div class="offline-status-row"><span>Álbumes / cartas</span><strong>${c.albums || 0} / ${c.albumCards || 0}</strong></div>
+                <div class="offline-status-row"><span>Wanted</span><strong>${c.wishlist || 0}</strong></div>
                 <div class="offline-status-row"><span>Imágenes guardadas</span><strong>${status.imageCount}</strong></div>
                 <div class="offline-status-row"><span>Espacio usado</span><strong>${usage}</strong></div>
                 ${meta.images && meta.images.failed ? `<div class="offline-status-note warn">${meta.images.failed} imágenes no se pudieron descargar; vuelve a sincronizar con internet.</div>` : ''}
@@ -244,6 +246,8 @@
                                 <div>Decks: <b>${result.counts.decks}</b> (${result.counts.deckCards} cartas)</div>
                                 <div>Binders: <b>${result.counts.binders}</b> (${result.counts.binderCards} cartas)</div>
                                 <div>Colecciones: <b>${result.counts.investmentCategories}</b> (${result.counts.investmentCards} cartas)</div>
+                                <div>Álbumes: <b>${result.counts.albums}</b> (${result.counts.albumCards} cartas)</div>
+                                <div>Wanted: <b>${result.counts.wishlist}</b></div>
                                 <div>Imágenes: <b>${result.images.total - result.images.failed}</b> de ${result.images.total}</div>
                                 <div style="margin-top:8px">Ya puedes usar la tablet sin internet.</div>
                             </div>`,
@@ -295,10 +299,27 @@
         const grid = qs('#home-view .home-menu-grid');
         if (!grid) return;
 
-        const allowed = ['binders', 'decks', 'investments'];
+        const allowed = ['binders', 'decks', 'wishlist', 'investments'];
         Array.from(grid.querySelectorAll('.home-menu-item')).forEach(item => {
             if (!allowed.includes(item.dataset.view)) item.remove();
         });
+
+        if (!qs('#offline-albums-tile')) {
+            const albums = document.createElement('div');
+            albums.className = 'home-menu-item tile-yellow tile-wide';
+            albums.id = 'offline-albums-tile';
+            albums.innerHTML = '<span>Álbumes</span>';
+            albums.addEventListener('click', async () => {
+                if (!window.currentStoreId) {
+                    try {
+                        const user = await resolveUser(getStoreIdentifier());
+                        if (user) window.currentStoreId = user.id;
+                    } catch (e) { /* sin datos locales */ }
+                }
+                switchView('albums');
+            });
+            grid.insertBefore(albums, qs('#offline-duel-tile') || null);
+        }
 
         if (!qs('#offline-duel-tile')) {
             const duel = document.createElement('div');
@@ -471,9 +492,20 @@
         ensureShell();
         setTimeout(ensureShell, 5000);
 
+        // ?autostart=1 llega desde el panel: abre el panel y descarga sin
+        // que haya que pulsar nada más.
+        const params = new URLSearchParams(location.search);
+        const autostart = params.get('autostart') === '1' || params.get('sync') === '1';
+
         OfflineSync.getStatus().then(status => {
-            if (!status.meta) openPanel();
-            else maybeAutoSync();
+            if (autostart && navigator.onLine) {
+                openPanel();
+                setTimeout(() => startSync({ interactive: true }), 400);
+            } else if (!status.meta) {
+                openPanel();
+            } else {
+                maybeAutoSync();
+            }
         });
     }
 

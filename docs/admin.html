@@ -816,6 +816,9 @@
                 <a href="packages.html#tab-bdd-global" class="tile tile-orange" id="btn-packages" style="display:none;">
                     <span>Packages</span>
                 </a>
+                <a href="#" class="tile tile-green tile-wide" id="btn-offline-tile">
+                    <span>Tablet Sin Conexión</span>
+                </a>
                 <a href="#" class="tile tile-pink" id="btn-logout-tile">
                     <span>Salir</span>
                 </a>
@@ -3524,6 +3527,35 @@
                 window.location.href = deckBuilderUrl(deck && deck.id);
             };
         });
+    </script>
+
+    <script>
+        // Descarga en este dispositivo la copia sin conexión (binders, decks,
+        // álbumes, Wanted e inversiones con sus imágenes, más los tableros de
+        // duelo y Magic). Solo se ve dentro del panel, con sesión iniciada.
+        (function () {
+            function storeIdentifier() {
+                let session = {};
+                try { session = JSON.parse(localStorage.getItem('tcg_session') || '{}') || {}; } catch (e) { session = {}; }
+                return session.username || session.user_username || session.store_name || session.id || '';
+            }
+
+            function openOfflineDownload(ev) {
+                if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+                const store = storeIdentifier();
+                if (!store) {
+                    const msg = 'No se pudo leer tu usuario. Vuelve a iniciar sesión.';
+                    if (window.Swal) Swal.fire({ icon: 'warning', title: 'Falta el usuario', text: msg });
+                    else alert(msg);
+                    return;
+                }
+                window.location.href = 'offline/index.html?store=' + encodeURIComponent(store) + '&autostart=1';
+            }
+
+            document.addEventListener('click', function (ev) {
+                if (ev.target.closest('#btn-offline-tile')) openOfflineDownload(ev);
+            });
+        })();
     </script>
 </body>
 </html>

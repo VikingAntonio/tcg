@@ -1,7 +1,8 @@
 # Modo sin conexión (tablet)
 
 Copia de solo lectura de la tienda pública para usar en una tablet **sin internet**:
-binders, decks, inversiones, el duelo de 1 jugador y Magic, con sus imágenes.
+binders, decks, álbumes, Wanted e inversiones, más el duelo de 1 jugador y Magic,
+con sus imágenes (portadas, cartas y listas).
 
 Todo vive en `docs/offline/`. **No modifica ninguna vista del sitio**: las páginas de
 aquí son copias propias que reutilizan los mismos `js/` y `css/` del proyecto.
@@ -9,6 +10,13 @@ aquí son copias propias que reutilizan los mismos `js/` y `css/` del proyecto.
 ---
 
 ## 1. Cómo se usa
+
+La forma más rápida: entra a tu panel (`admin.html`) con tu cuenta y pulsa el
+tile verde **«Tablet Sin Conexión»**. Abre la copia sin conexión de tu tienda y
+empieza a descargar solo (`offline/index.html?store=TU_USUARIO&autostart=1`).
+Como está dentro del panel, solo lo ve el dueño de la cuenta.
+
+También puedes entrar a mano:
 
 1. Con internet, abre `https://TU-DOMINIO/offline/index.html?store=toonShop`
    (cambia `toonShop` por el nombre o el id de tu tienda).
