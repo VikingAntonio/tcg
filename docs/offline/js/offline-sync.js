@@ -512,6 +512,32 @@
         tables.investment_categories = categories;
         tables.investment_cards = investmentCards;
 
+        // Álbumes (carpetas): portada, páginas y las cartas de cada slot.
+        let albums = [];
+        let albumPages = [];
+        let albumSlots = [];
+        try {
+            onProgress({ phase: 'data', message: 'Descargando álbumes…' });
+            albums = await fetchAll('albums', `select=*&user_id=eq.${ownerId}&order=position.asc,id.asc`);
+            albumPages = await fetchByIn('pages', 'album_id', albums.map(a => a.id));
+            albumSlots = await fetchByIn('card_slots', 'page_id', albumPages.map(p => p.id));
+        } catch (e) {
+            console.warn('Álbumes no disponibles para la copia:', e && e.message);
+        }
+        tables.albums = albums;
+        tables.pages = albumPages;
+        tables.card_slots = albumSlots;
+
+        // Wanted (lista de deseos), todas las listas del dueño.
+        let wishlist = [];
+        try {
+            onProgress({ phase: 'data', message: 'Descargando Wanted…' });
+            wishlist = await fetchAll('wishlist', `select=*&user_id=eq.${ownerId}&order=list_index.asc,created_at.desc`);
+        } catch (e) {
+            console.warn('Wanted no disponible para la copia:', e && e.message);
+        }
+        tables.wishlist = wishlist;
+
         // Opcionales: si la tabla no existe o no hay permisos, se ignora.
         try {
             tables.store_customizations = await fetchAll('store_customizations', `select=*&user_id=eq.${ownerId}`);
@@ -534,7 +560,10 @@
             binderPages: binderPages.length,
             binderCards: binderSlots.length,
             investmentCategories: categories.length,
-            investmentCards: investmentCards.length
+            investmentCards: investmentCards.length,
+            albums: albums.length,
+            albumCards: albumSlots.length,
+            wishlist: wishlist.length
         };
 
         const previous = (await OfflineDB.getMeta('snapshot')) || {};
